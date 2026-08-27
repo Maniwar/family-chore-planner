@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "entities": {
+    "Household": {
+      "title": "Household",
+      "description": "A multi-family isolated tenant household containing family members, chore settings, and access codes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique household identifier" },
+        "householdCode": { "type": "string", "description": "6-character easy join code (e.g. HOME-9241)" },
+        "familyName": { "type": "string", "description": "Name of the family or house" },
+        "housePhotoUrl": { "type": "string", "description": "Cover photo URL of the house" },
+        "houseAddressOrMotto": { "type": "string", "description": "Family motto or address" },
+        "adminPin": { "type": "string", "description": "4-digit Parent/Mom mode PIN" },
+        "createdAt": { "type": "string", "description": "ISO timestamp created" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp updated" }
+      },
+      "required": ["id", "householdCode", "familyName"]
+    },
+    "HouseholdMember": {
+      "title": "HouseholdMember",
+      "description": "A family member within a specific household",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "householdId": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["parent", "child", "teen", "other"] },
+        "avatarColor": { "type": "string" },
+        "avatarEmoji": { "type": "string" },
+        "avatarPhotoUrl": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "age": { "type": "number" },
+        "currentPoints": { "type": "number" },
+        "lifetimePoints": { "type": "number" },
+        "starsCount": { "type": "number" },
+        "targetWeeklyPoints": { "type": "number" },
+        "streakDays": { "type": "number" }
+      },
+      "required": ["id", "householdId", "name", "role", "currentPoints"]
+    },
+    "Chore": {
+      "title": "Chore",
+      "description": "A configured family chore or task item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "householdId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "assignedMemberId": { "type": "string" },
+        "frequency": { "type": "string" },
+        "scheduledDays": { "type": "array", "items": { "type": "number" } },
+        "timeOfDay": { "type": "string" },
+        "scheduledTime": { "type": "string" },
+        "defaultPoints": { "type": "number" },
+        "qualityChecklist": { "type": "array", "items": { "type": "string" } },
+        "estimatedMinutes": { "type": "number" },
+        "iconName": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "householdId", "title", "category", "defaultPoints", "isActive"]
+    },
+    "ChoreAssignmentLog": {
+      "title": "ChoreAssignmentLog",
+      "description": "Daily chore completion, photo proofs, and parental grading logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "householdId": { "type": "string" },
+        "choreId": { "type": "string" },
+        "memberId": { "type": "string" },
+        "date": { "type": "string" },
+        "status": { "type": "string" },
+        "completedAt": { "type": "string" },
+        "reviewedAt": { "type": "string" },
+        "qualityScore": { "type": "number" },
+        "qualityGrade": { "type": "string" },
+        "feedbackNote": { "type": "string" },
+        "pointsAwarded": { "type": "number" },
+        "bonusPoints": { "type": "number" },
+        "checklistStatus": { "type": "object" },
+        "completedNote": { "type": "string" }
+      },
+      "required": ["id", "householdId", "choreId", "memberId", "date", "status"]
+    },
+    "RewardItem": {
+      "title": "RewardItem",
+      "description": "Available household rewards catalog",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "householdId": { "type": "string" },
+        "title": { "type": "string" },
+        "pointCost": { "type": "number" },
+        "icon": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "allowedRoles": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "householdId", "title", "pointCost", "category"]
+    },
+    "RewardClaim": {
+      "title": "RewardClaim",
+      "description": "Member redemption claim records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "householdId": { "type": "string" },
+        "rewardId": { "type": "string" },
+        "rewardTitle": { "type": "string" },
+        "memberId": { "type": "string" },
+        "memberName": { "type": "string" },
+        "pointCost": { "type": "number" },
+        "claimedAt": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "householdId", "rewardId", "memberId", "pointCost", "status"]
+    }
+  }
+}

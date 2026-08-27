@@ -1,0 +1,6 @@
+{
+  "name": "Family Chore & Quality Tracker",
+  "description": "User-friendly household chore schedule manager for parents to assign chores to family members, track timely completions, inspect and grade quality, award points, generate reports, and print fridge charts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
