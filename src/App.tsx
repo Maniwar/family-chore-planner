@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   loadStoredMembers, 
   saveMembers, 
@@ -82,6 +82,14 @@ export default function App() {
   // Cloud multi-tenant household state
   const [activeHousehold, setActiveHousehold] = useState<CloudHousehold | null>(null);
   const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState<boolean>(false);
+
+  // Deduplication tracking to prevent infinite snapshot write-back loops
+  const lastRemoteMembersRef = useRef<string>('');
+  const lastRemoteChoresRef = useRef<string>('');
+  const lastRemoteLogsRef = useRef<string>('');
+  const lastRemoteRewardsRef = useRef<string>('');
+  const lastRemoteClaimsRef = useRef<string>('');
+  const lastRemoteHouseholdRef = useRef<string>('');
 
   const [currentDateStr, setCurrentDateStr] = useState<string>(getTodayDateString());
   const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
@@ -207,46 +215,74 @@ export default function App() {
     }, 3500);
   };
 
-  // Sync to local storage & Cloud
+  // Sync to local storage & Cloud (with deduplication to prevent listener loops)
   useEffect(() => {
     saveMembers(members);
     if (activeHousehold?.id) {
-      syncAllMembersToCloud(activeHousehold.id, members).catch(console.error);
+      const currentJson = JSON.stringify(members);
+      if (currentJson !== lastRemoteMembersRef.current) {
+        lastRemoteMembersRef.current = currentJson;
+        syncAllMembersToCloud(activeHousehold.id, members).catch(console.warn);
+      }
     }
   }, [members, activeHousehold?.id]);
 
   useEffect(() => {
     saveChores(chores);
     if (activeHousehold?.id) {
-      syncAllChoresToCloud(activeHousehold.id, chores).catch(console.error);
+      const currentJson = JSON.stringify(chores);
+      if (currentJson !== lastRemoteChoresRef.current) {
+        lastRemoteChoresRef.current = currentJson;
+        syncAllChoresToCloud(activeHousehold.id, chores).catch(console.warn);
+      }
     }
   }, [chores, activeHousehold?.id]);
 
   useEffect(() => {
     saveLogs(logs);
     if (activeHousehold?.id) {
-      syncAllLogsToCloud(activeHousehold.id, logs).catch(console.error);
+      const currentJson = JSON.stringify(logs);
+      if (currentJson !== lastRemoteLogsRef.current) {
+        lastRemoteLogsRef.current = currentJson;
+        syncAllLogsToCloud(activeHousehold.id, logs).catch(console.warn);
+      }
     }
   }, [logs, activeHousehold?.id]);
 
   useEffect(() => {
     saveRewards(rewards);
     if (activeHousehold?.id) {
-      syncAllRewardsToCloud(activeHousehold.id, rewards).catch(console.error);
+      const currentJson = JSON.stringify(rewards);
+      if (currentJson !== lastRemoteRewardsRef.current) {
+        lastRemoteRewardsRef.current = currentJson;
+        syncAllRewardsToCloud(activeHousehold.id, rewards).catch(console.warn);
+      }
     }
   }, [rewards, activeHousehold?.id]);
 
   useEffect(() => {
     saveClaims(claims);
     if (activeHousehold?.id) {
-      syncAllClaimsToCloud(activeHousehold.id, claims).catch(console.error);
+      const currentJson = JSON.stringify(claims);
+      if (currentJson !== lastRemoteClaimsRef.current) {
+        lastRemoteClaimsRef.current = currentJson;
+        syncAllClaimsToCloud(activeHousehold.id, claims).catch(console.warn);
+      }
     }
   }, [claims, activeHousehold?.id]);
 
   useEffect(() => {
     saveHouseholdInfo(householdInfo);
     if (activeHousehold?.id) {
-      syncHouseholdInfoToCloud(activeHousehold.id, householdInfo).catch(console.error);
+      const currentJson = JSON.stringify({
+        familyName: householdInfo.familyName,
+        houseAddressOrMotto: householdInfo.houseAddressOrMotto,
+        housePhotoUrl: householdInfo.housePhotoUrl
+      });
+      if (currentJson !== lastRemoteHouseholdRef.current) {
+        lastRemoteHouseholdRef.current = currentJson;
+        syncHouseholdInfoToCloud(activeHousehold.id, householdInfo).catch(console.warn);
+      }
     }
   }, [householdInfo, activeHousehold?.id]);
 
@@ -261,6 +297,11 @@ export default function App() {
     getHousehold(savedHhId).then((hh) => {
       if (hh && isMounted) {
         setActiveHousehold(hh);
+        lastRemoteHouseholdRef.current = JSON.stringify({
+          familyName: hh.familyName,
+          houseAddressOrMotto: hh.houseAddressOrMotto,
+          housePhotoUrl: hh.housePhotoUrl
+        });
         setHouseholdInfo(prev => ({
           ...prev,
           familyName: hh.familyName,
@@ -271,12 +312,17 @@ export default function App() {
           isCloudSynced: true,
         }));
       }
-    });
+    }).catch(console.warn);
 
     // 2. Subscribe to real-time streams
     const unsubHh = subscribeHousehold(savedHhId, (info, fullHh) => {
       if (!isMounted) return;
       setActiveHousehold(fullHh);
+      lastRemoteHouseholdRef.current = JSON.stringify({
+        familyName: fullHh.familyName,
+        houseAddressOrMotto: fullHh.houseAddressOrMotto,
+        housePhotoUrl: fullHh.housePhotoUrl
+      });
       setHouseholdInfo(prev => ({
         ...prev,
         ...info,
@@ -289,6 +335,7 @@ export default function App() {
     const unsubMembers = subscribeMembers(savedHhId, (cloudMembers) => {
       if (!isMounted) return;
       if (cloudMembers.length > 0) {
+        lastRemoteMembersRef.current = JSON.stringify(cloudMembers);
         setMembers(cloudMembers);
       }
     });
@@ -296,24 +343,28 @@ export default function App() {
     const unsubChores = subscribeChores(savedHhId, (cloudChores) => {
       if (!isMounted) return;
       if (cloudChores.length > 0) {
+        lastRemoteChoresRef.current = JSON.stringify(cloudChores);
         setChores(cloudChores);
       }
     });
 
     const unsubLogs = subscribeLogs(savedHhId, (cloudLogs) => {
       if (!isMounted) return;
+      lastRemoteLogsRef.current = JSON.stringify(cloudLogs);
       setLogs(cloudLogs);
     });
 
     const unsubRewards = subscribeRewards(savedHhId, (cloudRewards) => {
       if (!isMounted) return;
       if (cloudRewards.length > 0) {
+        lastRemoteRewardsRef.current = JSON.stringify(cloudRewards);
         setRewards(cloudRewards);
       }
     });
 
     const unsubClaims = subscribeClaims(savedHhId, (cloudClaims) => {
       if (!isMounted) return;
+      lastRemoteClaimsRef.current = JSON.stringify(cloudClaims);
       setClaims(cloudClaims);
     });
 

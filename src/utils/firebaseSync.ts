@@ -162,16 +162,22 @@ export function subscribeHousehold(
   householdId: string, 
   callback: (info: HouseholdInfo, household: CloudHousehold) => void
 ): Unsubscribe {
-  return onSnapshot(doc(db, 'households', householdId), (docSnap) => {
-    if (docSnap.exists()) {
-      const data = docSnap.data() as CloudHousehold;
-      callback({
-        familyName: data.familyName,
-        houseAddressOrMotto: data.houseAddressOrMotto,
-        housePhotoUrl: data.housePhotoUrl,
-      }, data);
+  return onSnapshot(
+    doc(db, 'households', householdId), 
+    (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as CloudHousehold;
+        callback({
+          familyName: data.familyName,
+          houseAddressOrMotto: data.houseAddressOrMotto,
+          housePhotoUrl: data.housePhotoUrl,
+        }, data);
+      }
+    },
+    (err) => {
+      console.warn('Firestore household sync notice:', err?.message || err);
     }
-  });
+  );
 }
 
 /**
@@ -182,13 +188,19 @@ export function subscribeMembers(
   callback: (members: HouseholdMember[]) => void
 ): Unsubscribe {
   const membersRef = collection(db, 'households', householdId, 'members');
-  return onSnapshot(membersRef, (snapshot) => {
-    const members: HouseholdMember[] = [];
-    snapshot.forEach((doc) => {
-      members.push(doc.data() as HouseholdMember);
-    });
-    callback(members);
-  });
+  return onSnapshot(
+    membersRef, 
+    (snapshot) => {
+      const members: HouseholdMember[] = [];
+      snapshot.forEach((doc) => {
+        members.push(doc.data() as HouseholdMember);
+      });
+      callback(members);
+    },
+    (err) => {
+      console.warn('Firestore members sync notice:', err?.message || err);
+    }
+  );
 }
 
 /**
@@ -199,13 +211,19 @@ export function subscribeChores(
   callback: (chores: Chore[]) => void
 ): Unsubscribe {
   const choresRef = collection(db, 'households', householdId, 'chores');
-  return onSnapshot(choresRef, (snapshot) => {
-    const chores: Chore[] = [];
-    snapshot.forEach((doc) => {
-      chores.push(doc.data() as Chore);
-    });
-    callback(chores);
-  });
+  return onSnapshot(
+    choresRef, 
+    (snapshot) => {
+      const chores: Chore[] = [];
+      snapshot.forEach((doc) => {
+        chores.push(doc.data() as Chore);
+      });
+      callback(chores);
+    },
+    (err) => {
+      console.warn('Firestore chores sync notice:', err?.message || err);
+    }
+  );
 }
 
 /**
@@ -216,13 +234,19 @@ export function subscribeLogs(
   callback: (logs: ChoreAssignmentLog[]) => void
 ): Unsubscribe {
   const logsRef = collection(db, 'households', householdId, 'logs');
-  return onSnapshot(logsRef, (snapshot) => {
-    const logs: ChoreAssignmentLog[] = [];
-    snapshot.forEach((doc) => {
-      logs.push(doc.data() as ChoreAssignmentLog);
-    });
-    callback(logs);
-  });
+  return onSnapshot(
+    logsRef, 
+    (snapshot) => {
+      const logs: ChoreAssignmentLog[] = [];
+      snapshot.forEach((doc) => {
+        logs.push(doc.data() as ChoreAssignmentLog);
+      });
+      callback(logs);
+    },
+    (err) => {
+      console.warn('Firestore logs sync notice:', err?.message || err);
+    }
+  );
 }
 
 /**
@@ -233,13 +257,19 @@ export function subscribeRewards(
   callback: (rewards: RewardItem[]) => void
 ): Unsubscribe {
   const rewardsRef = collection(db, 'households', householdId, 'rewards');
-  return onSnapshot(rewardsRef, (snapshot) => {
-    const rewards: RewardItem[] = [];
-    snapshot.forEach((doc) => {
-      rewards.push(doc.data() as RewardItem);
-    });
-    callback(rewards);
-  });
+  return onSnapshot(
+    rewardsRef, 
+    (snapshot) => {
+      const rewards: RewardItem[] = [];
+      snapshot.forEach((doc) => {
+        rewards.push(doc.data() as RewardItem);
+      });
+      callback(rewards);
+    },
+    (err) => {
+      console.warn('Firestore rewards sync notice:', err?.message || err);
+    }
+  );
 }
 
 /**
@@ -250,13 +280,19 @@ export function subscribeClaims(
   callback: (claims: RewardClaim[]) => void
 ): Unsubscribe {
   const claimsRef = collection(db, 'households', householdId, 'claims');
-  return onSnapshot(claimsRef, (snapshot) => {
-    const claims: RewardClaim[] = [];
-    snapshot.forEach((doc) => {
-      claims.push(doc.data() as RewardClaim);
-    });
-    callback(claims);
-  });
+  return onSnapshot(
+    claimsRef, 
+    (snapshot) => {
+      const claims: RewardClaim[] = [];
+      snapshot.forEach((doc) => {
+        claims.push(doc.data() as RewardClaim);
+      });
+      callback(claims);
+    },
+    (err) => {
+      console.warn('Firestore claims sync notice:', err?.message || err);
+    }
+  );
 }
 
 /**
@@ -264,83 +300,135 @@ export function subscribeClaims(
  */
 
 export async function syncHouseholdInfoToCloud(householdId: string, info: HouseholdInfo): Promise<void> {
-  await updateDoc(doc(db, 'households', householdId), {
-    familyName: info.familyName,
-    houseAddressOrMotto: info.houseAddressOrMotto || '',
-    housePhotoUrl: info.housePhotoUrl || '',
-    updatedAt: new Date().toISOString(),
-  });
+  try {
+    await updateDoc(doc(db, 'households', householdId), {
+      familyName: info.familyName,
+      houseAddressOrMotto: info.houseAddressOrMotto || '',
+      housePhotoUrl: info.housePhotoUrl || '',
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.warn('Household info sync warning:', err?.message || err);
+  }
 }
 
 export async function syncMemberToCloud(householdId: string, member: HouseholdMember): Promise<void> {
-  await setDoc(doc(db, 'households', householdId, 'members', member.id), member, { merge: true });
+  try {
+    await setDoc(doc(db, 'households', householdId, 'members', member.id), member, { merge: true });
+  } catch (err: any) {
+    console.warn('Member sync warning:', err?.message || err);
+  }
 }
 
 export async function syncAllMembersToCloud(householdId: string, members: HouseholdMember[]): Promise<void> {
-  const batch = writeBatch(db);
-  members.forEach((m) => {
-    const ref = doc(db, 'households', householdId, 'members', m.id);
-    batch.set(ref, m, { merge: true });
-  });
-  await batch.commit();
+  try {
+    const batch = writeBatch(db);
+    members.forEach((m) => {
+      const ref = doc(db, 'households', householdId, 'members', m.id);
+      batch.set(ref, m, { merge: true });
+    });
+    await batch.commit();
+  } catch (err: any) {
+    console.warn('Batch members sync warning:', err?.message || err);
+  }
 }
 
 export async function syncChoreToCloud(householdId: string, chore: Chore): Promise<void> {
-  await setDoc(doc(db, 'households', householdId, 'chores', chore.id), chore, { merge: true });
+  try {
+    await setDoc(doc(db, 'households', householdId, 'chores', chore.id), chore, { merge: true });
+  } catch (err: any) {
+    console.warn('Chore sync warning:', err?.message || err);
+  }
 }
 
 export async function deleteChoreFromCloud(householdId: string, choreId: string): Promise<void> {
-  await deleteDoc(doc(db, 'households', householdId, 'chores', choreId));
+  try {
+    await deleteDoc(doc(db, 'households', householdId, 'chores', choreId));
+  } catch (err: any) {
+    console.warn('Chore deletion sync warning:', err?.message || err);
+  }
 }
 
 export async function syncAllChoresToCloud(householdId: string, chores: Chore[]): Promise<void> {
-  const batch = writeBatch(db);
-  chores.forEach((c) => {
-    const ref = doc(db, 'households', householdId, 'chores', c.id);
-    batch.set(ref, c, { merge: true });
-  });
-  await batch.commit();
+  try {
+    const batch = writeBatch(db);
+    chores.forEach((c) => {
+      const ref = doc(db, 'households', householdId, 'chores', c.id);
+      batch.set(ref, c, { merge: true });
+    });
+    await batch.commit();
+  } catch (err: any) {
+    console.warn('Batch chores sync warning:', err?.message || err);
+  }
 }
 
 export async function syncLogToCloud(householdId: string, log: ChoreAssignmentLog): Promise<void> {
-  await setDoc(doc(db, 'households', householdId, 'logs', log.id), log, { merge: true });
+  try {
+    await setDoc(doc(db, 'households', householdId, 'logs', log.id), log, { merge: true });
+  } catch (err: any) {
+    console.warn('Log sync warning:', err?.message || err);
+  }
 }
 
 export async function syncAllLogsToCloud(householdId: string, logs: ChoreAssignmentLog[]): Promise<void> {
-  const batch = writeBatch(db);
-  logs.forEach((l) => {
-    const ref = doc(db, 'households', householdId, 'logs', l.id);
-    batch.set(ref, l, { merge: true });
-  });
-  await batch.commit();
+  try {
+    const batch = writeBatch(db);
+    logs.forEach((l) => {
+      const ref = doc(db, 'households', householdId, 'logs', l.id);
+      batch.set(ref, l, { merge: true });
+    });
+    await batch.commit();
+  } catch (err: any) {
+    console.warn('Batch logs sync warning:', err?.message || err);
+  }
 }
 
 export async function syncRewardToCloud(householdId: string, reward: RewardItem): Promise<void> {
-  await setDoc(doc(db, 'households', householdId, 'rewards', reward.id), reward, { merge: true });
+  try {
+    await setDoc(doc(db, 'households', householdId, 'rewards', reward.id), reward, { merge: true });
+  } catch (err: any) {
+    console.warn('Reward sync warning:', err?.message || err);
+  }
 }
 
 export async function syncAllRewardsToCloud(householdId: string, rewards: RewardItem[]): Promise<void> {
-  const batch = writeBatch(db);
-  rewards.forEach((r) => {
-    const ref = doc(db, 'households', householdId, 'rewards', r.id);
-    batch.set(ref, r, { merge: true });
-  });
-  await batch.commit();
+  try {
+    const batch = writeBatch(db);
+    rewards.forEach((r) => {
+      const ref = doc(db, 'households', householdId, 'rewards', r.id);
+      batch.set(ref, r, { merge: true });
+    });
+    await batch.commit();
+  } catch (err: any) {
+    console.warn('Batch rewards sync warning:', err?.message || err);
+  }
 }
 
 export async function deleteRewardFromCloud(householdId: string, rewardId: string): Promise<void> {
-  await deleteDoc(doc(db, 'households', householdId, 'rewards', rewardId));
+  try {
+    await deleteDoc(doc(db, 'households', householdId, 'rewards', rewardId));
+  } catch (err: any) {
+    console.warn('Reward delete warning:', err?.message || err);
+  }
 }
 
 export async function syncClaimToCloud(householdId: string, claim: RewardClaim): Promise<void> {
-  await setDoc(doc(db, 'households', householdId, 'claims', claim.id), claim, { merge: true });
+  try {
+    await setDoc(doc(db, 'households', householdId, 'claims', claim.id), claim, { merge: true });
+  } catch (err: any) {
+    console.warn('Claim sync warning:', err?.message || err);
+  }
 }
 
 export async function syncAllClaimsToCloud(householdId: string, claims: RewardClaim[]): Promise<void> {
-  const batch = writeBatch(db);
-  claims.forEach((c) => {
-    const ref = doc(db, 'households', householdId, 'claims', c.id);
-    batch.set(ref, c, { merge: true });
-  });
-  await batch.commit();
+  try {
+    const batch = writeBatch(db);
+    claims.forEach((c) => {
+      const ref = doc(db, 'households', householdId, 'claims', c.id);
+      batch.set(ref, c, { merge: true });
+    });
+    await batch.commit();
+  } catch (err: any) {
+    console.warn('Batch claims sync warning:', err?.message || err);
+  }
 }

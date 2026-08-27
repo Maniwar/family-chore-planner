@@ -142,7 +142,7 @@ export async function requestGoogleCalendarAuth(): Promise<{ accessToken: string
   // 2. Fallback: Google Identity Services token client using OAuth client ID
   return new Promise(async (resolve, reject) => {
     try {
-      let clientId = firebaseConfig.oAuthClientId || '695929293431-nsu6ggrtjokv5ififpepebt5su3rtsmp.apps.googleusercontent.com';
+      let clientId = (firebaseConfig as any).oAuthClientId || '695929293431-nsu6ggrtjokv5ififpepebt5su3rtsmp.apps.googleusercontent.com';
       try {
         const res = await fetch('/api/auth/client-id');
         if (res.ok) {
