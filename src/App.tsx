@@ -893,17 +893,6 @@ export default function App() {
         onOpenPrintView={() => setCurrentView('reports')}
         onOpenAIAssign={() => setIsAIAssignModalOpen(true)}
         onOpenGoogleCalendar={() => setCurrentView('calendar')}
-        onResetDemo={() => {
-          if (!isMomMode) {
-            requestParentAuth(
-              () => handleResetDemo(),
-              'Reset Demo Data Security',
-              'Enter Parent PIN to reset all chore schedules, members, and logs.'
-            );
-          } else {
-            handleResetDemo();
-          }
-        }}
         isMomMode={isMomMode}
         onToggleMomMode={handleToggleMomMode}
         language={language}
@@ -1045,6 +1034,7 @@ export default function App() {
           onClose={() => setIsHouseSettingsModalOpen(false)}
           householdInfo={householdInfo}
           onSaveHouseholdInfo={handleSaveHouseholdInfo}
+          onResetDemo={handleResetDemo}
         />
       )}
 

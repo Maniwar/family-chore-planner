@@ -3,7 +3,6 @@ import {
   Sparkles, 
   Printer, 
   Plus, 
-  RotateCcw, 
   SlidersHorizontal,
   Home,
   Volume2,
@@ -38,7 +37,7 @@ interface HeaderProps {
   onOpenPrintView: () => void;
   onOpenAIAssign: () => void;
   onOpenGoogleCalendar: () => void;
-  onResetDemo: () => void;
+  onResetDemo?: () => void;
   isMomMode: boolean;
   onToggleMomMode: () => void;
   language: SupportedLanguage;
@@ -431,21 +430,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>{t.kidChecklist}</span>
               </button>
             </div>
-
-            {/* Reset Demo */}
-            <button
-              id="header-reset-demo-btn"
-              onClick={() => {
-                soundFX.playPop();
-                if (window.confirm('Reset all chores, members, photos, and logs back to sample demo data?')) {
-                  onResetDemo();
-                }
-              }}
-              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-              title="Reset to Sample Demo Data"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
 
