@@ -45,7 +45,11 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
   const [tab, setTab] = useState<'status' | 'create' | 'join'>('status');
   const [newFamilyName, setNewFamilyName] = useState(householdInfo.familyName || 'Our Family Home');
   const [newMotto, setNewMotto] = useState(householdInfo.houseAddressOrMotto || 'Clean spaces, happy smiles & teamwork! ✨');
+  const [newPassphrase, setNewPassphrase] = useState('');
   const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [joinPassphraseInput, setJoinPassphraseInput] = useState('');
+  const [requiresPassphrasePrompt, setRequiresPassphrasePrompt] = useState(false);
+  const [pendingHouseholdFound, setPendingHouseholdFound] = useState<CloudHousehold | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
@@ -72,7 +76,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
     setErrorMessage('');
     try {
       soundFX.playFanfare();
-      const created = await createNewHousehold(newFamilyName, newMotto);
+      const created = await createNewHousehold(newFamilyName, newMotto, '1234', newPassphrase);
       onHouseholdConnected(created);
       onShowToast(`Created cloud household for "${created.familyName}"! Join code: ${created.householdCode}`, 'success');
       setTab('status');
@@ -88,7 +92,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
     e.preventDefault();
     const cleanCode = joinCodeInput.trim().toUpperCase();
     if (!cleanCode) {
-      setErrorMessage('Please enter a 6-character Family Code.');
+      setErrorMessage('Please enter a valid Family Code.');
       return;
     }
 
@@ -102,10 +106,30 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
         return;
       }
 
+      // If household has a join passphrase requirement
+      if (found.joinPassphrase && found.joinPassphrase.trim().length > 0) {
+        if (!requiresPassphrasePrompt || !joinPassphraseInput) {
+          setRequiresPassphrasePrompt(true);
+          setPendingHouseholdFound(found);
+          setIsLoading(false);
+          return;
+        }
+
+        if (joinPassphraseInput.trim() !== found.joinPassphrase.trim()) {
+          setErrorMessage('Incorrect household password! Ask your family administrator.');
+          soundFX.playPop();
+          setIsLoading(false);
+          return;
+        }
+      }
+
       soundFX.playStarChime(5);
       setCurrentHouseholdId(found.id);
       onHouseholdConnected(found);
       onShowToast(`Connected to "${found.familyName}" in real time! 🎉`, 'success');
+      setRequiresPassphrasePrompt(false);
+      setPendingHouseholdFound(null);
+      setJoinPassphraseInput('');
       setTab('status');
     } catch (err) {
       console.error('Failed to join household', err);
@@ -306,15 +330,18 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
             <form onSubmit={handleJoinHousehold} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Enter 6-Character Family Code
+                  Enter Family Join Code
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     value={joinCodeInput}
-                    onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
-                    placeholder="e.g. HOME-7842"
-                    maxLength={10}
+                    onChange={(e) => {
+                      setJoinCodeInput(e.target.value.toUpperCase());
+                      setRequiresPassphrasePrompt(false);
+                    }}
+                    placeholder="e.g. NEST-7K9X"
+                    maxLength={12}
                     className="w-full uppercase font-mono tracking-widest text-center text-lg font-black px-4 py-3 rounded-2xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-slate-900 bg-slate-50"
                     autoFocus
                   />
@@ -323,6 +350,26 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                   Ask the household creator for their code from the Cloud Sync status page.
                 </p>
               </div>
+
+              {/* Protected Household Password Challenge */}
+              {requiresPassphrasePrompt && (
+                <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-2xl space-y-2 animate-in fade-in">
+                  <label className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                    🔒 Protected Household: Enter Family Password
+                  </label>
+                  <p className="text-[11px] text-amber-700">
+                    "{pendingHouseholdFound?.familyName}" requires a password to join.
+                  </p>
+                  <input
+                    type="password"
+                    value={joinPassphraseInput}
+                    onChange={(e) => setJoinPassphraseInput(e.target.value)}
+                    placeholder="Enter family password"
+                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-amber-300 text-xs font-bold focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                    autoFocus
+                  />
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -341,7 +388,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                 ) : (
                   <>
                     <ArrowRight className="w-4 h-4" />
-                    Join Family Live
+                    {requiresPassphrasePrompt ? 'Unlock & Join Family' : 'Join Family Live'}
                   </>
                 )}
               </button>
@@ -374,10 +421,24 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                 />
               </div>
 
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span>Household Join Password (Optional)</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Extra privacy protection</span>
+                </label>
+                <input
+                  type="password"
+                  value={newPassphrase}
+                  onChange={(e) => setNewPassphrase(e.target.value)}
+                  placeholder="e.g. secret123 (Leave blank for code-only access)"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-slate-900"
+                />
+              </div>
+
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>
-                  Creating a cloud household gives you a unique 6-character code that other families or devices can join!
+                  High-entropy codes and optional passwords guarantee no random stranger can guess or access your family's data.
                 </span>
               </div>
 

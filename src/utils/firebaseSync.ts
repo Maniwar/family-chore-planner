@@ -33,16 +33,21 @@ export interface CloudHousehold {
   houseAddressOrMotto?: string;
   housePhotoUrl?: string;
   adminPin?: string;
+  joinPassphrase?: string; // Optional household join security password
   createdAt: string;
   updatedAt: string;
 }
 
-// Generate a clean 6-character Household Code e.g. "HOME-4821" or "CLEAN-912"
+// Generate an unguessable high-entropy Family Code e.g. "NEST-7K9X" or "HERO-3M8P"
 export function generateHouseholdCode(): string {
-  const prefixes = ['HOME', 'TEAM', 'STAR', 'NEST', 'HERO', 'SPARK'];
+  const prefixes = ['NEST', 'HERO', 'STAR', 'VIBE', 'NOVA', 'LUNA', 'APEX', 'ZEN', 'COVE', 'BEAM'];
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // exclude ambiguous 0,1,O,I
+  let randomPart = '';
+  for (let i = 0; i < 4; i++) {
+    randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
   const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `${prefix}-${num}`;
+  return `${prefix}-${randomPart}`;
 }
 
 export const HOUSEHOLD_SESSION_KEY = 'family_chores_current_household_id_v1';
@@ -65,7 +70,8 @@ export const setCurrentHouseholdId = (householdId: string | null): void => {
 export async function createNewHousehold(
   familyName: string, 
   motto: string = 'Clean spaces, happy smiles & teamwork! ✨',
-  adminPin: string = '1234'
+  adminPin: string = '1234',
+  joinPassphrase: string = ''
 ): Promise<CloudHousehold> {
   const householdId = 'hh_' + Math.random().toString(36).substring(2, 11);
   const householdCode = generateHouseholdCode();
@@ -77,6 +83,7 @@ export async function createNewHousehold(
     familyName: familyName.trim() || 'Our Family Home',
     houseAddressOrMotto: motto,
     adminPin,
+    joinPassphrase: joinPassphrase.trim() || undefined,
     createdAt: now,
     updatedAt: now,
   };
