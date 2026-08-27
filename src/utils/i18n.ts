@@ -65,7 +65,7 @@ export const translations = {
     tabCalendar: 'Google Calendar',
 
     // Chore card
-    markDone: 'Mark Done for Mom',
+    markDone: 'Done',
     fixedSubmit: 'Fixed! Submit for Review',
     awaitingMom: "Awaiting Mom's Inspection",
     inspectAndGrade: 'Inspect & Grade',
@@ -179,7 +179,7 @@ export const translations = {
     tabCalendar: 'Google Calendar',
 
     // Chore card
-    markDone: 'Tatakan na Tapos na kay Nanay',
+    markDone: 'Tapos na',
     fixedSubmit: 'Naayos na! Isumite para Suriin',
     awaitingMom: 'Naghihintay ng Pagsusuri ni Nanay',
     inspectAndGrade: 'Suriin at Bigyan ng Grado',
@@ -293,7 +293,7 @@ export const translations = {
     tabCalendar: 'Google Calendar',
 
     // Chore card
-    markDone: 'Markaan a Nalpas para ken Nanang',
+    markDone: 'Nalpasen',
     fixedSubmit: 'Natarimaan! Isumite tapno Matarimaan',
     awaitingMom: 'Agur-uray ti Pananginspeksion ni Nanang',
     inspectAndGrade: 'Sukimaten ken Gradoan',

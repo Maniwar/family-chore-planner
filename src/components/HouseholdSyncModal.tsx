@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Cloud, 
-  CloudCheck, 
+  CheckCircle2, 
   Users, 
   QrCode, 
   Copy, 
@@ -13,7 +13,10 @@ import {
   PlusCircle,
   RefreshCw,
   LogOut,
-  X
+  X,
+  Link as LinkIcon,
+  Share2,
+  Smartphone
 } from 'lucide-react';
 import { CloudHousehold, createNewHousehold, findHouseholdByCode, setCurrentHouseholdId } from '../utils/firebaseSync';
 import { HouseholdInfo } from '../types';
@@ -53,8 +56,15 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
 
   if (!isOpen) return null;
+
+  const getJoinUrl = () => {
+    if (!activeHousehold?.householdCode) return window.location.origin;
+    return `${window.location.origin}?join=${encodeURIComponent(activeHousehold.householdCode)}`;
+  };
 
   const handleCopyCode = () => {
     if (activeHousehold?.householdCode) {
@@ -64,6 +74,15 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
       onShowToast(`Family Code "${activeHousehold.householdCode}" copied to clipboard!`, 'success');
       setTimeout(() => setCopiedCode(false), 2500);
     }
+  };
+
+  const handleCopyLink = () => {
+    const url = getJoinUrl();
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    soundFX.playPop();
+    onShowToast('Direct Join Link copied! Send it via text/chat to other devices 📲', 'success');
+    setTimeout(() => setCopiedLink(false), 2500);
   };
 
   const handleCreateHousehold = async (e: React.FormEvent) => {
@@ -232,7 +251,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                   <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
-                        <CloudCheck className="w-5 h-5" />
+                        <CheckCircle2 className="w-5 h-5" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -261,12 +280,54 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                       <span className="font-mono text-2xl font-black tracking-widest text-cyan-300">
                         {activeHousehold.householdCode}
                       </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleCopyCode}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs transition-colors cursor-pointer"
+                        >
+                          {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedCode ? 'Copied!' : 'Copy Code'}</span>
+                        </button>
+                        <button
+                          onClick={() => { soundFX.playPop(); setShowQRCode(!showQRCode); }}
+                          className={`p-1.5 rounded-lg border text-xs font-bold transition-colors cursor-pointer ${
+                            showQRCode 
+                              ? 'bg-cyan-400 text-slate-950 border-cyan-400' 
+                              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                          }`}
+                          title="Show QR Code"
+                        >
+                          <QrCode className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* QR Code Quick Scan Overlay */}
+                    {showQRCode && (
+                      <div className="p-4 bg-white rounded-xl border border-slate-200 text-slate-900 flex flex-col items-center gap-2 animate-in fade-in zoom-in-95">
+                        <p className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                          <Smartphone className="w-3.5 h-3.5 text-cyan-600" />
+                          Scan with Phone Camera to Join Instantly
+                        </p>
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(getJoinUrl())}`}
+                          alt="Family Join QR Code"
+                          className="w-36 h-36 rounded-lg border border-slate-100 p-1 bg-white shadow-xs"
+                        />
+                        <p className="text-[10px] text-slate-400">
+                          Or enter code <strong className="text-slate-800 font-mono">{activeHousehold.householdCode}</strong>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 1-Click Join Link */}
+                    <div className="pt-1 flex flex-col sm:flex-row items-center gap-2">
                       <button
-                        onClick={handleCopyCode}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs transition-colors cursor-pointer"
+                        onClick={handleCopyLink}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-xs font-bold transition-colors cursor-pointer"
                       >
-                        {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedCode ? 'Copied!' : 'Copy Code'}</span>
+                        <Share2 className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>{copiedLink ? '✓ Invite Link Copied!' : 'Copy 1-Click Invite Link'}</span>
                       </button>
                     </div>
 

@@ -200,6 +200,209 @@ Provide helpful, empathetic, concise, and structured advice. Use bullet points a
   }
 });
 
+// ==========================================
+// RESILIENT SERVER-BACKED CLOUD HOUSEHOLD SYNC
+// ==========================================
+
+const HOUSEHOLD_DATA_DIR = path.join(process.cwd(), ".data");
+const HOUSEHOLD_STORE_FILE = path.join(HOUSEHOLD_DATA_DIR, "households.json");
+
+interface ServerHouseholdRecord {
+  id: string;
+  householdCode: string;
+  familyName: string;
+  houseAddressOrMotto?: string;
+  housePhotoUrl?: string;
+  adminPin?: string;
+  joinPassphrase?: string;
+  members?: any[];
+  chores?: any[];
+  logs?: any[];
+  rewards?: any[];
+  claims?: any[];
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+let householdsMemoryStore: Record<string, ServerHouseholdRecord> = {};
+
+function initHouseholdStore() {
+  try {
+    if (!fs.existsSync(HOUSEHOLD_DATA_DIR)) {
+      fs.mkdirSync(HOUSEHOLD_DATA_DIR, { recursive: true });
+    }
+    if (fs.existsSync(HOUSEHOLD_STORE_FILE)) {
+      const data = fs.readFileSync(HOUSEHOLD_STORE_FILE, "utf-8");
+      householdsMemoryStore = JSON.parse(data);
+    }
+  } catch (e) {
+    console.warn("Could not load stored households file, using memory store:", e);
+  }
+}
+
+function saveHouseholdStore() {
+  try {
+    if (!fs.existsSync(HOUSEHOLD_DATA_DIR)) {
+      fs.mkdirSync(HOUSEHOLD_DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(HOUSEHOLD_STORE_FILE, JSON.stringify(householdsMemoryStore, null, 2), "utf-8");
+  } catch (e) {
+    console.warn("Could not persist households to disk:", e);
+  }
+}
+
+initHouseholdStore();
+
+// Create a new household on server
+app.post("/api/household/create", (req, res) => {
+  try {
+    const { id, householdCode, familyName, houseAddressOrMotto, housePhotoUrl, adminPin, joinPassphrase, members, chores, logs, rewards, claims } = req.body;
+    const now = new Date().toISOString();
+    const hhId = id || "hh_" + Math.random().toString(36).substring(2, 11);
+    const code = (householdCode || "NEST-" + Math.random().toString(36).substring(2, 6)).toUpperCase();
+
+    const record: ServerHouseholdRecord = {
+      id: hhId,
+      householdCode: code,
+      familyName: familyName || "Our Family Home",
+      houseAddressOrMotto: houseAddressOrMotto || "Clean spaces, happy smiles & teamwork! ✨",
+      housePhotoUrl: housePhotoUrl || "",
+      adminPin: adminPin || "1234",
+      joinPassphrase: joinPassphrase || undefined,
+      members: Array.isArray(members) ? members : [],
+      chores: Array.isArray(chores) ? chores : [],
+      logs: Array.isArray(logs) ? logs : [],
+      rewards: Array.isArray(rewards) ? rewards : [],
+      claims: Array.isArray(claims) ? claims : [],
+      createdAt: now,
+      updatedAt: now,
+      version: 1,
+    };
+
+    householdsMemoryStore[hhId] = record;
+    saveHouseholdStore();
+
+    return res.json({ success: true, household: record });
+  } catch (err: any) {
+    console.error("Create household API error:", err);
+    return res.status(500).json({ error: err.message || "Failed to create household" });
+  }
+});
+
+// Look up household by code or ID flexibly
+app.get("/api/household/by-code/:code", (req, res) => {
+  try {
+    const raw = (req.params.code || "").trim();
+    const searchCode = raw.toUpperCase();
+    const cleanSearch = searchCode.replace(/[^A-Z0-9]/g, "");
+
+    const found = Object.values(householdsMemoryStore).find((h) => {
+      if (!h) return false;
+      const hCode = (h.householdCode || "").toUpperCase();
+      const hCleanCode = hCode.replace(/[^A-Z0-9]/g, "");
+      const hId = (h.id || "").toLowerCase();
+
+      return (
+        hCode === searchCode ||
+        hCleanCode === cleanSearch ||
+        hId === raw.toLowerCase() ||
+        h.id === raw
+      );
+    });
+
+    if (!found) {
+      return res.status(404).json({ error: "Household not found" });
+    }
+
+    return res.json({ success: true, household: found });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to search household" });
+  }
+});
+
+// Fetch full household by ID
+app.get("/api/household/:id", (req, res) => {
+  try {
+    const hh = householdsMemoryStore[req.params.id];
+    if (!hh) {
+      return res.status(404).json({ error: "Household not found" });
+    }
+    return res.json({ success: true, household: hh });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Sync / update household data across all devices
+app.post("/api/household/:id/sync", (req, res) => {
+  try {
+    const hhId = req.params.id;
+    const { familyName, houseAddressOrMotto, housePhotoUrl, householdCode, adminPin, joinPassphrase, members, chores, logs, rewards, claims, version } = req.body;
+    
+    let existing = householdsMemoryStore[hhId];
+    const now = new Date().toISOString();
+
+    if (!existing) {
+      existing = {
+        id: hhId,
+        householdCode: householdCode || "HERO-8K2Q",
+        familyName: familyName || "Our Family Home",
+        houseAddressOrMotto: houseAddressOrMotto || "",
+        housePhotoUrl: housePhotoUrl || "",
+        adminPin: adminPin || "1234",
+        createdAt: now,
+        updatedAt: now,
+        version: 1,
+      };
+    }
+
+    if (familyName !== undefined) existing.familyName = familyName;
+    if (houseAddressOrMotto !== undefined) existing.houseAddressOrMotto = houseAddressOrMotto;
+    if (housePhotoUrl !== undefined) existing.housePhotoUrl = housePhotoUrl;
+    if (adminPin !== undefined) existing.adminPin = adminPin;
+    if (joinPassphrase !== undefined) existing.joinPassphrase = joinPassphrase;
+    if (Array.isArray(members)) existing.members = members;
+    if (Array.isArray(chores)) existing.chores = chores;
+    if (Array.isArray(logs)) existing.logs = logs;
+    if (Array.isArray(rewards)) existing.rewards = rewards;
+    if (Array.isArray(claims)) existing.claims = claims;
+
+    existing.updatedAt = now;
+    existing.version = (existing.version || 0) + 1;
+
+    householdsMemoryStore[hhId] = existing;
+    saveHouseholdStore();
+
+    return res.json({ success: true, household: existing });
+  } catch (err: any) {
+    console.error("Household sync API error:", err);
+    return res.status(500).json({ error: err.message || "Failed to sync household" });
+  }
+});
+
+// Long-polling / fast poll endpoint for multi-device live sync
+app.get("/api/household/:id/poll", (req, res) => {
+  try {
+    const hhId = req.params.id;
+    const since = req.query.since ? String(req.query.since) : null;
+    const hh = householdsMemoryStore[hhId];
+
+    if (!hh) {
+      return res.status(404).json({ error: "Household not found" });
+    }
+
+    // Return if changed since provided timestamp or version
+    if (!since || hh.updatedAt !== since) {
+      return res.json({ hasUpdate: true, household: hh });
+    }
+
+    return res.json({ hasUpdate: false, updatedAt: hh.updatedAt });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Start server function with Vite middleware for dev / static for prod
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

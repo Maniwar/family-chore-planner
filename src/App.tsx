@@ -49,25 +49,8 @@ import {
   CloudHousehold, 
   getCurrentHouseholdId, 
   getHousehold, 
-  subscribeHousehold, 
-  subscribeMembers, 
-  subscribeChores, 
-  subscribeLogs, 
-  subscribeRewards, 
-  subscribeClaims,
-  syncHouseholdInfoToCloud,
-  syncMemberToCloud,
-  syncAllMembersToCloud,
-  syncChoreToCloud,
-  deleteChoreFromCloud,
-  syncAllChoresToCloud,
-  syncLogToCloud,
-  syncAllLogsToCloud,
-  syncRewardToCloud,
-  deleteRewardFromCloud,
-  syncAllRewardsToCloud,
-  syncClaimToCloud,
-  syncAllClaimsToCloud
+  subscribeHouseholdFull,
+  syncCompleteHouseholdToCloud
 } from './utils/firebaseSync';
 
 export default function App() {
@@ -83,13 +66,9 @@ export default function App() {
   const [activeHousehold, setActiveHousehold] = useState<CloudHousehold | null>(null);
   const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState<boolean>(false);
 
-  // Deduplication tracking to prevent infinite snapshot write-back loops
-  const lastRemoteMembersRef = useRef<string>('');
-  const lastRemoteChoresRef = useRef<string>('');
-  const lastRemoteLogsRef = useRef<string>('');
-  const lastRemoteRewardsRef = useRef<string>('');
-  const lastRemoteClaimsRef = useRef<string>('');
-  const lastRemoteHouseholdRef = useRef<string>('');
+  // Deduplication ref to prevent bouncing echoes between devices
+  const lastSyncedHashRef = useRef<string>('');
+  const isReceivingRemoteUpdateRef = useRef<boolean>(false);
 
   const [currentDateStr, setCurrentDateStr] = useState<string>(getTodayDateString());
   const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
@@ -215,78 +194,96 @@ export default function App() {
     }, 3500);
   };
 
-  // Sync to local storage & Cloud (with deduplication to prevent listener loops)
+  // Local storage persistence
   useEffect(() => {
     saveMembers(members);
-    if (activeHousehold?.id) {
-      const currentJson = JSON.stringify(members);
-      if (currentJson !== lastRemoteMembersRef.current) {
-        lastRemoteMembersRef.current = currentJson;
-        syncAllMembersToCloud(activeHousehold.id, members).catch(console.warn);
-      }
-    }
-  }, [members, activeHousehold?.id]);
+  }, [members]);
 
   useEffect(() => {
     saveChores(chores);
-    if (activeHousehold?.id) {
-      const currentJson = JSON.stringify(chores);
-      if (currentJson !== lastRemoteChoresRef.current) {
-        lastRemoteChoresRef.current = currentJson;
-        syncAllChoresToCloud(activeHousehold.id, chores).catch(console.warn);
-      }
-    }
-  }, [chores, activeHousehold?.id]);
+  }, [chores]);
 
   useEffect(() => {
     saveLogs(logs);
-    if (activeHousehold?.id) {
-      const currentJson = JSON.stringify(logs);
-      if (currentJson !== lastRemoteLogsRef.current) {
-        lastRemoteLogsRef.current = currentJson;
-        syncAllLogsToCloud(activeHousehold.id, logs).catch(console.warn);
-      }
-    }
-  }, [logs, activeHousehold?.id]);
+  }, [logs]);
 
   useEffect(() => {
     saveRewards(rewards);
-    if (activeHousehold?.id) {
-      const currentJson = JSON.stringify(rewards);
-      if (currentJson !== lastRemoteRewardsRef.current) {
-        lastRemoteRewardsRef.current = currentJson;
-        syncAllRewardsToCloud(activeHousehold.id, rewards).catch(console.warn);
-      }
-    }
-  }, [rewards, activeHousehold?.id]);
+  }, [rewards]);
 
   useEffect(() => {
     saveClaims(claims);
-    if (activeHousehold?.id) {
-      const currentJson = JSON.stringify(claims);
-      if (currentJson !== lastRemoteClaimsRef.current) {
-        lastRemoteClaimsRef.current = currentJson;
-        syncAllClaimsToCloud(activeHousehold.id, claims).catch(console.warn);
-      }
-    }
-  }, [claims, activeHousehold?.id]);
+  }, [claims]);
 
   useEffect(() => {
     saveHouseholdInfo(householdInfo);
-    if (activeHousehold?.id) {
-      const currentJson = JSON.stringify({
-        familyName: householdInfo.familyName,
-        houseAddressOrMotto: householdInfo.houseAddressOrMotto,
-        housePhotoUrl: householdInfo.housePhotoUrl
-      });
-      if (currentJson !== lastRemoteHouseholdRef.current) {
-        lastRemoteHouseholdRef.current = currentJson;
-        syncHouseholdInfoToCloud(activeHousehold.id, householdInfo).catch(console.warn);
-      }
-    }
-  }, [householdInfo, activeHousehold?.id]);
+  }, [householdInfo]);
 
-  // Real-time Cloud Sync Subscription
+  // Auto-connect via Invite Link / URL parameter (?join=CODE or ?code=CODE or ?hh=ID)
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const inviteCode = urlParams.get('join') || urlParams.get('code') || urlParams.get('hh') || urlParams.get('household');
+      if (inviteCode) {
+        findHouseholdByCode(inviteCode).then((hh) => {
+          if (hh) {
+            setCurrentHouseholdId(hh.id);
+            setActiveHousehold(hh);
+            if (hh.members && hh.members.length > 0) setMembers(hh.members);
+            if (hh.chores && hh.chores.length > 0) setChores(hh.chores);
+            if (hh.logs) setLogs(hh.logs);
+            if (hh.rewards && hh.rewards.length > 0) setRewards(hh.rewards);
+            if (hh.claims) setClaims(hh.claims);
+            setHouseholdInfo(prev => ({
+              ...prev,
+              familyName: hh.familyName || prev.familyName,
+              houseAddressOrMotto: hh.houseAddressOrMotto || prev.houseAddressOrMotto,
+              housePhotoUrl: hh.housePhotoUrl || prev.housePhotoUrl,
+              householdCode: hh.householdCode,
+              householdId: hh.id,
+              isCloudSynced: true,
+            }));
+            soundFX.playFanfare();
+            showToast(`Connected to "${hh.familyName}" via invite link! 🎉`);
+            // Clean URL without reloading
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        }).catch(console.warn);
+      }
+    } catch (e) {
+      console.warn('URL invite check notice:', e);
+    }
+  }, []);
+
+  // Debounced cloud sync to prevent quota exhaustion and duplicate sync echoes
+  useEffect(() => {
+    if (!activeHousehold?.id) return;
+    if (isReceivingRemoteUpdateRef.current) return;
+
+    const dataPayload = {
+      familyName: householdInfo.familyName,
+      houseAddressOrMotto: householdInfo.houseAddressOrMotto,
+      housePhotoUrl: householdInfo.housePhotoUrl,
+      householdCode: activeHousehold.householdCode,
+      members,
+      chores,
+      logs,
+      rewards,
+      claims,
+    };
+
+    const currentHash = JSON.stringify(dataPayload);
+    if (currentHash === lastSyncedHashRef.current) return;
+
+    const timer = setTimeout(() => {
+      lastSyncedHashRef.current = currentHash;
+      syncCompleteHouseholdToCloud(activeHousehold.id, dataPayload).catch(console.warn);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [members, chores, logs, rewards, claims, householdInfo, activeHousehold?.id]);
+
+  // Real-time Cloud Sync Subscription (Dual Firestore + Fast Polling Engine)
   useEffect(() => {
     const savedHhId = getCurrentHouseholdId();
     if (!savedHhId) return;
@@ -297,16 +294,17 @@ export default function App() {
     getHousehold(savedHhId).then((hh) => {
       if (hh && isMounted) {
         setActiveHousehold(hh);
-        lastRemoteHouseholdRef.current = JSON.stringify({
-          familyName: hh.familyName,
-          houseAddressOrMotto: hh.houseAddressOrMotto,
-          housePhotoUrl: hh.housePhotoUrl
-        });
+        if (hh.members && hh.members.length > 0) setMembers(hh.members);
+        if (hh.chores && hh.chores.length > 0) setChores(hh.chores);
+        if (hh.logs) setLogs(hh.logs);
+        if (hh.rewards && hh.rewards.length > 0) setRewards(hh.rewards);
+        if (hh.claims) setClaims(hh.claims);
+
         setHouseholdInfo(prev => ({
           ...prev,
-          familyName: hh.familyName,
-          houseAddressOrMotto: hh.houseAddressOrMotto,
-          housePhotoUrl: hh.housePhotoUrl,
+          familyName: hh.familyName || prev.familyName,
+          houseAddressOrMotto: hh.houseAddressOrMotto || prev.houseAddressOrMotto,
+          housePhotoUrl: hh.housePhotoUrl || prev.housePhotoUrl,
           householdCode: hh.householdCode,
           householdId: hh.id,
           isCloudSynced: true,
@@ -314,73 +312,60 @@ export default function App() {
       }
     }).catch(console.warn);
 
-    // 2. Subscribe to real-time streams
-    const unsubHh = subscribeHousehold(savedHhId, (info, fullHh) => {
+    // 2. Real-time multi-device subscription
+    const unsubscribe = subscribeHouseholdFull(savedHhId, (cloudHh) => {
       if (!isMounted) return;
-      setActiveHousehold(fullHh);
-      lastRemoteHouseholdRef.current = JSON.stringify({
-        familyName: fullHh.familyName,
-        houseAddressOrMotto: fullHh.houseAddressOrMotto,
-        housePhotoUrl: fullHh.housePhotoUrl
-      });
+      isReceivingRemoteUpdateRef.current = true;
+
+      setActiveHousehold(cloudHh);
+      if (cloudHh.members && cloudHh.members.length > 0) setMembers(cloudHh.members);
+      if (cloudHh.chores && cloudHh.chores.length > 0) setChores(cloudHh.chores);
+      if (cloudHh.logs) setLogs(cloudHh.logs);
+      if (cloudHh.rewards && cloudHh.rewards.length > 0) setRewards(cloudHh.rewards);
+      if (cloudHh.claims) setClaims(cloudHh.claims);
+
       setHouseholdInfo(prev => ({
         ...prev,
-        ...info,
-        householdCode: fullHh.householdCode,
-        householdId: fullHh.id,
+        familyName: cloudHh.familyName || prev.familyName,
+        houseAddressOrMotto: cloudHh.houseAddressOrMotto || prev.houseAddressOrMotto,
+        housePhotoUrl: cloudHh.housePhotoUrl || prev.housePhotoUrl,
+        householdCode: cloudHh.householdCode,
+        householdId: cloudHh.id,
         isCloudSynced: true,
       }));
-    });
 
-    const unsubMembers = subscribeMembers(savedHhId, (cloudMembers) => {
-      if (!isMounted) return;
-      if (cloudMembers.length > 0) {
-        lastRemoteMembersRef.current = JSON.stringify(cloudMembers);
-        setMembers(cloudMembers);
-      }
-    });
+      // Update hash so we don't reflect this remote update back to the server
+      lastSyncedHashRef.current = JSON.stringify({
+        familyName: cloudHh.familyName,
+        houseAddressOrMotto: cloudHh.houseAddressOrMotto,
+        housePhotoUrl: cloudHh.housePhotoUrl,
+        householdCode: cloudHh.householdCode,
+        members: cloudHh.members,
+        chores: cloudHh.chores,
+        logs: cloudHh.logs,
+        rewards: cloudHh.rewards,
+        claims: cloudHh.claims,
+      });
 
-    const unsubChores = subscribeChores(savedHhId, (cloudChores) => {
-      if (!isMounted) return;
-      if (cloudChores.length > 0) {
-        lastRemoteChoresRef.current = JSON.stringify(cloudChores);
-        setChores(cloudChores);
-      }
-    });
-
-    const unsubLogs = subscribeLogs(savedHhId, (cloudLogs) => {
-      if (!isMounted) return;
-      lastRemoteLogsRef.current = JSON.stringify(cloudLogs);
-      setLogs(cloudLogs);
-    });
-
-    const unsubRewards = subscribeRewards(savedHhId, (cloudRewards) => {
-      if (!isMounted) return;
-      if (cloudRewards.length > 0) {
-        lastRemoteRewardsRef.current = JSON.stringify(cloudRewards);
-        setRewards(cloudRewards);
-      }
-    });
-
-    const unsubClaims = subscribeClaims(savedHhId, (cloudClaims) => {
-      if (!isMounted) return;
-      lastRemoteClaimsRef.current = JSON.stringify(cloudClaims);
-      setClaims(cloudClaims);
+      setTimeout(() => {
+        isReceivingRemoteUpdateRef.current = false;
+      }, 100);
     });
 
     return () => {
       isMounted = false;
-      unsubHh();
-      unsubMembers();
-      unsubChores();
-      unsubLogs();
-      unsubRewards();
-      unsubClaims();
+      unsubscribe();
     };
   }, [activeHousehold?.id]);
 
   const handleHouseholdConnected = (household: CloudHousehold) => {
     setActiveHousehold(household);
+    if (household.members && household.members.length > 0) setMembers(household.members);
+    if (household.chores && household.chores.length > 0) setChores(household.chores);
+    if (household.logs && household.logs.length > 0) setLogs(household.logs);
+    if (household.rewards && household.rewards.length > 0) setRewards(household.rewards);
+    if (household.claims && household.claims.length > 0) setClaims(household.claims);
+
     setHouseholdInfo(prev => ({
       ...prev,
       familyName: household.familyName,
