@@ -312,10 +312,28 @@ export async function syncRewardToCloud(householdId: string, reward: RewardItem)
   await setDoc(doc(db, 'households', householdId, 'rewards', reward.id), reward, { merge: true });
 }
 
+export async function syncAllRewardsToCloud(householdId: string, rewards: RewardItem[]): Promise<void> {
+  const batch = writeBatch(db);
+  rewards.forEach((r) => {
+    const ref = doc(db, 'households', householdId, 'rewards', r.id);
+    batch.set(ref, r, { merge: true });
+  });
+  await batch.commit();
+}
+
 export async function deleteRewardFromCloud(householdId: string, rewardId: string): Promise<void> {
   await deleteDoc(doc(db, 'households', householdId, 'rewards', rewardId));
 }
 
 export async function syncClaimToCloud(householdId: string, claim: RewardClaim): Promise<void> {
   await setDoc(doc(db, 'households', householdId, 'claims', claim.id), claim, { merge: true });
+}
+
+export async function syncAllClaimsToCloud(householdId: string, claims: RewardClaim[]): Promise<void> {
+  const batch = writeBatch(db);
+  claims.forEach((c) => {
+    const ref = doc(db, 'households', householdId, 'claims', c.id);
+    batch.set(ref, c, { merge: true });
+  });
+  await batch.commit();
 }

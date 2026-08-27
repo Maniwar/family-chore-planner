@@ -65,7 +65,9 @@ import {
   syncAllLogsToCloud,
   syncRewardToCloud,
   deleteRewardFromCloud,
-  syncClaimToCloud
+  syncAllRewardsToCloud,
+  syncClaimToCloud,
+  syncAllClaimsToCloud
 } from './utils/firebaseSync';
 
 export default function App() {
@@ -229,11 +231,17 @@ export default function App() {
 
   useEffect(() => {
     saveRewards(rewards);
-  }, [rewards]);
+    if (activeHousehold?.id) {
+      syncAllRewardsToCloud(activeHousehold.id, rewards).catch(console.error);
+    }
+  }, [rewards, activeHousehold?.id]);
 
   useEffect(() => {
     saveClaims(claims);
-  }, [claims]);
+    if (activeHousehold?.id) {
+      syncAllClaimsToCloud(activeHousehold.id, claims).catch(console.error);
+    }
+  }, [claims, activeHousehold?.id]);
 
   useEffect(() => {
     saveHouseholdInfo(householdInfo);
