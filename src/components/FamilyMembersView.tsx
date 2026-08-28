@@ -25,6 +25,7 @@ interface FamilyMembersViewProps {
   members: HouseholdMember[];
   chores: Chore[];
   householdInfo: HouseholdInfo;
+  isMomMode?: boolean;
   onOpenNewMember: () => void;
   onEditMember: (member: HouseholdMember) => void;
   onDeleteMember: (memberId: string) => void;
@@ -36,6 +37,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
   members,
   chores,
   householdInfo,
+  isMomMode = true,
   onOpenNewMember,
   onEditMember,
   onDeleteMember,
@@ -69,8 +71,8 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
             <div className="w-full h-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-6 text-center">
               <div className="text-white/80 space-y-1">
                 <div className="text-4xl sm:text-5xl mb-2">🏡</div>
-                <p className="text-sm font-semibold text-slate-300">No house picture uploaded yet</p>
-                <p className="text-xs text-slate-400">Add a nice facade or family home picture!</p>
+                <p className="text-sm font-semibold text-slate-300">Our Family Home</p>
+                <p className="text-xs text-slate-400">Working together every day to keep our house shining!</p>
               </div>
             </div>
           )}
@@ -83,7 +85,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-bold text-rose-200 border border-white/20">
                 <Home className="w-3 h-3" />
-                <span>Our Household</span>
+                <span>Our Household Hub</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
                 {householdInfo.familyName || 'Our Family Home'}
@@ -95,16 +97,18 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
               )}
             </div>
 
-            <button
-              onClick={() => {
-                soundFX.playPop();
-                onOpenHouseSettings();
-              }}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-white text-slate-900 hover:bg-slate-100 shadow-md transition-all active:scale-95 shrink-0"
-            >
-              <Camera className="w-4 h-4 text-rose-600" />
-              <span>{householdInfo.housePhotoUrl ? 'Change House Photo' : 'Upload House Photo'}</span>
-            </button>
+            {isMomMode && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  onOpenHouseSettings();
+                }}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-white text-slate-900 hover:bg-slate-100 shadow-md transition-all active:scale-95 shrink-0 cursor-pointer"
+              >
+                <Camera className="w-4 h-4 text-rose-600" />
+                <span>{householdInfo.housePhotoUrl ? 'Change House Photo' : 'Upload House Photo'}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -124,20 +128,22 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
               ))}
             </div>
             <span className="text-xs font-bold text-slate-700">
-              {members.length} Household Members
+              {members.length} Family Helpers & Superstars
             </span>
           </div>
 
-          <button
-            onClick={() => {
-              soundFX.playPop();
-              onOpenNewMember();
-            }}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-2xs transition-colors"
-          >
-            <Plus className="w-4 h-4 text-emerald-400" />
-            <span>Add Family Member</span>
-          </button>
+          {isMomMode && (
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                onOpenNewMember();
+              }}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-2xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-emerald-400" />
+              <span>Add Family Member</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -189,31 +195,33 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => {
-                        soundFX.playPop();
-                        onEditMember(member);
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-colors"
-                      title="Edit Member & Photo"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    {members.length > 1 && (
+                  {isMomMode && (
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={() => {
-                          if (window.confirm(`Remove ${member.name} from the family hub?`)) {
-                            onDeleteMember(member.id);
-                          }
+                          soundFX.playPop();
+                          onEditMember(member);
                         }}
-                        className="p-1.5 text-slate-300 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors"
-                        title="Delete Member"
+                        className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+                        title="Edit Member & Photo"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Edit2 className="w-4 h-4" />
                       </button>
-                    )}
-                  </div>
+                      {members.length > 1 && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Remove ${member.name} from the family hub?`)) {
+                              onDeleteMember(member.id);
+                            }
+                          }}
+                          className="p-1.5 text-slate-300 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Delete Member"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Points & Stats Badges */}
@@ -287,15 +295,21 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                 </div>
               </div>
 
-              {/* Bonus / Point Adjustment Footer */}
+              {/* Bonus / Point Adjustment Footer (Mom Mode Only for adjustments, always show streak) */}
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                <button
-                  onClick={() => setBonusMemberId(bonusMemberId === member.id ? null : member.id)}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors py-1"
-                >
-                  <Gift className="w-3.5 h-3.5" />
-                  <span>{bonusMemberId === member.id ? 'Close Bonus Box' : 'Award Point Bonus'}</span>
-                </button>
+                {isMomMode ? (
+                  <button
+                    onClick={() => setBonusMemberId(bonusMemberId === member.id ? null : member.id)}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors py-1 cursor-pointer"
+                  >
+                    <Gift className="w-3.5 h-3.5" />
+                    <span>{bonusMemberId === member.id ? 'Close Bonus Box' : 'Award Point Bonus'}</span>
+                  </button>
+                ) : (
+                  <span className="text-xs font-semibold text-slate-500">
+                    Keep up the good work! 🌟
+                  </span>
+                )}
 
                 <div className="flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
                   <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
@@ -303,8 +317,8 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                 </div>
               </div>
 
-              {/* Point Bonus Input Collapse */}
-              {bonusMemberId === member.id && (
+              {/* Point Bonus Input Collapse (Mom Mode Only) */}
+              {isMomMode && bonusMemberId === member.id && (
                 <div className="mt-3 p-3 bg-indigo-50/70 rounded-2xl border border-indigo-200 space-y-2 animate-in fade-in">
                   <div className="flex items-center justify-between text-xs font-bold text-indigo-900">
                     <span>Award Bonus Points to {member.name}</span>
@@ -325,7 +339,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                     />
                     <button
                       onClick={() => handleGiveBonus(member.id)}
-                      className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs shrink-0"
+                      className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs shrink-0 cursor-pointer"
                     >
                       Give
                     </button>

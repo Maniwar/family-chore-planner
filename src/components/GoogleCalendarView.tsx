@@ -55,6 +55,7 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<{ current: number; total: number } | null>(null);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [filterMemberId, setFilterMemberId] = useState<string>('all');
 
   const [selectedChoreIds, setSelectedChoreIds] = useState<{ [id: string]: boolean }>({});
   const [syncTargetDate, setSyncTargetDate] = useState<string>(selectedDate);
@@ -483,22 +484,56 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
                     chores.forEach(c => { all[c.id] = true; });
                     setSelectedChoreIds(all);
                   }}
-                  className="text-indigo-600 hover:underline"
+                  className="text-indigo-600 hover:underline cursor-pointer"
                 >
                   Select All
                 </button>
                 <span className="text-slate-300">|</span>
                 <button
                   onClick={() => setSelectedChoreIds({})}
-                  className="text-slate-500 hover:underline"
+                  className="text-slate-500 hover:underline cursor-pointer"
                 >
                   None
                 </button>
               </div>
             </div>
 
+            {/* Member Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
+              <button
+                onClick={() => setFilterMemberId('all')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors shrink-0 cursor-pointer ${
+                  filterMemberId === 'all'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                All Helpers ({chores.filter(c => c.isActive).length})
+              </button>
+              {members.map(m => {
+                const count = chores.filter(c => c.isActive && c.assignedMemberId === m.id).length;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => setFilterMemberId(m.id)}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer ${
+                      filterMemberId === m.id
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>{m.avatarEmoji}</span>
+                    <span>{m.name}</span>
+                    <span className="text-[10px] opacity-80">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden max-h-[380px] overflow-y-auto">
-              {chores.filter(c => c.isActive).map(chore => {
+              {chores
+                .filter(c => c.isActive && (filterMemberId === 'all' || c.assignedMemberId === filterMemberId))
+                .map(chore => {
                 const member = members.find(m => m.id === chore.assignedMemberId);
                 const isSelected = selectedChoreIds[chore.id] !== false;
 

@@ -299,9 +299,9 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
             </div>
           )}
 
-          {/* Status: NEEDS REVIEW (Child submitted, waiting for Mom) - FIXED LAYOUT */}
+          {/* Status: NEEDS REVIEW (Child submitted, waiting for Mom) */}
           {status === 'needs_review' && log && (
-            <div className="w-full flex flex-col gap-2.5">
+            <div className="w-full flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
                   <span className="relative flex h-2 w-2">
@@ -310,35 +310,49 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                   </span>
                   <span className="truncate">{t.awaitingMom}</span>
                 </div>
+                {!isMomMode && (
+                  <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                    Submitted ✨
+                  </span>
+                )}
               </div>
 
-              {/* Robust 2-button grid that never overflows */}
-              <div className="grid grid-cols-2 gap-2 w-full">
-                <button
-                  id={`btn-inspect-grade-${chore.id}`}
-                  onClick={() => {
-                    soundFX.playPop();
-                    onOpenInspect(chore, log);
-                  }}
-                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-xs transition-transform active:scale-[0.98] min-w-0"
-                >
-                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{t.inspectAndGrade}</span>
-                </button>
+              {isMomMode ? (
+                /* Mom / Admin Mode: Inspect & Quick Approve buttons */
+                <div className="grid grid-cols-2 gap-2 w-full pt-1">
+                  <button
+                    id={`btn-inspect-grade-${chore.id}`}
+                    onClick={() => {
+                      soundFX.playPop();
+                      onOpenInspect(chore, log);
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-xs transition-transform active:scale-[0.98] min-w-0 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{t.inspectAndGrade}</span>
+                  </button>
 
-                <button
-                  id={`btn-quick-approve-${chore.id}`}
-                  onClick={() => {
-                    soundFX.playStarChime(5);
-                    onQuickApprove(chore.id, log.id);
-                  }}
-                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition-transform active:scale-[0.98] min-w-0"
-                  title={t.quickApproveTitle}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span className="truncate">{t.pass5Star}</span>
-                </button>
-              </div>
+                  <button
+                    id={`btn-quick-approve-${chore.id}`}
+                    onClick={() => {
+                      soundFX.playStarChime(5);
+                      onQuickApprove(chore.id, log.id);
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition-transform active:scale-[0.98] min-w-0 cursor-pointer"
+                    title={t.quickApproveTitle}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="truncate">{t.pass5Star}</span>
+                  </button>
+                </div>
+              ) : (
+                /* Kid Mode: Friendly confirmation message without admin approval triggers */
+                <div className="p-2.5 bg-amber-50/80 rounded-xl border border-amber-200/80 text-center">
+                  <p className="text-xs font-semibold text-amber-900 leading-snug">
+                    🎉 Great job! Mom will review your work and award your stars soon.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

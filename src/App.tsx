@@ -48,6 +48,8 @@ import { isPinProtectionEnabled, isParentSessionUnlocked, setParentSessionUnlock
 import { 
   CloudHousehold, 
   getCurrentHouseholdId, 
+  setCurrentHouseholdId,
+  findHouseholdByCode,
   getHousehold, 
   subscribeHouseholdFull,
   syncCompleteHouseholdToCloud
@@ -171,6 +173,9 @@ export default function App() {
       // Switching to Kid Mode: Lock parent session and switch view
       setIsMomMode(false);
       setParentSessionUnlocked(false);
+      if (currentView === 'inspection' || currentView === 'library') {
+        setCurrentView('today');
+      }
       soundFX.playPop();
       showToast('Mom Mode locked 🔒 Switched to Helper / Kid View');
     } else {
@@ -927,6 +932,7 @@ export default function App() {
             logs={logs}
             members={members}
             selectedMemberId={selectedMemberId}
+            onSelectMember={(id) => setSelectedMemberId(id)}
             isMomMode={isMomMode}
             language={language}
             currentTheme={currentTheme}
@@ -986,6 +992,7 @@ export default function App() {
             members={members}
             chores={chores}
             householdInfo={householdInfo}
+            isMomMode={isMomMode}
             onOpenNewMember={() => setMemberModalData({ isOpen: true, memberToEdit: null })}
             onEditMember={(member) => setMemberModalData({ isOpen: true, memberToEdit: member })}
             onDeleteMember={handleDeleteMember}

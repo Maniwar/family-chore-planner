@@ -31,6 +31,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   onViewChange,
   pendingInspectionCount = 0,
   pendingRewardCount = 0,
+  isMomMode = true,
   language = 'en',
   currentTheme = 'rose',
 }) => {
@@ -43,16 +44,19 @@ export const Navigation: React.FC<NavigationProps> = ({
     if (onViewChange) onViewChange(v);
   };
 
-  const navItems = [
+  // Base navigation items with Mom/Admin vs Kid filtering
+  const allNavItems = [
     {
       id: 'today' as ViewMode,
       label: t.tabToday,
       icon: CalendarDays,
+      adminOnly: false,
     },
     {
       id: 'weekly' as ViewMode,
       label: t.tabWeekly,
       icon: CalendarRange,
+      adminOnly: false,
     },
     {
       id: 'inspection' as ViewMode,
@@ -60,6 +64,7 @@ export const Navigation: React.FC<NavigationProps> = ({
       icon: Sparkles,
       badge: pendingInspectionCount > 0 ? pendingInspectionCount : null,
       badgeColor: 'bg-amber-500 text-white',
+      adminOnly: true, // Only Mom inspects chores
     },
     {
       id: 'rewards' as ViewMode,
@@ -67,28 +72,35 @@ export const Navigation: React.FC<NavigationProps> = ({
       icon: Award,
       badge: pendingRewardCount > 0 ? pendingRewardCount : null,
       badgeColor: 'bg-emerald-500 text-white',
+      adminOnly: false,
     },
     {
       id: 'library' as ViewMode,
       label: t.tabLibrary,
       icon: ListTodo,
+      adminOnly: true, // Only Mom creates/edits chore templates library
     },
     {
       id: 'members' as ViewMode,
-      label: t.tabMembers,
+      label: isMomMode ? t.tabMembers : 'Family Stars 🌟',
       icon: Users,
+      adminOnly: false,
     },
     {
       id: 'calendar' as ViewMode,
       label: t.tabCalendar,
       icon: Calendar,
+      adminOnly: false,
     },
     {
       id: 'reports' as ViewMode,
       label: t.tabReports,
       icon: Printer,
+      adminOnly: false,
     },
   ];
+
+  const navItems = allNavItems.filter(item => !item.adminOnly || isMomMode);
 
   return (
     <div className={`${theme.navBg} border-b ${theme.navBorder} no-print overflow-x-auto scrollbar-none sticky top-[57px] sm:top-[65px] z-20 shadow-2xs transition-colors duration-200`}>

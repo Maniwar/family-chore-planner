@@ -337,7 +337,8 @@ export function subscribeHouseholdFull(
         }
       },
       (err) => {
-        console.warn('Firestore listener notice (switching to background stream):', err?.message || err);
+        handleFirestoreWriteError(err);
+        console.info('Firestore realtime listener note (seamless server fallback stream active):', err?.message || err);
       }
     );
   } catch (e) {

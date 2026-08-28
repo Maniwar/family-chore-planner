@@ -9,11 +9,15 @@ import {
   User, 
   Printer, 
   ArrowRight,
-  Filter
+  Filter,
+  Home,
+  Users
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
 import { getWeekDates, parseLocalDate, isChoreScheduledForDate, formatTimeDisplay } from '../utils/storage';
 import { WeeklyWorkloadChart } from './WeeklyWorkloadChart';
+import { Avatar } from './Avatar';
+import { soundFX } from '../utils/audio';
 
 interface WeeklyScheduleViewProps {
   currentDateStr: string;
@@ -43,6 +47,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
   const weekDays = getWeekDates(centerDate);
 
   const handlePrevWeek = () => {
+    soundFX.playPop();
     const d = parseLocalDate(centerDate);
     d.setDate(d.getDate() - 7);
     const yyyy = d.getFullYear();
@@ -52,6 +57,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
   };
 
   const handleNextWeek = () => {
+    soundFX.playPop();
     const d = parseLocalDate(centerDate);
     d.setDate(d.getDate() + 7);
     const yyyy = d.getFullYear();
@@ -66,8 +72,8 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Week Navigation Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
+      {/* Week Navigation & Contextual Filter Header */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700">
@@ -86,35 +92,98 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrevWeek}
-              className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+              className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
               title="Previous Week"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
             <button
-              onClick={() => setCenterDate(new Date().toISOString().split('T')[0])}
-              className="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+              onClick={() => {
+                soundFX.playPop();
+                setCenterDate(new Date().toISOString().split('T')[0]);
+              }}
+              className="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
             >
               This Week
             </button>
 
             <button
               onClick={handleNextWeek}
-              className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+              className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
               title="Next Week"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
 
             <button
-              onClick={onOpenPrintView}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors ml-2"
+              onClick={() => {
+                soundFX.playPop();
+                onOpenPrintView();
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors ml-2 cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print Fridge Grid</span>
             </button>
           </div>
+        </div>
+
+        {/* Member Filter Chips for the Weekly Matrix */}
+        <div className="pt-3 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1">
+            <Users className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Filter Schedule:</span>
+          </span>
+
+          <button
+            id="weekly-filter-all-members"
+            onClick={() => {
+              soundFX.playPop();
+              onSelectMember('all');
+            }}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer ${
+              selectedMemberId === 'all'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <Home className="w-3.5 h-3.5" />
+            <span>Whole Family</span>
+          </button>
+
+          {members.map((m) => {
+            const isSelected = selectedMemberId === m.id;
+            return (
+              <button
+                key={m.id}
+                id={`weekly-filter-member-${m.id}`}
+                onClick={() => {
+                  soundFX.playPop();
+                  onSelectMember(m.id);
+                }}
+                className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 cursor-pointer ${
+                  isSelected
+                    ? 'bg-rose-500 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Avatar
+                  photoUrl={m.avatarPhotoUrl}
+                  emoji={m.avatarEmoji}
+                  name={m.name}
+                  size="xs"
+                  showBorder={false}
+                />
+                <span>{m.name}</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                  isSelected ? 'bg-black/20 text-white' : 'bg-slate-200 text-slate-700'
+                }`}>
+                  {m.currentPoints} pts
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

@@ -7,10 +7,14 @@ import {
   CheckCircle2, 
   Sparkles, 
   Plus, 
-  BarChart3
+  BarChart3,
+  Home,
+  Users,
+  Check
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember, ChoreCategory, TimeOfDay } from '../types';
 import { ChoreCard } from './ChoreCard';
+import { Avatar } from './Avatar';
 import { WeeklyWorkloadChart } from './WeeklyWorkloadChart';
 import { formatDisplayDate, parseLocalDate, getTodayDateString, isChoreScheduledForDate } from '../utils/storage';
 import { soundFX } from '../utils/audio';
@@ -36,6 +40,7 @@ interface DailyScheduleViewProps {
   logs: ChoreAssignmentLog[];
   members: HouseholdMember[];
   selectedMemberId: string;
+  onSelectMember?: (memberId: string) => void;
   isMomMode: boolean;
   language?: SupportedLanguage;
   currentTheme?: ThemePreset;
@@ -56,6 +61,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   logs,
   members,
   selectedMemberId,
+  onSelectMember,
   isMomMode,
   language = 'en',
   currentTheme = 'rose',
@@ -294,6 +300,88 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         )}
       </div>
 
+      {/* Contextual Helper / Family Member Filter Chips */}
+      {onSelectMember && (
+        <div className={`${theme.cardBg} rounded-2xl border ${theme.cardBorder} p-3 sm:p-4 shadow-xs space-y-2`}>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Filter Chores by Helper</span>
+            </span>
+            {selectedMemberId !== 'all' && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  onSelectMember('all');
+                }}
+                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+              >
+                Clear Filter (Show All)
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+            {/* All Helpers Chip */}
+            <button
+              id="daily-filter-all-helpers"
+              onClick={() => {
+                soundFX.playPop();
+                onSelectMember('all');
+              }}
+              className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                selectedMemberId === 'all'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span>{t.wholeFamily}</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                selectedMemberId === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {chores.filter(c => isChoreScheduledForDate(c, currentDateStr)).length}
+              </span>
+            </button>
+
+            {/* Per-Member Filter Chips */}
+            {members.map((m) => {
+              const isSelected = selectedMemberId === m.id;
+              const memberChoreCount = chores.filter(c => c.assignedMemberId === m.id && isChoreScheduledForDate(c, currentDateStr)).length;
+              return (
+                <button
+                  key={m.id}
+                  id={`daily-filter-member-${m.id}`}
+                  onClick={() => {
+                    soundFX.playPop();
+                    onSelectMember(m.id);
+                  }}
+                  className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 cursor-pointer ${
+                    isSelected
+                      ? `${theme.primaryBg} text-white shadow-xs`
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <Avatar
+                    photoUrl={m.avatarPhotoUrl}
+                    emoji={m.avatarEmoji}
+                    name={m.name}
+                    size="xs"
+                    showBorder={false}
+                  />
+                  <span className="truncate max-w-[100px]">{m.name}</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                    isSelected ? 'bg-black/20 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {memberChoreCount} {memberChoreCount === 1 ? 'chore' : 'chores'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Filter and Search Bar */}
       <div className={`${theme.cardBg} rounded-2xl border ${theme.cardBorder} p-3 sm:p-4 space-y-3 shadow-xs transition-colors duration-200`}>
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
@@ -364,7 +452,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 soundFX.playPop();
                 setShowWorkloadChart(!showWorkloadChart);
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 border ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 border cursor-pointer ${
                 showWorkloadChart
                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
@@ -375,14 +463,14 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               <span className="hidden sm:inline">{t.workloadChart}</span>
             </button>
 
-            {/* AI Auto-Assign Shortcut */}
-            {onOpenAIAssign && (
+            {/* AI Auto-Assign Shortcut (Mom Mode Only) */}
+            {isMomMode && onOpenAIAssign && (
               <button
                 onClick={() => {
                   soundFX.playPop();
                   onOpenAIAssign();
                 }}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-xs transition-all flex items-center gap-1.5 shrink-0"
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
                 title="AI Auto-Assign Chores"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -397,7 +485,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   soundFX.playPop();
                   onOpenGoogleCalendar();
                 }}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors flex items-center gap-1 shrink-0"
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                 title="Google Calendar Sync"
               >
                 <span>📅</span>
@@ -436,16 +524,18 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               ? t.allChoresDoneSubtitle 
               : t.addCustomChore}
           </p>
-          <button
-            onClick={() => {
-              soundFX.playPop();
-              onOpenNewChore();
-            }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{t.newChore}</span>
-          </button>
+          {isMomMode && (
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                onOpenNewChore();
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t.newChore}</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

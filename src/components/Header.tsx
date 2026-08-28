@@ -324,15 +324,15 @@ export const Header: React.FC<HeaderProps> = ({
               {isSoundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
-            {/* Mom Inspection Alert Pill */}
-            {pendingInspectionCount > 0 && (
+            {/* Mom Inspection Alert Pill (Mom Mode Only) */}
+            {isMomMode && pendingInspectionCount > 0 && (
               <button
                 id="header-inspection-badge-btn"
                 onClick={() => {
                   soundFX.playPop();
                   onOpenInspectionQueue();
                 }}
-                className="relative inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-extrabold bg-amber-500 text-white shadow-xs hover:bg-amber-600 transition-all animate-pulse"
+                className="relative inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-extrabold bg-amber-500 text-white shadow-xs hover:bg-amber-600 transition-all animate-pulse cursor-pointer"
                 title={`${pendingInspectionCount} chores waiting for inspection`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -340,20 +340,22 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* AI Auto-Assign Button */}
-            <button
-              id="header-ai-assign-btn"
-              onClick={() => {
-                soundFX.playPop();
-                onOpenAIAssign();
-              }}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 sm:px-3 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xs"
-              title="AI Smart Auto-Assign Chores by Age & Milestones"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden sm:inline">{t.aiAutoAssign}</span>
-              <span className="sm:hidden">AI</span>
-            </button>
+            {/* AI Auto-Assign Button (Mom Mode Only) */}
+            {isMomMode && (
+              <button
+                id="header-ai-assign-btn"
+                onClick={() => {
+                  soundFX.playPop();
+                  onOpenAIAssign();
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 sm:px-3 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xs cursor-pointer"
+                title="AI Smart Auto-Assign Chores by Age & Milestones"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span className="hidden sm:inline">{t.aiAutoAssign}</span>
+                <span className="sm:hidden">AI</span>
+              </button>
+            )}
 
             {/* Google Calendar Button */}
             <button
@@ -362,7 +364,7 @@ export const Header: React.FC<HeaderProps> = ({
                 soundFX.playPop();
                 onOpenGoogleCalendar();
               }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
               title="Google Family Calendar Sync"
             >
               <Calendar className="w-3.5 h-3.5 text-blue-600" />
@@ -376,25 +378,27 @@ export const Header: React.FC<HeaderProps> = ({
                 soundFX.playPop();
                 onOpenPrintView();
               }}
-              className="inline-flex items-center gap-1 px-2 py-1.5 sm:px-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-1.5 sm:px-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
               title="Printable Fridge Chore Schedules & Punchcards"
             >
               <Printer className="w-3.5 h-3.5 text-rose-500" />
               <span className="hidden md:inline">{t.printSchedule}</span>
             </button>
 
-            {/* Add New Chore Button */}
-            <button
-              id="header-add-chore-btn"
-              onClick={() => {
-                soundFX.playPop();
-                onOpenNewChore();
-              }}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 sm:px-3 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-xs"
-            >
-              <Plus className="w-4 h-4 text-emerald-400" />
-              <span>{t.newChore}</span>
-            </button>
+            {/* Add New Chore Button (Mom Mode Only) */}
+            {isMomMode && (
+              <button
+                id="header-add-chore-btn"
+                onClick={() => {
+                  soundFX.playPop();
+                  onOpenNewChore();
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 sm:px-3 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-emerald-400" />
+                <span>{t.newChore}</span>
+              </button>
+            )}
 
             {/* Mom Mode Switcher for Desktop */}
             <div className="hidden lg:flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
@@ -404,7 +408,7 @@ export const Header: React.FC<HeaderProps> = ({
                   soundFX.playPop();
                   if (!isMomMode) onToggleMomMode();
                 }}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                   isMomMode 
                     ? `bg-white ${theme.badgeText} shadow-xs` 
                     : 'text-slate-600 hover:text-slate-900'
@@ -420,7 +424,7 @@ export const Header: React.FC<HeaderProps> = ({
                   soundFX.playPop();
                   if (isMomMode) onToggleMomMode();
                 }}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                   !isMomMode 
                     ? 'bg-white text-slate-900 shadow-xs' 
                     : 'text-slate-600 hover:text-slate-900'
@@ -431,62 +435,6 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Member Selector Filter Ribbon */}
-        <div className="flex items-center gap-2 overflow-x-auto py-2 sm:py-2.5 border-t border-slate-100 scrollbar-none text-xs">
-          <span className="text-slate-400 font-bold whitespace-nowrap mr-0.5 text-[11px] uppercase tracking-wider shrink-0">
-            {t.familyView}
-          </span>
-          
-          <button
-            id="filter-all-members-btn"
-            onClick={() => {
-              soundFX.playPop();
-              onSelectMember('all');
-            }}
-            className={`px-3 py-1.5 rounded-full font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-              selectedMemberId === 'all'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <Home className="w-3.5 h-3.5" />
-            <span>{t.wholeFamily}</span>
-          </button>
-
-          {members.map((member) => {
-            const isSelected = selectedMemberId === member.id;
-            return (
-              <button
-                key={member.id}
-                id={`filter-member-${member.id}`}
-                onClick={() => {
-                  soundFX.playPop();
-                  onSelectMember(member.id);
-                }}
-                className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-                  isSelected
-                    ? `${theme.primaryBg} text-white shadow-xs`
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                <Avatar
-                  photoUrl={member.avatarPhotoUrl}
-                  emoji={member.avatarEmoji}
-                  name={member.name}
-                  size="xs"
-                  showBorder={false}
-                />
-                <span className="max-w-[80px] sm:max-w-none truncate">{member.name}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
-                  isSelected ? 'bg-black/20 text-white' : 'bg-slate-200 text-slate-700'
-                }`}>
-                  {member.currentPoints} {t.pts}
-                </span>
-              </button>
-            );
-          })}
         </div>
       </div>
     </header>

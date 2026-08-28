@@ -137,7 +137,7 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
         </div>
       </div>
 
-      {/* Mom Pending Claims Queue */}
+      {/* Pending Claims Queue */}
       {pendingClaims.length > 0 && (
         <div className="bg-amber-50 rounded-2xl border border-amber-300 p-5 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
@@ -145,7 +145,9 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
               <Clock className="w-4 h-4 text-amber-600" />
               <span>Pending Reward Requests ({pendingClaims.length})</span>
             </h3>
-            <span className="text-xs text-amber-700 font-semibold">Mom's Approval Needed</span>
+            <span className="text-xs text-amber-700 font-semibold">
+              {isMomMode ? "Mom's Approval Needed" : "Waiting for Mom's Review"}
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -160,12 +162,18 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => onApproveClaim(claim.id)}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors"
-                  >
-                    Approve
-                  </button>
+                  {isMomMode ? (
+                    <button
+                      onClick={() => onApproveClaim(claim.id)}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                    >
+                      Approve
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-bold text-amber-700 bg-amber-100/80 px-2 py-1 rounded-md">
+                      Pending Review ⏳
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
