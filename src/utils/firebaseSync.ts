@@ -30,6 +30,7 @@ export interface CloudHousehold {
   houseAddressOrMotto?: string;
   housePhotoUrl?: string;
   adminPin?: string;
+  pinProtectionEnabled?: boolean;
   joinPassphrase?: string; // Optional household join security password
   members?: HouseholdMember[];
   chores?: Chore[];
@@ -275,6 +276,7 @@ export async function syncCompleteHouseholdToCloud(
     housePhotoUrl?: string;
     householdCode?: string;
     adminPin?: string;
+    pinProtectionEnabled?: boolean;
     joinPassphrase?: string;
     members?: HouseholdMember[];
     chores?: Chore[];

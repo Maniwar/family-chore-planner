@@ -214,6 +214,7 @@ interface ServerHouseholdRecord {
   houseAddressOrMotto?: string;
   housePhotoUrl?: string;
   adminPin?: string;
+  pinProtectionEnabled?: boolean;
   joinPassphrase?: string;
   members?: any[];
   chores?: any[];
@@ -257,7 +258,7 @@ initHouseholdStore();
 // Create a new household on server
 app.post("/api/household/create", (req, res) => {
   try {
-    const { id, householdCode, familyName, houseAddressOrMotto, housePhotoUrl, adminPin, joinPassphrase, members, chores, logs, rewards, claims } = req.body;
+    const { id, householdCode, familyName, houseAddressOrMotto, housePhotoUrl, adminPin, pinProtectionEnabled, joinPassphrase, members, chores, logs, rewards, claims } = req.body;
     const now = new Date().toISOString();
     const hhId = id || "hh_" + Math.random().toString(36).substring(2, 11);
     const code = (householdCode || "NEST-" + Math.random().toString(36).substring(2, 6)).toUpperCase();
@@ -269,6 +270,7 @@ app.post("/api/household/create", (req, res) => {
       houseAddressOrMotto: houseAddressOrMotto || "Clean spaces, happy smiles & teamwork! ✨",
       housePhotoUrl: housePhotoUrl || "",
       adminPin: adminPin || "1234",
+      pinProtectionEnabled: pinProtectionEnabled !== undefined ? Boolean(pinProtectionEnabled) : true,
       joinPassphrase: joinPassphrase || undefined,
       members: Array.isArray(members) ? members : [],
       chores: Array.isArray(chores) ? chores : [],
@@ -338,7 +340,7 @@ app.get("/api/household/:id", (req, res) => {
 app.post("/api/household/:id/sync", (req, res) => {
   try {
     const hhId = req.params.id;
-    const { familyName, houseAddressOrMotto, housePhotoUrl, householdCode, adminPin, joinPassphrase, members, chores, logs, rewards, claims, version } = req.body;
+    const { familyName, houseAddressOrMotto, housePhotoUrl, householdCode, adminPin, pinProtectionEnabled, joinPassphrase, members, chores, logs, rewards, claims, version } = req.body;
     
     let existing = householdsMemoryStore[hhId];
     const now = new Date().toISOString();
@@ -351,6 +353,7 @@ app.post("/api/household/:id/sync", (req, res) => {
         houseAddressOrMotto: houseAddressOrMotto || "",
         housePhotoUrl: housePhotoUrl || "",
         adminPin: adminPin || "1234",
+        pinProtectionEnabled: pinProtectionEnabled !== undefined ? Boolean(pinProtectionEnabled) : true,
         createdAt: now,
         updatedAt: now,
         version: 1,
@@ -361,6 +364,7 @@ app.post("/api/household/:id/sync", (req, res) => {
     if (houseAddressOrMotto !== undefined) existing.houseAddressOrMotto = houseAddressOrMotto;
     if (housePhotoUrl !== undefined) existing.housePhotoUrl = housePhotoUrl;
     if (adminPin !== undefined) existing.adminPin = adminPin;
+    if (pinProtectionEnabled !== undefined) existing.pinProtectionEnabled = Boolean(pinProtectionEnabled);
     if (joinPassphrase !== undefined) existing.joinPassphrase = joinPassphrase;
     if (Array.isArray(members)) existing.members = members;
     if (Array.isArray(chores)) existing.chores = chores;

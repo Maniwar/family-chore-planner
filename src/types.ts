@@ -23,6 +23,8 @@ export interface HouseholdInfo {
   householdCode?: string; // 6-character cloud sync code e.g. "HOME-4921"
   householdId?: string; // Active Cloud household ID
   isCloudSynced?: boolean;
+  adminPin?: string; // Cloud-synced 4-digit Parent/Mom mode PIN
+  pinProtectionEnabled?: boolean;
 }
 
 export type ChoreCategory = 

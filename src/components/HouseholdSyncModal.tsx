@@ -19,6 +19,7 @@ import {
   Smartphone
 } from 'lucide-react';
 import { CloudHousehold, createNewHousehold, findHouseholdByCode, setCurrentHouseholdId } from '../utils/firebaseSync';
+import { getParentPin } from '../utils/parentLock';
 import { HouseholdInfo } from '../types';
 import { ThemePreset, THEMES } from '../utils/theme';
 import { soundFX } from '../utils/audio';
@@ -95,7 +96,8 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
     setErrorMessage('');
     try {
       soundFX.playFanfare();
-      const created = await createNewHousehold(newFamilyName, newMotto, '1234', newPassphrase);
+      const currentAdminPin = getParentPin();
+      const created = await createNewHousehold(newFamilyName, newMotto, currentAdminPin, newPassphrase);
       onHouseholdConnected(created);
       onShowToast(`Created cloud household for "${created.familyName}"! Join code: ${created.householdCode}`, 'success');
       setTab('status');

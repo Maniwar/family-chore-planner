@@ -44,7 +44,7 @@ import { HouseholdSyncModal } from './components/HouseholdSyncModal';
 import { soundFX } from './utils/audio';
 import { SupportedLanguage, getTranslation } from './utils/i18n';
 import { ThemePreset, THEMES } from './utils/theme';
-import { isPinProtectionEnabled, isParentSessionUnlocked, setParentSessionUnlocked } from './utils/parentLock';
+import { isPinProtectionEnabled, isParentSessionUnlocked, setParentSessionUnlocked, syncParentPinFromCloud, getParentPin } from './utils/parentLock';
 import { 
   CloudHousehold, 
   getCurrentHouseholdId, 
@@ -234,6 +234,9 @@ export default function App() {
           if (hh) {
             setCurrentHouseholdId(hh.id);
             setActiveHousehold(hh);
+            if (hh.adminPin || hh.pinProtectionEnabled !== undefined) {
+              syncParentPinFromCloud(hh.adminPin, hh.pinProtectionEnabled);
+            }
             if (hh.members && hh.members.length > 0) setMembers(hh.members);
             if (hh.chores && hh.chores.length > 0) setChores(hh.chores);
             if (hh.logs) setLogs(hh.logs);
@@ -270,6 +273,8 @@ export default function App() {
       houseAddressOrMotto: householdInfo.houseAddressOrMotto,
       housePhotoUrl: householdInfo.housePhotoUrl,
       householdCode: activeHousehold.householdCode,
+      adminPin: getParentPin(),
+      pinProtectionEnabled: isPinProtectionEnabled(),
       members,
       chores,
       logs,
@@ -299,6 +304,9 @@ export default function App() {
     getHousehold(savedHhId).then((hh) => {
       if (hh && isMounted) {
         setActiveHousehold(hh);
+        if (hh.adminPin || hh.pinProtectionEnabled !== undefined) {
+          syncParentPinFromCloud(hh.adminPin, hh.pinProtectionEnabled);
+        }
         if (hh.members && hh.members.length > 0) setMembers(hh.members);
         if (hh.chores && hh.chores.length > 0) setChores(hh.chores);
         if (hh.logs) setLogs(hh.logs);
@@ -323,6 +331,9 @@ export default function App() {
       isReceivingRemoteUpdateRef.current = true;
 
       setActiveHousehold(cloudHh);
+      if (cloudHh.adminPin || cloudHh.pinProtectionEnabled !== undefined) {
+        syncParentPinFromCloud(cloudHh.adminPin, cloudHh.pinProtectionEnabled);
+      }
       if (cloudHh.members && cloudHh.members.length > 0) setMembers(cloudHh.members);
       if (cloudHh.chores && cloudHh.chores.length > 0) setChores(cloudHh.chores);
       if (cloudHh.logs) setLogs(cloudHh.logs);
@@ -345,6 +356,8 @@ export default function App() {
         houseAddressOrMotto: cloudHh.houseAddressOrMotto,
         housePhotoUrl: cloudHh.housePhotoUrl,
         householdCode: cloudHh.householdCode,
+        adminPin: getParentPin(),
+        pinProtectionEnabled: isPinProtectionEnabled(),
         members: cloudHh.members,
         chores: cloudHh.chores,
         logs: cloudHh.logs,
@@ -365,6 +378,9 @@ export default function App() {
 
   const handleHouseholdConnected = (household: CloudHousehold) => {
     setActiveHousehold(household);
+    if (household.adminPin || household.pinProtectionEnabled !== undefined) {
+      syncParentPinFromCloud(household.adminPin, household.pinProtectionEnabled);
+    }
     if (household.members && household.members.length > 0) setMembers(household.members);
     if (household.chores && household.chores.length > 0) setChores(household.chores);
     if (household.logs && household.logs.length > 0) setLogs(household.logs);

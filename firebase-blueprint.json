@@ -12,6 +12,7 @@
         "housePhotoUrl": { "type": "string", "description": "Cover photo URL of the house" },
         "houseAddressOrMotto": { "type": "string", "description": "Family motto or address" },
         "adminPin": { "type": "string", "description": "4-digit Parent/Mom mode PIN" },
+        "pinProtectionEnabled": { "type": "boolean", "description": "Whether Parent PIN authentication is active" },
         "createdAt": { "type": "string", "description": "ISO timestamp created" },
         "updatedAt": { "type": "string", "description": "ISO timestamp updated" }
       },

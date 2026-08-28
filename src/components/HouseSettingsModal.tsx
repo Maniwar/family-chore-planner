@@ -305,9 +305,9 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                         setPinNotice('PIN must be 4 digits');
                         return;
                       }
-                      if (setParentPin(customPinInput)) {
+                      if (setParentPin(customPinInput, householdInfo.householdId)) {
                         soundFX.playRewardCoin();
-                        setPinNotice('PIN updated!');
+                        setPinNotice(householdInfo.isCloudSynced ? 'PIN updated & synced across family devices! ☁️' : 'PIN updated!');
                         setIsEditingPin(false);
                         setCustomPinInput('');
                       }

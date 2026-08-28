@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Lock, Unlock, KeyRound, X, Check, AlertCircle, ShieldAlert, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { verifyParentPin, setParentPin, setParentSessionUnlocked, getParentPin, isPinProtectionEnabled } from '../utils/parentLock';
+import { getCurrentHouseholdId } from '../utils/firebaseSync';
 import { soundFX } from '../utils/audio';
 
 interface ParentPinModalProps {
@@ -144,9 +145,11 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
       return;
     }
 
+    const isCloud = Boolean(getCurrentHouseholdId());
+
     if (setParentPin(newPinInput)) {
       soundFX.playRewardCoin();
-      setChangeSuccessMsg('Parent PIN changed successfully!');
+      setChangeSuccessMsg(isCloud ? 'Parent PIN updated & synced across all family devices! ☁️' : 'Parent PIN changed successfully!');
       setErrorMsg(null);
       setTimeout(() => {
         setIsChangingPin(false);
@@ -156,6 +159,8 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
       setErrorMsg('Failed to update PIN.');
     }
   };
+
+  const isCloud = Boolean(getCurrentHouseholdId());
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
@@ -176,7 +181,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
                 {isChangingPin ? 'Change Parent PIN' : actionTitle}
               </h2>
               <p className="text-[11px] text-rose-100">
-                {isChangingPin ? 'Set a custom 4-digit code' : 'Parent & Admin Security'}
+                {isChangingPin ? (isCloud ? 'Cloud-synced across all family devices ☁️' : 'Set a custom 4-digit code') : 'Parent & Admin Security'}
               </p>
             </div>
           </div>
