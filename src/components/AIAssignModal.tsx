@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 import { HouseholdMember, Chore, AIAssignmentResult, AIAssignmentSuggestion } from '../types';
 import { getMemberEffectiveAge } from '../utils/age';
+import { ThemePreset, THEMES } from '../utils/theme';
 
 interface AIAssignModalProps {
   isOpen: boolean;
   onClose: () => void;
   members: HouseholdMember[];
   chores: Chore[];
+  currentTheme?: ThemePreset;
   onApplyAssignments: (assignments: { choreId: string; assignedMemberId: string }[]) => void;
 }
 
@@ -33,9 +35,11 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
   onClose,
   members,
   chores,
+  currentTheme = 'rose',
   onApplyAssignments,
 }) => {
   if (!isOpen) return null;
+  const theme = THEMES[currentTheme] || THEMES.rose;
 
   const [activeTab, setActiveTab] = useState<'assigner' | 'coach'>('assigner');
   const [focusGoal, setFocusGoal] = useState<'balanced_developmental' | 'skill_building' | 'rotation'>('balanced_developmental');

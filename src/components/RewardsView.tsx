@@ -12,38 +12,57 @@ import {
   Gamepad2, 
   Film, 
   IceCream, 
-  Moon 
+  Star,
+  Check,
+  ChevronRight,
+  Filter,
+  User
 } from 'lucide-react';
 import { RewardItem, RewardClaim, HouseholdMember } from '../types';
+import { Avatar } from './Avatar';
+import { soundFX } from '../utils/audio';
+import { ThemePreset, THEMES } from '../utils/theme';
 
 interface RewardsViewProps {
   rewards: RewardItem[];
   claims: RewardClaim[];
   members: HouseholdMember[];
   isMomMode: boolean;
-  onClaimReward: (rewardId: string, memberId: string) => void;
-  onApproveClaim: (claimId: string) => void;
-  onDeliverClaim: (claimId: string) => void;
+  currentTheme?: ThemePreset;
+  onClaimReward: (rewardId: string, memberId: string, note?: string) => void;
+  onApproveClaim: (claimId: string, parentNote?: string) => void;
+  onDeliverClaim: (claimId: string, parentNote?: string) => void;
+  onRejectClaim?: (claimId: string, parentNote?: string) => void;
   onAddNewReward: (reward: Omit<RewardItem, 'id'>) => void;
   onDeleteReward: (rewardId: string) => void;
+  onNavigateToRedemptions?: () => void;
 }
+
+type RewardCategory = 'all' | 'treat' | 'allowance' | 'screentime' | 'activity' | 'privilege';
 
 export const RewardsView: React.FC<RewardsViewProps> = ({
   rewards,
   claims,
   members,
   isMomMode,
+  currentTheme = 'rose',
   onClaimReward,
   onApproveClaim,
   onDeliverClaim,
+  onRejectClaim,
   onAddNewReward,
   onDeleteReward,
+  onNavigateToRedemptions,
 }) => {
+  const theme = THEMES[currentTheme] || THEMES.rose;
   const [showAddModal, setShowAddModal] = useState(false);
   const [claimModalReward, setClaimModalReward] = useState<RewardItem | null>(null);
+  const [selectedFilterMemberId, setSelectedFilterMemberId] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<RewardCategory>('all');
   const [selectedClaimMemberId, setSelectedClaimMemberId] = useState<string>(
     members.find(m => m.role !== 'parent')?.id || members[0]?.id || ''
   );
+  const [claimNote, setClaimNote] = useState<string>('');
 
   // New reward form state
   const [newTitle, setNewTitle] = useState('');
@@ -52,12 +71,13 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
   const [newDesc, setNewDesc] = useState('');
 
   const pendingClaims = claims.filter(c => c.status === 'pending');
-  const pastClaims = claims.filter(c => c.status !== 'pending').slice(0, 10);
+  const activeMember = members.find(m => m.id === selectedFilterMemberId);
 
   const handleCreateReward = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
+    soundFX.playPop();
     onAddNewReward({
       title: newTitle.trim(),
       pointCost: Number(newPoints) || 50,
@@ -74,104 +94,169 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
 
   const handleConfirmClaim = () => {
     if (!claimModalReward || !selectedClaimMemberId) return;
+    soundFX.playFanfare();
     onClaimReward(claimModalReward.id, selectedClaimMemberId);
     setClaimModalReward(null);
   };
 
-  const getCategoryBadge = (cat: string) => {
+  const getCategoryInfo = (cat: string) => {
     switch (cat) {
-      case 'screentime': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-      case 'activity': return 'bg-purple-50 text-purple-700 border-purple-200';
-      case 'treat': return 'bg-pink-50 text-pink-700 border-pink-200';
-      case 'allowance': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      default: return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'screentime': 
+        return { label: 'Screen Time', emoji: '🎮', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+      case 'activity': 
+        return { label: 'Outing / Activity', emoji: '🎟️', badge: 'bg-purple-50 text-purple-700 border-purple-200' };
+      case 'treat': 
+        return { label: 'Treat / Food', emoji: '🍦', badge: 'bg-pink-50 text-pink-700 border-pink-200' };
+      case 'allowance': 
+        return { label: 'Allowance', emoji: '💵', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+      case 'privilege':
+        return { label: 'Privilege', emoji: '🌟', badge: 'bg-amber-50 text-amber-800 border-amber-200' };
+      default: 
+        return { label: cat, emoji: '🎁', badge: 'bg-slate-50 text-slate-700 border-slate-200' };
     }
   };
 
+  const filteredRewards = rewards.filter((reward) => {
+    if (selectedCategory !== 'all' && reward.category !== selectedCategory) {
+      return false;
+    }
+    return true;
+  });
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center text-xl shadow-xs">
-            🏆
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 leading-tight">
-              Family Rewards & Point Store
-            </h2>
-            <p className="text-xs text-slate-500">
-              Redeem chore completion points for allowance, screen time, outings, and special treats
-            </p>
-          </div>
+    <div className="space-y-3 sm:space-y-5 pb-16 sm:pb-6">
+      
+      {/* Header & Primary Action Bar */}
+      <div className="flex items-center justify-between gap-2 pt-0.5 px-0.5 min-w-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-black tracking-tight text-slate-900 leading-tight truncate">
+            Rewards & Store
+          </h1>
+          <p className="text-[11px] sm:text-xs text-slate-500 font-medium truncate">
+            Redeem chore points for perks, treats & allowance
+          </p>
         </div>
 
         {isMomMode && (
           <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-colors"
+            onClick={() => {
+              soundFX.playPop();
+              setShowAddModal(true);
+            }}
+            className={`inline-flex items-center justify-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} shadow-2xs transition-all active:scale-95 cursor-pointer min-h-[36px] shrink-0`}
           >
-            <Plus className="w-4 h-4" />
-            <span>Create Custom Reward</span>
+            <Plus className="w-3.5 h-3.5 stroke-[3]" />
+            <span>Add Reward</span>
           </button>
         )}
       </div>
 
-      {/* Family Points Balances Banner */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 text-white shadow-xs">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-          Available Points to Spend:
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {members.map((member) => (
-            <div key={member.id} className="bg-white/10 backdrop-blur-xs rounded-xl p-3 border border-white/10">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-lg">{member.avatarEmoji}</span>
-                <span className="text-xs font-bold truncate">{member.name.split(' ')[0]}</span>
-              </div>
-              <div className="text-xl font-extrabold text-amber-300">
-                {member.currentPoints} <span className="text-xs font-normal text-slate-300">pts</span>
-              </div>
-            </div>
-          ))}
+      {/* Sleek Family Points Balance Strip (Horizontal Ribbon) */}
+      <div className={`${theme.heroBannerBg} ${theme.heroBannerText} rounded-2xl sm:rounded-3xl p-2.5 sm:p-3.5 shadow-2xs border ${theme.heroBannerBorder} ${theme.heroBannerGlow}`}>
+        <div className="flex items-center justify-between mb-1.5 px-1">
+          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider opacity-80">
+            Family Points Balance
+          </span>
+          <span className="text-[10px] sm:text-[11px] font-medium opacity-85 truncate max-w-[170px]">
+            {selectedFilterMemberId === 'all' ? 'Tap member to see affordability' : `Filtered: ${activeMember?.name.split(' ')[0]}`}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 -mx-0.5 px-0.5">
+          <button
+            onClick={() => {
+              soundFX.playPop();
+              setSelectedFilterMemberId('all');
+            }}
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer min-h-[40px] sm:min-h-[44px] touch-target active:scale-95 border ${
+              selectedFilterMemberId === 'all'
+                ? 'bg-white text-slate-900 border-white shadow-xs font-black'
+                : 'bg-white/15 text-white border-white/20 hover:bg-white/25'
+            }`}
+          >
+            <span>👨‍👩‍👧‍👦 All Kids</span>
+          </button>
+
+          {members.map((member) => {
+            const isSelected = selectedFilterMemberId === member.id;
+            return (
+              <button
+                key={member.id}
+                onClick={() => {
+                  soundFX.playPop();
+                  setSelectedFilterMemberId(isSelected ? 'all' : member.id);
+                }}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer min-h-[40px] sm:min-h-[44px] touch-target active:scale-95 border ${
+                  isSelected
+                    ? 'bg-white text-slate-900 border-white shadow-xs font-black scale-[1.02]'
+                    : 'bg-white/15 text-white border-white/20 hover:bg-white/25'
+                }`}
+              >
+                <Avatar photoUrl={member.avatarPhotoUrl} emoji={member.avatarEmoji} name={member.name} size="xs" showBorder={false} />
+                <span className="truncate max-w-[75px]">{member.name.split(' ')[0]}</span>
+                <span className={`px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-black ${
+                  isSelected ? `${theme.primaryBg} ${theme.primaryText}` : 'bg-black/20 text-white'
+                }`}>
+                  ⭐ {member.currentPoints}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Pending Claims Queue */}
+      {/* Pending Claims Queue (Compact Notice & List) */}
       {pendingClaims.length > 0 && (
-        <div className="bg-amber-50 rounded-2xl border border-amber-300 p-5 shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-amber-900 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-600" />
+        <div className="bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-300/80 dark:border-amber-800 p-3 sm:p-4 shadow-2xs space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-xs sm:text-sm font-black text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
               <span>Pending Reward Requests ({pendingClaims.length})</span>
             </h3>
-            <span className="text-xs text-amber-700 font-semibold">
-              {isMomMode ? "Mom's Approval Needed" : "Waiting for Mom's Review"}
-            </span>
+            <div className="flex items-center gap-2">
+              {onNavigateToRedemptions && (
+                <button
+                  onClick={() => {
+                    soundFX.playPop();
+                    onNavigateToRedemptions();
+                  }}
+                  className="text-[11px] text-amber-900 dark:text-amber-200 font-black bg-amber-200/80 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800 px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Track & Manage</span>
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-1.5 sm:space-y-2">
             {pendingClaims.map((claim) => (
-              <div key={claim.id} className="bg-white p-3.5 rounded-xl border border-amber-200 flex items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-slate-900">{claim.memberName}</span>
-                    <span className="text-xs text-amber-800 font-semibold">({claim.pointCost} pts)</span>
+              <div key={claim.id} className="bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-xl border border-amber-200 dark:border-amber-800/80 flex items-center justify-between gap-2 shadow-2xs">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="text-xs font-black text-slate-900 dark:text-white truncate">{claim.memberName}</span>
+                    <span className="text-[11px] font-black text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-950 px-1.5 py-0.2 rounded-md shrink-0">
+                      ⭐ {claim.pointCost} pts
+                    </span>
                   </div>
-                  <p className="text-xs text-slate-600 font-medium mt-0.5">{claim.rewardTitle}</p>
+                  <p className="text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">{claim.rewardTitle}</p>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 shrink-0">
                   {isMomMode ? (
                     <button
-                      onClick={() => onApproveClaim(claim.id)}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                      onClick={() => {
+                        soundFX.playComplete();
+                        onApproveClaim(claim.id);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-black shadow-2xs transition-all cursor-pointer min-h-[38px] flex items-center gap-1"
                     >
-                      Approve
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Approve</span>
                     </button>
                   ) : (
-                    <span className="text-[11px] font-bold text-amber-700 bg-amber-100/80 px-2 py-1 rounded-md">
-                      Pending Review ⏳
+                    <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950 px-2 py-1 rounded-lg">
+                      Pending ⏳
                     </span>
                   )}
                 </div>
@@ -181,105 +266,302 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
         </div>
       )}
 
-      {/* Rewards Catalog */}
-      <div>
-        <h3 className="text-sm font-bold text-slate-900 mb-3">Available Reward Items:</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rewards.map((reward) => (
+      {/* Category Filter Chips */}
+      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+        {[
+          { id: 'all', label: 'All Rewards', emoji: '🎁' },
+          { id: 'treat', label: 'Treats & Snacks', emoji: '🍦' },
+          { id: 'screentime', label: 'Screen Time', emoji: '🎮' },
+          { id: 'activity', label: 'Outings', emoji: '🎟️' },
+          { id: 'allowance', label: 'Allowance', emoji: '💵' },
+          { id: 'privilege', label: 'Privileges', emoji: '🌟' },
+        ].map((cat) => {
+          const isSelected = selectedCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => {
+                soundFX.playPop();
+                setSelectedCategory(cat.id as RewardCategory);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[38px] active:scale-95 ${
+                isSelected
+                  ? `${theme.primaryBg} ${theme.primaryText} shadow-2xs font-extrabold`
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <span>{cat.emoji}</span>
+              <span>{cat.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Rewards Catalog Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
+        {filteredRewards.map((reward) => {
+          const catInfo = getCategoryInfo(reward.category);
+          
+          // Check affordability for selected member
+          const memberPoints = activeMember ? activeMember.currentPoints : 0;
+          const canAfford = !activeMember || memberPoints >= reward.pointCost;
+          const pointsNeeded = activeMember ? Math.max(0, reward.pointCost - memberPoints) : 0;
+          const progressPercent = activeMember ? Math.min(100, Math.round((memberPoints / reward.pointCost) * 100)) : 100;
+
+          return (
             <div
               key={reward.id}
-              className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3.5 sm:p-4 shadow-2xs flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2.5">
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getCategoryBadge(reward.category)}`}>
-                    {reward.category}
+                {/* Category & Cost Badge */}
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${catInfo.badge}`}>
+                    <span>{catInfo.emoji}</span>
+                    <span>{catInfo.label}</span>
                   </span>
 
-                  <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-200 shadow-xs">
-                    ⭐ {reward.pointCost} pts
+                  <span className="px-2.5 py-1 rounded-full text-xs font-black bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-200 border border-amber-200 dark:border-amber-800 shadow-2xs flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-600" />
+                    <span>{reward.pointCost} pts</span>
                   </span>
                 </div>
 
-                <h4 className="text-base font-bold text-slate-900 mb-1 leading-snug">
+                {/* Title & Description */}
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mb-1 leading-snug break-words">
                   {reward.title}
-                </h4>
+                </h3>
 
-                <p className="text-xs text-slate-500 mb-4">
-                  {reward.description}
-                </p>
+                {reward.description && (
+                  <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-2.5 line-clamp-2 leading-relaxed">
+                    {reward.description}
+                  </p>
+                )}
+
+                {/* Affordability Progress when a specific member is selected */}
+                {activeMember && (
+                  <div className="my-2 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-700/60 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-slate-600 dark:text-slate-300 truncate">{activeMember.name.split(' ')[0]}'s Progress:</span>
+                      <span className={`font-extrabold ${canAfford ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                        {canAfford ? 'Ready to Claim! 🎉' : `Need ${pointsNeeded} more pts`}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-300 ${canAfford ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+              {/* Action Button Strip */}
+              <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 mt-1">
                 <button
-                  onClick={() => setClaimModalReward(reward)}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition-colors"
+                  onClick={() => {
+                    soundFX.playPop();
+                    if (activeMember) {
+                      setSelectedClaimMemberId(activeMember.id);
+                    }
+                    setClaimModalReward(reward);
+                  }}
+                  className={`flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold shadow-2xs transition-all cursor-pointer min-h-[40px] touch-target active:scale-95 ${
+                    canAfford
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                  }`}
                 >
                   <Gift className="w-3.5 h-3.5" />
-                  <span>Redeem This Reward</span>
+                  <span>{canAfford ? 'Redeem Reward' : 'Check Requirements'}</span>
                 </button>
 
                 {isMomMode && (
                   <button
                     onClick={() => {
                       if (window.confirm(`Delete "${reward.title}" from rewards catalog?`)) {
+                        soundFX.playPop();
                         onDeleteReward(reward.id);
                       }
                     }}
-                    className="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                    className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
+                    title="Delete Reward"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 )}
               </div>
             </div>
-          ))}
+          );
+        })}
+      </div>
+
+      {/* Kid-Friendly Guide: How Points & Quality Grading Work */}
+      <div className="bg-gradient-to-br from-indigo-50/70 via-purple-50/40 to-amber-50/50 dark:from-slate-800/80 dark:via-slate-800/60 dark:to-slate-800/80 rounded-2xl border border-indigo-100 dark:border-slate-700/80 p-3.5 sm:p-4.5 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+              💡
+            </div>
+            <div>
+              <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+                How to Earn Maximum Points
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                Finish chores on time with top quality to buy what you want from the store!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+          <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-indigo-100/80 dark:border-slate-700 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-extrabold text-emerald-700 dark:text-emerald-300">🌟 Top Quality (A+)</span>
+              <span className="text-[10px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 rounded-md">100% Pts</span>
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+              Follow all checklist steps & take clean photo proof to get 5 Stars and full points.
+            </p>
+          </div>
+
+          <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-amber-100/80 dark:border-slate-700 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-extrabold text-amber-700 dark:text-amber-300">⏰ On-Time Bonus</span>
+              <span className="text-[10px] font-black bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 px-1.5 py-0.2 rounded-md">0% Penalty</span>
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+              Finish on time. 1 day late keeps 90%, 2 days keeps 75%, 3+ days keeps 50%.
+            </p>
+          </div>
+
+          <div className="bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-purple-100/80 dark:border-slate-700 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-extrabold text-purple-700 dark:text-purple-300">🔄 Quick Redos</span>
+              <span className="text-[10px] font-black bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 px-1.5 py-0.2 rounded-md">Full Recovery</span>
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+              If Mom asks for a quick redo, fix the missing item right away to earn your points!
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Claim Modal */}
+      {filteredRewards.length === 0 && (
+        <div className="text-center py-10 px-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <Gift className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">No rewards in this category</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Try selecting "All Rewards" or add a new custom reward.</p>
+        </div>
+      )}
+
+      {/* Claim Modal - Mobile iOS Bottom Sheet */}
       {claimModalReward && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900">Claim Reward</h3>
-              <button onClick={() => setClaimModalReward(null)} className="text-slate-400 hover:text-slate-600">
+        <div className="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
+          <div 
+            className="fixed inset-0"
+            onClick={() => setClaimModalReward(null)}
+          />
+          <div className="relative bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-4 sm:p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 animate-in slide-in-from-bottom duration-200 max-h-[90vh] overflow-y-auto safe-area-pb z-10">
+            
+            {/* Top Drag Handle for Mobile */}
+            <div className="sm:hidden pt-1 pb-0.5 flex justify-center">
+              <div className="w-10 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            </div>
+
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Claim Reward</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Request redemption from family store</p>
+              </div>
+              <button 
+                onClick={() => setClaimModalReward(null)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
-              <p className="text-xs font-bold text-amber-900">{claimModalReward.title}</p>
-              <p className="text-xs text-amber-700 font-extrabold mt-0.5">Cost: {claimModalReward.pointCost} points</p>
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800 text-center">
+              <span className="text-2xl mb-1 block">🎁</span>
+              <h4 className="text-sm font-black text-amber-950 dark:text-amber-100">{claimModalReward.title}</h4>
+              <p className="text-xs font-bold text-amber-800 dark:text-amber-300 mt-0.5">Cost: {claimModalReward.pointCost} Points</p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
                 Who is claiming this reward?
               </label>
-              <select
-                value={selectedClaimMemberId}
-                onChange={(e) => setSelectedClaimMemberId(e.target.value)}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white font-medium"
-              >
-                {members.map((m) => (
-                  <option key={m.id} value={m.id} disabled={m.currentPoints < claimModalReward.pointCost}>
-                    {m.avatarEmoji} {m.name} ({m.currentPoints} pts available) {m.currentPoints < claimModalReward.pointCost ? '— Not enough pts' : ''}
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-1.5">
+                {members.filter(m => m.role !== 'parent').map((m) => {
+                  const hasEnough = m.currentPoints >= claimModalReward.pointCost;
+                  const isSelected = selectedClaimMemberId === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      disabled={!hasEnough}
+                      onClick={() => {
+                        soundFX.playPop();
+                        setSelectedClaimMemberId(m.id);
+                      }}
+                      className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer min-h-[44px] ${
+                        !hasEnough 
+                          ? 'opacity-50 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-not-allowed'
+                          : isSelected
+                            ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-400 dark:border-amber-600 ring-2 ring-amber-400/20'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Avatar photoUrl={m.avatarPhotoUrl} emoji={m.avatarEmoji} name={m.name} size="xs" showBorder={false} />
+                        <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{m.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`text-[11px] font-black ${hasEnough ? 'text-amber-800 dark:text-amber-300' : 'text-slate-400'}`}>
+                          {m.currentPoints} pts
+                        </span>
+                        {isSelected && <Check className="w-4 h-4 text-amber-600 font-bold" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="pt-2 flex gap-2">
+            <div>
+              <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                Note for Mom (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Can we do this on Friday night?"
+                value={claimNote}
+                onChange={(e) => setClaimNote(e.target.value)}
+                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium"
+              />
+            </div>
+
+            <div className="pt-2 flex gap-2 border-t border-slate-100 dark:border-slate-800">
               <button
+                type="button"
                 onClick={() => setClaimModalReward(null)}
-                className="flex-1 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[40px] cursor-pointer"
               >
                 Cancel
               </button>
               <button
-                onClick={handleConfirmClaim}
-                className="flex-1 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-xs"
+                type="button"
+                onClick={() => {
+                  if (!claimModalReward || !selectedClaimMemberId) return;
+                  soundFX.playFanfare();
+                  onClaimReward(claimModalReward.id, selectedClaimMemberId, claimNote.trim() || undefined);
+                  setClaimModalReward(null);
+                  setClaimNote('');
+                }}
+                disabled={!selectedClaimMemberId || (members.find(m => m.id === selectedClaimMemberId)?.currentPoints || 0) < claimModalReward.pointCost}
+                className="flex-1 py-2.5 rounded-xl text-xs font-extrabold bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-2xs cursor-pointer min-h-[40px] disabled:opacity-50"
               >
                 Confirm Claim
               </button>
@@ -288,20 +570,36 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
         </div>
       )}
 
-      {/* Add New Reward Modal */}
+      {/* Add New Reward Modal - Mobile iOS Bottom Sheet */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-base font-bold text-slate-900">Add New Family Reward</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600">
+        <div className="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
+          <div 
+            className="fixed inset-0"
+            onClick={() => setShowAddModal(false)}
+          />
+          <div className="relative bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 animate-in slide-in-from-bottom duration-200 max-h-[90vh] overflow-y-auto safe-area-pb z-10">
+            
+            {/* Top Drag Handle for Mobile */}
+            <div className="sm:hidden pt-1 pb-0.5 flex justify-center">
+              <div className="w-10 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            </div>
+
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Add New Family Reward</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Create a perk or treat kids can work toward</p>
+              </div>
+              <button 
+                onClick={() => setShowAddModal(false)} 
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateReward} className="space-y-3.5">
+            <form onSubmit={handleCreateReward} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
                   Reward Title *
                 </label>
                 <input
@@ -310,13 +608,13 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
                   placeholder="e.g. Pizza Night Topping Choice"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 font-medium"
+                  className="w-full text-xs sm:text-sm p-2.5 sm:p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold min-h-[40px]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
                     Point Cost
                   </label>
                   <input
@@ -325,18 +623,18 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
                     max="1000"
                     value={newPoints}
                     onChange={(e) => setNewPoints(Number(e.target.value))}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 font-bold text-amber-900"
+                    className="w-full text-xs sm:text-sm p-2.5 sm:p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-black text-amber-900 dark:text-amber-200 min-h-[40px]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
                     Category
                   </label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as any)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white font-medium"
+                    className="w-full text-xs sm:text-sm p-2.5 sm:p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold min-h-[40px]"
                   >
                     <option value="treat">🍦 Treat / Food</option>
                     <option value="screentime">🎮 Screen Time</option>
@@ -348,29 +646,29 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-                  Description
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                  Description / Redemption Rules
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Rules or instructions for redeeming this reward"
+                  placeholder="e.g. Can be redeemed on Friday or weekend family movie night"
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
-                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300"
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium"
                 />
               </div>
 
-              <div className="pt-3 border-t flex justify-end gap-2">
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[40px] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs"
+                  className="px-4 py-2.5 rounded-xl text-xs font-black bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 active:scale-95 shadow-2xs min-h-[40px] cursor-pointer"
                 >
                   Save Reward
                 </button>

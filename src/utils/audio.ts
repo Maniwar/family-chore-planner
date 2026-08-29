@@ -1,4 +1,4 @@
-// Audio Synthesizer using standard Web Audio API (Zero external assets needed, instant & responsive)
+// Audio Synthesizer using standard Web Audio API & Vibration Haptics (Zero external assets needed, works across iOS, Android, and Web)
 
 class SoundFX {
   private ctx: AudioContext | null = null;
@@ -39,8 +39,33 @@ class SoundFX {
     return this.isEnabled;
   }
 
+  // Cross-platform haptic feedback (Android navigator.vibrate & touch)
+  public triggerHaptic(type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' = 'light') {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.vibrate) return;
+    try {
+      switch (type) {
+        case 'light':
+          navigator.vibrate(10); // subtle tap (Android / mobile standard)
+          break;
+        case 'medium':
+          navigator.vibrate(25);
+          break;
+        case 'heavy':
+          navigator.vibrate([35, 30, 35]);
+          break;
+        case 'success':
+          navigator.vibrate([15, 40, 25, 40, 35]); // cheerful ascending pulse
+          break;
+        case 'warning':
+          navigator.vibrate([40, 50, 40]);
+          break;
+      }
+    } catch {}
+  }
+
   // Playful pop when clicking checkboxes or small items
   public playPop() {
+    this.triggerHaptic('light');
     if (!this.isEnabled) return;
     try {
       this.initContext();
@@ -67,6 +92,7 @@ class SoundFX {
 
   // Bright chime when a chore is marked complete
   public playComplete() {
+    this.triggerHaptic('success');
     if (!this.isEnabled) return;
     try {
       this.initContext();
@@ -98,6 +124,7 @@ class SoundFX {
 
   // Star celebration chime when Mom grades
   public playStarChime(starCount: number = 5) {
+    this.triggerHaptic('success');
     if (!this.isEnabled) return;
     try {
       this.initContext();
@@ -130,6 +157,7 @@ class SoundFX {
 
   // Victory fanfare chord
   public playFanfare() {
+    this.triggerHaptic('heavy');
     if (!this.isEnabled) return;
     try {
       this.initContext();
@@ -168,6 +196,7 @@ class SoundFX {
 
   // Coin / reward chime
   public playRewardCoin() {
+    this.triggerHaptic('medium');
     if (!this.isEnabled) return;
     try {
       this.initContext();

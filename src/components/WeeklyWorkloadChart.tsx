@@ -16,16 +16,16 @@ import {
   TrendingUp, 
   Clock, 
   Sparkles, 
-  AlertCircle, 
-  CheckCircle2, 
   Users, 
   Layers,
   ChevronDown,
   ChevronUp,
-  Info
+  Flame,
+  Feather
 } from 'lucide-react';
 import { Chore, HouseholdMember } from '../types';
-import { getWeekDates, parseLocalDate, isChoreScheduledForDate } from '../utils/storage';
+import { getWeekDates, isChoreScheduledForDate } from '../utils/storage';
+import { soundFX } from '../utils/audio';
 
 interface WeeklyWorkloadChartProps {
   chores: Chore[];
@@ -47,12 +47,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const MEMBER_COLORS: string[] = [
-  '#2563eb', // blue (Mani)
-  '#e11d48', // rose (Hilda)
-  '#9333ea', // purple (Ashbelle)
-  '#4f46e5', // indigo (Theena)
-  '#d97706', // amber (Layla)
-  '#059669', // emerald (Sven)
+  '#2563eb', // blue
+  '#e11d48', // rose
+  '#9333ea', // purple
+  '#4f46e5', // indigo
+  '#d97706', // amber
+  '#059669', // emerald
   '#0891b2', // cyan
   '#be185d', // pink
 ];
@@ -121,136 +121,143 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
   const peakDay = sortedByValue[0] || chartData[0];
   const lightDay = sortedByValue[sortedByValue.length - 1] || chartData[0];
 
-  // Workload Balance Score calculation (Standard Deviation based fairness 0-100)
+  // Workload Balance Score calculation
   const balanceScore = useMemo(() => {
     if (totalWeeklyCount === 0) return 100;
     const avg = totalWeeklyCount / 7;
     const variance = chartData.reduce((sum, d) => sum + Math.pow(d.totalCount - avg, 2), 0) / 7;
     const stdDev = Math.sqrt(variance);
-    // Lower standard deviation relative to avg gives higher score
-    const cv = avg > 0 ? (stdDev / avg) : 0; // coefficient of variation
-    const score = Math.max(20, Math.min(100, Math.round(100 - cv * 65)));
-    return score;
+    const cv = avg > 0 ? (stdDev / avg) : 0;
+    return Math.max(20, Math.min(100, Math.round(100 - cv * 65)));
   }, [chartData, totalWeeklyCount]);
 
   // Weekend vs Weekday analysis
   const weekendDays = chartData.filter(d => d.dayName === 'Sat' || d.dayName === 'Sun');
-  const weekdayDays = chartData.filter(d => d.dayName !== 'Sat' && d.dayName !== 'Sun');
   const weekendTotal = weekendDays.reduce((sum, d) => sum + d.totalCount, 0);
   const weekendPercentage = totalWeeklyCount > 0 ? Math.round((weekendTotal / totalWeeklyCount) * 100) : 0;
 
-  // Distinct Categories present in chores
-  const activeCategories = useMemo(() => {
-    const set = new Set<string>();
-    chores.forEach(c => {
-      if (c.isActive) set.add(c.category);
-    });
-    return Array.from(set);
-  }, [chores]);
+  const formatDuration = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m}m`;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden transition-all">
-      
-      {/* Card Header & Controls */}
-      <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        
-        {/* Title & Badge */}
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-xs shrink-0">
+    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden transition-all">
+      {/* Apple Card Header with Unified Action Row */}
+      <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3.5 bg-gradient-to-b from-slate-50/70 to-white">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-xs shrink-0">
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-900">
-                Weekly Chore Workload Distribution
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight">
+                Workload Distribution
               </h3>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
                 balanceScore >= 80 
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                   : balanceScore >= 60 
-                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                  : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  : 'bg-rose-50 text-rose-700 border-rose-200'
               }`}>
-                {balanceScore}% Balanced
+                <span className={`w-1.5 h-1.5 rounded-full ${balanceScore >= 80 ? 'bg-emerald-500' : balanceScore >= 60 ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                <span>{balanceScore}% Balanced</span>
               </span>
             </div>
-            <p className="text-xs text-slate-500">
-              Visual overview to identify chore spikes and balance tasks across all 7 days
+            <p className="text-xs text-slate-500 mt-0.5">
+              Identify chore spikes and balance tasks across all 7 days
             </p>
           </div>
         </div>
 
-        {/* View Controls & Toggles */}
-        <div className="flex flex-wrap items-center gap-2">
-          
+        {/* Clean Apple-style Segmented Controls */}
+        <div className="flex items-center gap-2 flex-wrap self-stretch md:self-auto justify-between md:justify-end">
           {/* Metric Toggle: Count vs Time */}
-          <div className="inline-flex rounded-xl p-0.5 bg-slate-100 border border-slate-200 text-xs">
+          <div className="inline-flex rounded-xl p-1 bg-slate-100 border border-slate-200 text-xs">
             <button
-              onClick={() => setMetricMode('count')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+              onClick={() => {
+                soundFX.playPop();
+                setMetricMode('count');
+              }}
+              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer min-h-[28px] ${
                 metricMode === 'count'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Chore Count
+              Count
             </button>
             <button
-              onClick={() => setMetricMode('minutes')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1 ${
+              onClick={() => {
+                soundFX.playPop();
+                setMetricMode('minutes');
+              }}
+              className={`px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer min-h-[28px] ${
                 metricMode === 'minutes'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Clock className="w-3 h-3 text-slate-500" />
-              <span>Est. Time</span>
+              <span>Time</span>
             </button>
           </div>
 
           {/* Breakdown Mode */}
-          <div className="inline-flex rounded-xl p-0.5 bg-slate-100 border border-slate-200 text-xs">
+          <div className="inline-flex rounded-xl p-1 bg-slate-100 border border-slate-200 text-xs">
             <button
-              onClick={() => setBreakdownMode('total')}
-              className={`px-2.5 py-1.5 rounded-lg font-semibold transition-all ${
+              onClick={() => {
+                soundFX.playPop();
+                setBreakdownMode('total');
+              }}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer min-h-[28px] ${
                 breakdownMode === 'total'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
-              title="Single overview bar"
             >
               Overview
             </button>
             <button
-              onClick={() => setBreakdownMode('member')}
-              className={`px-2.5 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1 ${
+              onClick={() => {
+                soundFX.playPop();
+                setBreakdownMode('member');
+              }}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer min-h-[28px] ${
                 breakdownMode === 'member'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
-              title="Stacked by family helper"
             >
-              <Users className="w-3 h-3 text-indigo-500" />
-              <span>By Helper</span>
+              <Users className="w-3 h-3 text-indigo-600" />
+              <span>Helper</span>
             </button>
             <button
-              onClick={() => setBreakdownMode('category')}
-              className={`px-2.5 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1 ${
+              onClick={() => {
+                soundFX.playPop();
+                setBreakdownMode('category');
+              }}
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer min-h-[28px] ${
                 breakdownMode === 'category'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
-              title="Stacked by room/category"
             >
-              <Layers className="w-3 h-3 text-emerald-500" />
-              <span>By Room</span>
+              <Layers className="w-3 h-3 text-emerald-600" />
+              <span>Room</span>
             </button>
           </div>
 
           {/* Minimize / Expand Toggle */}
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+            onClick={() => {
+              soundFX.playPop();
+              setIsExpanded(!isExpanded);
+            }}
+            className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-95 shadow-2xs"
             title={isExpanded ? 'Collapse Chart' : 'Expand Chart'}
           >
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -259,61 +266,87 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
       </div>
 
       {isExpanded && (
-        <div className="p-4 sm:p-5 space-y-5">
-          
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">
+        <div className="p-4 sm:p-5 space-y-4">
+          {/* Apple Stat Grid (Clean typography, no overflow) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Stat 1: Total Week Volume */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 Total Week Volume
-              </div>
-              <div className="text-lg font-extrabold text-slate-900 flex items-baseline gap-1.5">
-                <span>{totalWeeklyCount} chores</span>
-                <span className="text-xs font-medium text-slate-500">
-                  (~{Math.round(totalWeeklyMinutes / 60)}h {totalWeeklyMinutes % 60}m)
+              </span>
+              <div className="mt-1.5">
+                <div className="text-xl font-black text-slate-900 leading-tight">
+                  {totalWeeklyCount} <span className="text-xs font-semibold text-slate-500">chores</span>
+                </div>
+                <span className="text-[11px] font-medium text-slate-500 block mt-0.5">
+                  ~{formatDuration(totalWeeklyMinutes)} total
                 </span>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">
+            {/* Stat 2: Daily Average */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 Daily Average
-              </div>
-              <div className="text-lg font-extrabold text-slate-900 flex items-baseline gap-1.5">
-                <span>{avgDailyCount}</span>
-                <span className="text-xs font-medium text-slate-500">chores/day ({avgDailyMinutes}m)</span>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-rose-50/60 border border-rose-100">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-rose-700 mb-0.5 flex items-center gap-1">
-                <span>🔥 Peak Day</span>
-              </div>
-              <div className="text-base font-extrabold text-rose-900 truncate">
-                {peakDay ? `${peakDay.dayName} (${peakDay.totalCount} chores · ${peakDay.totalMinutes}m)` : '-'}
+              </span>
+              <div className="mt-1.5">
+                <div className="text-xl font-black text-slate-900 leading-tight">
+                  {avgDailyCount} <span className="text-xs font-semibold text-slate-500">/ day</span>
+                </div>
+                <span className="text-[11px] font-medium text-slate-500 block mt-0.5">
+                  ~{formatDuration(avgDailyMinutes)} / day
+                </span>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 mb-0.5 flex items-center gap-1">
-                <span>🌿 Lightest Day</span>
+            {/* Stat 3: Peak Day */}
+            <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200/80 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-rose-700">
+                <span className="flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Peak Day</span>
+                </span>
               </div>
-              <div className="text-base font-extrabold text-emerald-900 truncate">
-                {lightDay ? `${lightDay.dayName} (${lightDay.totalCount} chores · ${lightDay.totalMinutes}m)` : '-'}
+              <div className="mt-1.5">
+                <div className="text-xl font-black text-rose-950 leading-tight">
+                  {peakDay?.dayName || 'Sat'}
+                </div>
+                <span className="text-[11px] font-semibold text-rose-700 block mt-0.5">
+                  {peakDay?.totalCount || 0} chores ({formatDuration(peakDay?.totalMinutes || 0)})
+                </span>
+              </div>
+            </div>
+
+            {/* Stat 4: Lightest Day */}
+            <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                <span className="flex items-center gap-1">
+                  <Feather className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Lightest Day</span>
+                </span>
+              </div>
+              <div className="mt-1.5">
+                <div className="text-xl font-black text-emerald-950 leading-tight">
+                  {lightDay?.dayName || 'Wed'}
+                </div>
+                <span className="text-[11px] font-semibold text-emerald-700 block mt-0.5">
+                  {lightDay?.totalCount || 0} chores ({formatDuration(lightDay?.totalMinutes || 0)})
+                </span>
               </div>
             </div>
           </div>
 
-          {/* The Recharts Visual Bar Chart */}
-          <div className="h-64 sm:h-72 w-full pt-2">
+          {/* Recharts Visual Bar Chart */}
+          <div className="h-56 sm:h-64 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
-                margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+                margin={{ top: 12, right: 12, left: -20, bottom: 0 }}
                 onClick={(e: any) => {
                   if (e && e.activePayload && e.activePayload.length > 0 && onSelectDate) {
                     const data = e.activePayload[0].payload;
                     if (data && data.dateStr) {
+                      soundFX.playPop();
                       onSelectDate(data.dateStr);
                     }
                   }
@@ -332,11 +365,11 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
                         <text
                           x={0}
                           y={0}
-                          dy={12}
+                          dy={14}
                           textAnchor="middle"
-                          fill={isToday ? '#e11d48' : '#64748b'}
+                          fill={isToday ? '#e11d48' : '#475569'}
                           fontSize={12}
-                          fontWeight={isToday ? 700 : 500}
+                          fontWeight={isToday ? 800 : 600}
                         >
                           {payload.value}
                         </text>
@@ -359,11 +392,11 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
                       return (
-                        <div className="bg-slate-900 text-white p-3 rounded-xl shadow-lg text-xs space-y-1.5 border border-slate-700 min-w-[170px] z-50">
-                          <div className="flex items-center justify-between border-b border-slate-700 pb-1 font-bold">
-                            <span className="text-slate-200">{label}, {data.dateStr}</span>
+                        <div className="bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-xl text-xs space-y-1.5 border border-slate-700/80 min-w-[180px] z-50 animate-in fade-in">
+                          <div className="flex items-center justify-between border-b border-slate-700/80 pb-1 font-bold">
+                            <span className="text-slate-100">{label}, {data.dateStr}</span>
                             {data.isToday && (
-                              <span className="bg-rose-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">
+                              <span className="bg-rose-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-black">
                                 TODAY
                               </span>
                             )}
@@ -374,51 +407,11 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
                           </div>
                           <div className="flex items-center justify-between text-slate-400">
                             <span>Est. Duration:</span>
-                            <span className="font-semibold text-amber-300">~{data.totalMinutes} mins</span>
+                            <span className="font-semibold text-amber-300">~{formatDuration(data.totalMinutes)}</span>
                           </div>
 
-                          {/* Detail breakdown in tooltip */}
-                          {breakdownMode === 'member' && (
-                            <div className="pt-1.5 mt-1 border-t border-slate-800 space-y-1">
-                              <span className="text-[10px] uppercase font-bold text-slate-400">Helper Breakdown:</span>
-                              {members.map((m) => {
-                                const val = data[`mem_${m.id}`] || 0;
-                                if (val === 0) return null;
-                                return (
-                                  <div key={m.id} className="flex items-center justify-between text-[11px]">
-                                    <span className="flex items-center gap-1 text-slate-300">
-                                      <span>{m.avatarEmoji}</span>
-                                      <span>{m.name.split(' ')[0]}</span>
-                                    </span>
-                                    <span className="font-semibold text-slate-100">
-                                      {val} {metricMode === 'count' ? 'chores' : 'm'}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {breakdownMode === 'category' && (
-                            <div className="pt-1.5 mt-1 border-t border-slate-800 space-y-1">
-                              <span className="text-[10px] uppercase font-bold text-slate-400">Room Breakdown:</span>
-                              {activeCategories.map((cat) => {
-                                const val = data[`cat_${cat}`] || 0;
-                                if (val === 0) return null;
-                                return (
-                                  <div key={cat} className="flex items-center justify-between text-[11px]">
-                                    <span className="text-slate-300">{cat}</span>
-                                    <span className="font-semibold text-slate-100">
-                                      {val} {metricMode === 'count' ? 'chores' : 'm'}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-
                           <div className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-800 text-center">
-                            Click to inspect day in schedule
+                            Tap bar to open day in schedule
                           </div>
                         </div>
                       );
@@ -434,15 +427,15 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
                   strokeDasharray="4 4"
                   label={{
                     value: `Avg (${metricMode === 'count' ? avgDailyCount : avgDailyMinutes + 'm'})`,
-                    fill: '#94a3b8',
-                    fontSize: 10,
+                    fill: '#64748b',
+                    fontSize: 11,
                     position: 'insideTopRight'
                   }}
                 />
 
                 {/* Single Overview Bars */}
                 {breakdownMode === 'total' && (
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                     {chartData.map((entry, index) => {
                       const isPeak = entry.dateStr === peakDay?.dateStr;
                       const isLight = entry.dateStr === lightDay?.dateStr;
@@ -463,27 +456,27 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
                     name={m.name.split(' ')[0]}
                     stackId="a"
                     fill={MEMBER_COLORS[idx % MEMBER_COLORS.length]}
-                    radius={idx === members.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
+                    radius={idx === members.length - 1 ? [8, 8, 0, 0] : [0, 0, 0, 0]}
                     className="cursor-pointer"
                   />
                 ))}
 
                 {/* Stacked by Category */}
-                {breakdownMode === 'category' && activeCategories.map((cat, idx) => (
+                {breakdownMode === 'category' && Object.keys(CATEGORY_COLORS).map((cat, idx) => (
                   <Bar
                     key={cat}
                     dataKey={`cat_${cat}`}
                     name={cat}
                     stackId="a"
                     fill={CATEGORY_COLORS[cat] || '#64748b'}
-                    radius={idx === activeCategories.length - 1 ? [6, 6, 0, 0] : [0, 0, 0, 0]}
+                    radius={idx === Object.keys(CATEGORY_COLORS).length - 1 ? [8, 8, 0, 0] : [0, 0, 0, 0]}
                     className="cursor-pointer"
                   />
                 ))}
 
                 {(breakdownMode === 'member' || breakdownMode === 'category') && (
                   <Legend 
-                    wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                    wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
                     iconType="circle"
                   />
                 )}
@@ -493,27 +486,27 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
 
           {/* Smart Balance Insights for Parents */}
           {showInsights && (
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-              <div className="flex items-start gap-2.5">
-                <div className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5">
-                  <Sparkles className="w-3.5 h-3.5" />
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4" />
                 </div>
                 <div className="space-y-0.5">
-                  <span className="font-bold text-slate-800">
-                    Parent Workload Advice:
+                  <span className="font-black text-slate-900 text-sm">
+                    Workload Advice
                   </span>
-                  <p className="text-slate-600">
+                  <p className="text-slate-600 leading-snug">
                     {weekendPercentage >= 40 ? (
                       <span>
-                        <strong>Weekend load is heavy ({weekendPercentage}% of weekly chores).</strong> Consider shifting recurring tasks (such as dusting or bathroom towel restocking) to Tuesday or Thursday to free up family weekend time.
+                        <strong>Weekend load is heavy ({weekendPercentage}% of weekly tasks).</strong> Shift recurring chores to Tuesday or Thursday to free up weekend family time.
                       </span>
                     ) : peakDay && peakDay.totalCount > Number(avgDailyCount) * 1.5 ? (
                       <span>
-                        <strong>{peakDay.dayName} has a significant spike ({peakDay.totalCount} chores).</strong> Distribute multi-step tasks across {lightDay?.dayName || 'mid-week'} to balance helper effort.
+                        <strong>{peakDay.dayName} has a chore spike ({peakDay.totalCount} chores).</strong> Distribute multi-step tasks across {lightDay?.dayName || 'mid-week'} to balance helper effort.
                       </span>
                     ) : (
                       <span>
-                        <strong>Great balance!</strong> Chores are evenly distributed throughout the 7 days without creating burnout on any single day.
+                        <strong>Great balance!</strong> Chores are evenly distributed throughout the 7 days without creating burnout.
                       </span>
                     )}
                   </p>
@@ -522,11 +515,14 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
 
               {peakDay && onSelectDate && (
                 <button
-                  onClick={() => onSelectDate(peakDay.dateStr)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold text-[11px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs whitespace-nowrap shrink-0 transition-colors"
+                  onClick={() => {
+                    soundFX.playPop();
+                    onSelectDate(peakDay.dateStr);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs whitespace-nowrap shrink-0 transition-all cursor-pointer active:scale-95 self-end sm:self-center min-h-[36px]"
                 >
-                  <span>Inspect Peak ({peakDay.dayName})</span>
-                  <TrendingUp className="w-3 h-3 text-rose-500" />
+                  <span>Inspect {peakDay.dayName}</span>
+                  <TrendingUp className="w-3.5 h-3.5 text-rose-500" />
                 </button>
               )}
             </div>

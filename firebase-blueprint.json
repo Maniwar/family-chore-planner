@@ -119,6 +119,45 @@
         "status": { "type": "string" }
       },
       "required": ["id", "householdId", "rewardId", "memberId", "pointCost", "status"]
+    },
+    "ChoreEvent": {
+      "title": "ChoreEvent",
+      "description": "Auditable event records for penalties, waivers, extensions, and nudges",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "householdId": { "type": "string" },
+        "type": { "type": "string" },
+        "memberId": { "type": "string" },
+        "memberName": { "type": "string" },
+        "choreId": { "type": "string" },
+        "choreTitle": { "type": "string" },
+        "pointsBefore": { "type": "number" },
+        "pointsAfter": { "type": "number" },
+        "pointsDelta": { "type": "number" },
+        "reason": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "householdId", "type", "memberId", "createdAt"]
+    },
+    "NudgeRecord": {
+      "title": "NudgeRecord",
+      "description": "In-app household nudge notifications sent to members",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "householdId": { "type": "string" },
+        "memberId": { "type": "string" },
+        "memberName": { "type": "string" },
+        "senderRole": { "type": "string" },
+        "senderName": { "type": "string" },
+        "message": { "type": "string" },
+        "choreId": { "type": "string" },
+        "choreTitle": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "acknowledged": { "type": "boolean" }
+      },
+      "required": ["id", "householdId", "memberId", "message", "createdAt"]
     }
   }
 }

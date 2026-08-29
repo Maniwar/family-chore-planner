@@ -221,6 +221,9 @@ interface ServerHouseholdRecord {
   logs?: any[];
   rewards?: any[];
   claims?: any[];
+  penaltySettings?: any;
+  events?: any[];
+  nudges?: any[];
   createdAt: string;
   updatedAt: string;
   version: number;
@@ -254,6 +257,27 @@ function saveHouseholdStore() {
 }
 
 initHouseholdStore();
+
+// Resilient server household store initializer
+function getPrimaryServerHousehold(): ServerHouseholdRecord | null {
+  const values = Object.values(householdsMemoryStore);
+  if (values.length === 0) return null;
+  // Return the most recently updated or first household
+  return values.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())[0];
+}
+
+// Get the primary / active household for new devices connecting for the first time
+app.get("/api/household/primary", (req, res) => {
+  try {
+    const primary = getPrimaryServerHousehold();
+    if (!primary) {
+      return res.status(404).json({ error: "No primary household found" });
+    }
+    return res.json({ success: true, household: primary });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 // Create a new household on server
 app.post("/api/household/create", (req, res) => {
@@ -371,6 +395,9 @@ app.post("/api/household/:id/sync", (req, res) => {
     if (Array.isArray(logs)) existing.logs = logs;
     if (Array.isArray(rewards)) existing.rewards = rewards;
     if (Array.isArray(claims)) existing.claims = claims;
+    if (req.body.penaltySettings !== undefined) existing.penaltySettings = req.body.penaltySettings;
+    if (Array.isArray(req.body.events)) existing.events = req.body.events;
+    if (Array.isArray(req.body.nudges)) existing.nudges = req.body.nudges;
 
     existing.updatedAt = now;
     existing.version = (existing.version || 0) + 1;
@@ -382,6 +409,186 @@ app.post("/api/household/:id/sync", (req, res) => {
   } catch (err: any) {
     console.error("Household sync API error:", err);
     return res.status(500).json({ error: err.message || "Failed to sync household" });
+  }
+});
+
+// Daily penalty settle job endpoint (triggered by schedule/cron or background heartbeat)
+app.post("/api/household/:id/settle-penalties", (req, res) => {
+  try {
+    const hhId = req.params.id;
+    const hh = householdsMemoryStore[hhId];
+    if (!hh) {
+      return res.status(404).json({ error: "Household not found" });
+    }
+
+    const members = hh.members || [];
+    const chores = hh.chores || [];
+    const logs = hh.logs || [];
+    const events = hh.events || [];
+    const penaltySettings = hh.penaltySettings || {
+      shipDate: "2026-08-29T00:00:00.000Z",
+      allowNegativeBalance: false,
+      latenessTiers: {
+        tier1MaxDays: 1,
+        tier2MaxDays: 2,
+        tier3MaxDays: 6,
+        tier3DeductionPercent: 0.25,
+        tier4MinDays: 7,
+        tier4DeductionPercent: 1.0,
+      },
+    };
+
+    const now = new Date();
+    const shipDate = new Date(penaltySettings.shipDate || "2026-08-29T00:00:00.000Z");
+    const deductionsApplied: any[] = [];
+
+    // Helper: calculate days late
+    function getDaysLate(dateStr: string, extDateStr?: string) {
+      const targetStr = extDateStr || dateStr;
+      const [y, m, d] = targetStr.split("-").map(Number);
+      const dueDate = new Date(y, m - 1, d, 23, 59, 59);
+      if (now.getTime() <= dueDate.getTime()) return 0;
+      const baseDate = dueDate.getTime() < shipDate.getTime() ? shipDate : dueDate;
+      return Math.max(0, Math.floor((now.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24)));
+    }
+
+    // Process all active logs and chores
+    for (const log of logs) {
+      if (log.status === "approved" || log.penaltyWaived) continue;
+
+      const chore = chores.find((c: any) => c.id === log.choreId);
+      if (!chore) continue;
+
+      const daysLate = getDaysLate(log.originalDueDate || log.date, log.extendedDueDate);
+      log.daysLate = daysLate;
+
+      // Check if 7+ days late -> mark missed
+      if (daysLate >= (penaltySettings.latenessTiers?.tier4MinDays || 7) && !log.isMissed) {
+        log.isMissed = true;
+      }
+
+      // Check tier deductions
+      let targetTier = 0;
+      let deductionPct = 0;
+      if (daysLate >= 7 || log.isMissed) {
+        targetTier = 4;
+        deductionPct = penaltySettings.latenessTiers?.tier4DeductionPercent || 1.0;
+      } else if (daysLate >= 3) {
+        targetTier = 3;
+        deductionPct = penaltySettings.latenessTiers?.tier3DeductionPercent || 0.25;
+      }
+
+      if (targetTier > 0) {
+        const eventId = `${log.choreId}_tier_${targetTier}_${log.date}`;
+        // Verify this specific tier deduction has not already been applied
+        const alreadyApplied = events.some((e: any) => e.id === eventId);
+        if (!alreadyApplied) {
+          const memberIndex = members.findIndex((m: any) => m.id === log.memberId);
+          if (memberIndex !== -1) {
+            const member = members[memberIndex];
+            const rawDeduction = Math.round(chore.defaultPoints * deductionPct);
+            const pointsBefore = member.currentPoints || 0;
+            let pointsAfter = pointsBefore - rawDeduction;
+
+            if (!penaltySettings.allowNegativeBalance && pointsAfter < 0) {
+              pointsAfter = 0;
+            }
+            const actualDelta = pointsAfter - pointsBefore;
+
+            member.currentPoints = pointsAfter;
+            log.deductionApplied = (log.deductionApplied || 0) + Math.abs(actualDelta);
+
+            const newEvent = {
+              id: eventId,
+              householdId: hhId,
+              type: "penalty_applied",
+              memberId: member.id,
+              memberName: member.name,
+              choreId: chore.id,
+              choreTitle: chore.title,
+              pointsBefore,
+              pointsAfter,
+              pointsDelta: actualDelta,
+              tier: targetTier,
+              reason: `${daysLate} days late penalty tier ${targetTier} (${Math.round(deductionPct * 100)}% deduction)`,
+              weekNumber: Math.ceil(now.getDate() / 7),
+              year: now.getFullYear(),
+              createdAt: now.toISOString(),
+            };
+
+            events.unshift(newEvent);
+            deductionsApplied.push(newEvent);
+          }
+        }
+      }
+    }
+
+    hh.updatedAt = now.toISOString();
+    hh.version = (hh.version || 0) + 1;
+    saveHouseholdStore();
+
+    return res.json({
+      success: true,
+      deductionsCount: deductionsApplied.length,
+      deductions: deductionsApplied,
+      updatedAt: hh.updatedAt,
+    });
+  } catch (err: any) {
+    console.error("Settle penalties error:", err);
+    return res.status(500).json({ error: err.message || "Failed to settle penalties" });
+  }
+});
+
+// Post a Nudge to a member
+app.post("/api/household/:id/nudge", (req, res) => {
+  try {
+    const hhId = req.params.id;
+    const { memberId, memberName, senderRole, senderName, message, choreId, choreTitle } = req.body;
+    const hh = householdsMemoryStore[hhId];
+    if (!hh) return res.status(404).json({ error: "Household not found" });
+
+    const now = new Date().toISOString();
+    const nudgeId = "nudge_" + Math.random().toString(36).substring(2, 10);
+    const newNudge = {
+      id: nudgeId,
+      householdId: hhId,
+      memberId,
+      memberName,
+      senderRole: senderRole || "parent",
+      senderName: senderName || "Mom",
+      message: message || "Hey! Please check your chores before tonight! ⭐",
+      choreId,
+      choreTitle,
+      createdAt: now,
+      acknowledged: false,
+    };
+
+    if (!Array.isArray(hh.nudges)) hh.nudges = [];
+    hh.nudges.unshift(newNudge);
+
+    // Also log to events
+    if (!Array.isArray(hh.events)) hh.events = [];
+    hh.events.unshift({
+      id: "evt_" + nudgeId,
+      householdId: hhId,
+      type: "nudge_sent",
+      memberId,
+      memberName,
+      choreId,
+      choreTitle,
+      reason: message,
+      weekNumber: Math.ceil(new Date().getDate() / 7),
+      year: new Date().getFullYear(),
+      createdAt: now,
+    });
+
+    hh.updatedAt = now;
+    hh.version = (hh.version || 0) + 1;
+    saveHouseholdStore();
+
+    return res.json({ success: true, nudge: newNudge });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
   }
 });
 

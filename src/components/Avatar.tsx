@@ -54,6 +54,11 @@ export const Avatar: React.FC<AvatarProps> = ({
   showBorder = true,
 }) => {
   const [imageError, setImageError] = useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [photoUrl]);
+
   const sizeConfig = SIZE_MAP[size] || SIZE_MAP.md;
 
   const borderClass = showBorder ? 'border border-slate-200 shadow-2xs' : '';

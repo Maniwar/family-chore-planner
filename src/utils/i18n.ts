@@ -399,3 +399,34 @@ export function getCategoryTranslation(cat: string, lang?: string): string {
     default: return cat;
   }
 }
+
+export function getCategoryShortDisplay(cat: string, _lang?: string): { emoji: string; label: string } {
+  switch (cat) {
+    case 'Bathrooms':
+      return { emoji: '🛁', label: 'Bath' };
+    case 'Kitchen':
+      return { emoji: '🍳', label: 'Kitchen' };
+    case 'Bedrooms':
+      return { emoji: '🛏️', label: 'Bed' };
+    case 'Living Room':
+      return { emoji: '🛋️', label: 'Living' };
+    case 'Laundry':
+      return { emoji: '🧺', label: 'Laundry' };
+    case 'Pets':
+      return { emoji: '🐾', label: 'Pets' };
+    case 'Yard & Outdoor':
+      return { emoji: '🌿', label: 'Yard' };
+    case 'Daily Routine':
+      return { emoji: '☀️', label: 'Routine' };
+    case 'Trash & Recycling':
+      return { emoji: '🗑️', label: 'Trash' };
+    case 'Vehicles':
+      return { emoji: '🚗', label: 'Auto' };
+    case 'Study & Desk':
+      return { emoji: '📚', label: 'Study' };
+    case 'Special Projects':
+      return { emoji: '✨', label: 'Special' };
+    default:
+      return { emoji: '🧹', label: cat.length > 8 ? cat.slice(0, 7) + '…' : cat };
+  }
+}

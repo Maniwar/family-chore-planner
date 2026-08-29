@@ -37,6 +37,9 @@ export interface CloudHousehold {
   logs?: ChoreAssignmentLog[];
   rewards?: RewardItem[];
   claims?: RewardClaim[];
+  penaltySettings?: any;
+  events?: any[];
+  nudges?: any[];
   createdAt: string;
   updatedAt: string;
   version?: number;
@@ -234,6 +237,36 @@ export async function findHouseholdByCode(code: string): Promise<CloudHousehold 
 }
 
 /**
+ * Fetch Primary Household for devices connecting for the first time
+ */
+export async function getPrimaryHousehold(): Promise<CloudHousehold | null> {
+  try {
+    const res = await fetch('/api/household/primary');
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.household) {
+        return data.household as CloudHousehold;
+      }
+    }
+  } catch (e) {
+    // Continue fallback
+  }
+
+  // If server has none yet, check Firestore for any household
+  try {
+    const snap = await getDocs(query(collection(db, 'households')));
+    if (!snap.empty) {
+      const firstDoc = snap.docs[0].data() as CloudHousehold;
+      return firstDoc;
+    }
+  } catch (err) {
+    // Fallback gracefully
+  }
+
+  return null;
+}
+
+/**
  * Fetch Complete Household Details
  */
 export async function getHousehold(householdId: string): Promise<CloudHousehold | null> {
@@ -283,6 +316,9 @@ export async function syncCompleteHouseholdToCloud(
     logs?: ChoreAssignmentLog[];
     rewards?: RewardItem[];
     claims?: RewardClaim[];
+    penaltySettings?: any;
+    events?: any[];
+    nudges?: any[];
   }
 ): Promise<void> {
   const now = new Date().toISOString();

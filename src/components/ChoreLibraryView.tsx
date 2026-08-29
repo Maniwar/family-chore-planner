@@ -15,10 +15,12 @@ import {
 } from 'lucide-react';
 import { Chore, ChoreCategory, HouseholdMember } from '../types';
 import { formatTimeDisplay } from '../utils/storage';
+import { ThemePreset, THEMES } from '../utils/theme';
 
 interface ChoreLibraryViewProps {
   chores: Chore[];
   members: HouseholdMember[];
+  currentTheme?: ThemePreset;
   onOpenNewChore: () => void;
   onEditChore: (chore: Chore) => void;
   onDeleteChore: (choreId: string) => void;
@@ -29,12 +31,14 @@ interface ChoreLibraryViewProps {
 export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
   chores,
   members,
+  currentTheme = 'rose',
   onOpenNewChore,
   onEditChore,
   onDeleteChore,
   onToggleChoreActive,
   onOpenAIAssign,
 }) => {
+  const theme = THEMES[currentTheme] || THEMES.rose;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
@@ -60,46 +64,41 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
   });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-xl">
-            📋
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 leading-tight">
-              Master Household Chore Library
-            </h2>
-            <p className="text-xs text-slate-500">
-              Manage chore routines, inspection quality standards, and recurring schedules
-            </p>
-          </div>
+    <div className="space-y-4 sm:space-y-6">
+      {/* iOS Large Title Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+            Chore Library
+          </h1>
+          <p className="text-[13px] sm:text-sm text-slate-500 font-medium mt-0.5">
+            Manage routine templates, inspection quality standards, and recurring schedules
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           {onOpenAIAssign && (
             <button
               onClick={onOpenAIAssign}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-xs transition-all"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-95 text-white shadow-xs transition-all cursor-pointer min-h-[44px] touch-target"
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>AI Auto-Assign Chores</span>
+              <span>AI Auto-Assign</span>
             </button>
           )}
 
           <button
             onClick={onOpenNewChore}
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-colors"
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} active:scale-95 shadow-xs transition-all cursor-pointer min-h-[44px] touch-target`}
           >
             <Plus className="w-4 h-4" />
-            <span>Add New Chore</span>
+            <span>Add Chore</span>
           </button>
         </div>
       </div>
 
       {/* Filter and Search */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-xs flex flex-col md:flex-row gap-2.5 sm:gap-3 items-stretch md:items-center justify-between">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -107,7 +106,7 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
             placeholder="Search chore library..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+            className={`w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 ${theme.focusRing} min-h-[44px]`}
           />
         </div>
 
@@ -115,7 +114,7 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 py-1.5 px-2.5 rounded-lg text-xs font-medium"
+            className="bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium min-h-[44px]"
           >
             <option value="all">🏠 All Categories</option>
             {categories.map((cat) => (
@@ -126,9 +125,9 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
           <select
             value={selectedAssignee}
             onChange={(e) => setSelectedAssignee(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 py-1.5 px-2.5 rounded-lg text-xs font-medium"
+            className="bg-slate-50 border border-slate-200 text-slate-700 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium min-h-[44px]"
           >
-            <option value="all">👥 All Assignees</option>
+            <option value="all">👥 All Helpers</option>
             <option value="unassigned">🤝 Unassigned</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
@@ -145,7 +144,7 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
           <p className="text-sm font-bold text-slate-700 mb-2">No chores found</p>
           <button
             onClick={onOpenNewChore}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white"
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover}`}
           >
             <Plus className="w-4 h-4" />
             <span>Create a Chore</span>

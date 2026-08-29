@@ -29,6 +29,7 @@ interface HeaderProps {
   householdInfo: HouseholdInfo;
   onOpenHouseSettings: () => void;
   onOpenCloudSync?: () => void;
+  onOpenQuickSettings?: () => void;
   selectedMemberId: string;
   onSelectMember: (id: string) => void;
   pendingInspectionCount: number;
@@ -53,6 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
   householdInfo,
   onOpenHouseSettings,
   onOpenCloudSync,
+  onOpenQuickSettings,
   selectedMemberId,
   onSelectMember,
   pendingInspectionCount,
@@ -81,13 +83,107 @@ export const Header: React.FC<HeaderProps> = ({
     <header className={`${theme.headerBg} border-b ${theme.headerBorder} sticky top-0 z-30 shadow-xs no-print transition-colors duration-200`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         
-        {/* Top Header Row */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between py-2.5 sm:py-3 gap-2.5 sm:gap-3">
+        {/* Mobile Compact Header (Single Row on small screens) */}
+        <div className="lg:hidden flex items-center justify-between py-2 gap-2">
+          {/* Brand & House Avatar */}
+          <div className="flex items-center space-x-2 min-w-0">
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                onOpenHouseSettings();
+              }}
+              className="relative group shrink-0 focus:outline-none focus:ring-2 focus:ring-rose-500 rounded-xl active:scale-95 transition-transform"
+              title="Click to view/change house picture and settings"
+            >
+              {householdInfo.housePhotoUrl ? (
+                <div className="w-9 h-9 rounded-xl overflow-hidden border-2 border-slate-200 shadow-2xs">
+                  <img
+                    src={householdInfo.housePhotoUrl}
+                    alt={householdInfo.familyName}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              ) : (
+                <div className={`w-9 h-9 rounded-xl ${theme.primaryBg} flex items-center justify-center text-white shadow-2xs font-bold text-base`}>
+                  🏡
+                </div>
+              )}
+            </button>
+
+            <div className="min-w-0">
+              <div className="flex items-center space-x-1.5">
+                <h1 className="text-sm font-extrabold tracking-tight text-slate-900 truncate">
+                  {householdInfo.familyName || t.appTitle}
+                </h1>
+                {householdInfo.isCloudSynced && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Cloud Synced" />
+                )}
+              </div>
+              <p className="text-[10px] text-slate-500 truncate max-w-[170px]">
+                {householdInfo.houseAddressOrMotto || t.appSubtitle}
+              </p>
+            </div>
+          </div>
+
+          {/* Mobile Right Controls: Print Fridge, Mom/Kid Badge + Quick Menu Button */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Print Fridge Schedule Quick Button */}
+            <button
+              id="mobile-print-schedule-btn"
+              onClick={() => {
+                soundFX.playPop();
+                onOpenPrintView();
+              }}
+              className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 transition-colors active:scale-95 cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center"
+              title="Printable Fridge Charts & Punchcards"
+            >
+              <Printer className="w-4 h-4 text-rose-600" />
+            </button>
+
+            {/* Mom/Kid Mode Toggle */}
+            <button
+              id="mobile-mom-mode-toggle"
+              onClick={() => {
+                soundFX.playPop();
+                onToggleMomMode();
+              }}
+              className={`text-[11px] px-2.5 py-1.5 rounded-xl font-extrabold transition-all flex items-center gap-1 border active:scale-95 cursor-pointer min-h-[38px] ${
+                isMomMode 
+                  ? `${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder} shadow-2xs` 
+                  : 'bg-slate-100 text-slate-700 border-slate-200'
+              }`}
+              title={isMomMode ? 'Tap to Lock Mom Mode (Switch to Kid View)' : 'Tap to Enter Mom / Admin Mode (PIN Required)'}
+            >
+              {isMomMode ? (
+                <Unlock className="w-3.5 h-3.5 text-rose-600" />
+              ) : (
+                <Lock className="w-3.5 h-3.5 text-slate-500" />
+              )}
+              <span>{isMomMode ? 'Mom' : 'Kid'}</span>
+            </button>
+
+            {/* Quick Tools & Settings Modal Trigger */}
+            <button
+              id="mobile-quick-settings-btn"
+              onClick={() => {
+                soundFX.playPop();
+                if (onOpenQuickSettings) onOpenQuickSettings();
+              }}
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition-colors active:scale-95 cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center"
+              title="Quick Tools & Settings"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Header Row (Hidden on mobile) */}
+        <div className="hidden lg:flex lg:items-center lg:justify-between py-2.5 sm:py-3 gap-2.5 sm:gap-3">
           
           {/* Brand, House Photo/Icon, Title & Quick Toggles */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
-              {/* House Photo Avatar or Default Home Emoji Icon */}
+          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+            {/* House Photo Avatar or Default Home Emoji Icon */}
               <button
                 onClick={() => {
                   soundFX.playPop();
@@ -130,33 +226,8 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            {/* Mobile Actions: Mom Mode & Quick Add */}
-            <div className="lg:hidden flex items-center gap-1.5 shrink-0">
-              <button
-                id="mobile-mom-mode-toggle"
-                onClick={() => {
-                  soundFX.playPop();
-                  onToggleMomMode();
-                }}
-                className={`text-xs px-2.5 py-1.5 rounded-xl font-bold transition-colors flex items-center gap-1.5 border ${
-                  isMomMode 
-                    ? `${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder} shadow-2xs` 
-                    : 'bg-slate-100 text-slate-700 border-slate-300'
-                }`}
-                title={isMomMode ? 'Tap to Lock Mom Mode (Switch to Kid View)' : 'Tap to Enter Mom / Admin Mode (PIN Required)'}
-              >
-                {isMomMode ? (
-                  <Unlock className="w-3.5 h-3.5 text-rose-600" />
-                ) : (
-                  <Lock className="w-3.5 h-3.5 text-slate-500" />
-                )}
-                <span>{isMomMode ? t.momMode : t.kidView}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Action Tools & Customization Bar */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {/* Desktop Action Tools & Customization Bar */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
             
             {/* Language Switcher Dropdown */}
             <div className="relative">
@@ -393,7 +464,7 @@ export const Header: React.FC<HeaderProps> = ({
                   soundFX.playPop();
                   onOpenNewChore();
                 }}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 sm:px-3 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 sm:px-3 rounded-xl text-xs font-bold ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} transition-all shadow-xs cursor-pointer active:scale-95`}
               >
                 <Plus className="w-4 h-4 text-emerald-400" />
                 <span>{t.newChore}</span>

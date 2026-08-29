@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Home, Camera, Upload, Trash2, Check, Sparkles, Image as ImageIcon, Lock, KeyRound, ShieldCheck, RotateCcw, AlertTriangle } from 'lucide-react';
+import { X, Home, Camera, Trash2, Check, Sparkles, Lock, KeyRound, ShieldCheck, RotateCcw, AlertTriangle, ChevronRight } from 'lucide-react';
 import { HouseholdInfo } from '../types';
 import { processImageFile } from '../utils/imageUpload';
 import { soundFX } from '../utils/audio';
@@ -19,7 +19,6 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
   onClose,
   householdInfo,
   onSaveHouseholdInfo,
-  onOpenPinChange,
   onResetDemo,
 }) => {
   if (!isOpen) return null;
@@ -48,7 +47,6 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
     setIsProcessingPhoto(true);
     setUploadError(null);
     try {
-      // Allow higher resolution for house facade / landscape photo
       const result = await processImageFile(file, 900, 0.85);
       setHousePhotoUrl(result.dataUrl);
       soundFX.playPop();
@@ -79,339 +77,341 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
       <div
         id="house-settings-modal"
-        className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto"
+        className="bg-slate-50 dark:bg-slate-900 rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto flex flex-col max-h-[90vh]"
       >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 p-4 sm:p-5 text-white flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-xl shadow-xs">
+        {/* Apple HIG Modal Header */}
+        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-5 py-4 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center text-lg font-bold">
               🏡
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold leading-tight">
-                Household & Home Profile
+              <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                Household Settings
               </h2>
-              <p className="text-xs text-rose-100">
-                Upload house photo, customize family name & motto
+              <p className="text-xs text-slate-500">
+                Home profile, photo & Mom PIN security
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+            aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+        {/* Scrollable Form Content */}
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
           
-          {/* House Picture Banner Upload */}
+          {/* SECTION 1: HOUSE PHOTO & IDENTITY (Apple Inset Grouped Card) */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              House Photo / Home Facade
-            </label>
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+              Home Profile & Cover
+            </span>
 
-            <div className="relative rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 overflow-hidden group">
-              {housePhotoUrl ? (
-                <div className="relative h-44 sm:h-52 w-full bg-slate-900">
-                  <img
-                    src={housePhotoUrl}
-                    alt="House Preview"
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex items-end justify-between p-3.5">
-                    <span className="text-xs font-bold text-white bg-slate-900/70 px-2.5 py-1 rounded-lg backdrop-blur-xs">
-                      🏡 {familyName}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-2 rounded-xl bg-white/90 hover:bg-white text-slate-800 text-xs font-bold shadow-sm transition-transform active:scale-95 flex items-center gap-1.5"
-                      >
-                        <Camera className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Change</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRemovePhoto}
-                        className="p-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-transform active:scale-95"
-                        title="Remove house photo"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+            <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+              
+              {/* Photo Area */}
+              <div className="p-3">
+                {housePhotoUrl ? (
+                  <div className="relative h-44 w-full rounded-xl overflow-hidden bg-slate-900 group">
+                    <img
+                      src={housePhotoUrl}
+                      alt="House Preview"
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end justify-between p-3">
+                      <span className="text-xs font-bold text-white bg-black/50 px-2.5 py-1 rounded-lg backdrop-blur-md">
+                        🏡 {familyName}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="min-h-[36px] px-3 rounded-xl bg-white/95 hover:bg-white text-slate-900 text-xs font-bold shadow-sm transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Camera className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Change</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemovePhoto}
+                          className="min-h-[36px] w-9 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-transform active:scale-95 flex items-center justify-center cursor-pointer"
+                          title="Remove photo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="h-40 flex flex-col items-center justify-center p-5 text-center cursor-pointer hover:bg-slate-100/70 transition-colors"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 shadow-2xs mb-2 group-hover:scale-105 transition-transform">
-                    <Camera className="w-6 h-6 text-rose-500" />
+                ) : (
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="min-h-[140px] flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-rose-400 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-rose-50/20 text-center cursor-pointer transition-colors"
+                  >
+                    <div className="w-11 h-11 rounded-2xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-rose-500 shadow-2xs mb-2">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Tap to upload house photo
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Syncs automatically to family devices & phones
+                    </p>
                   </div>
-                  <p className="text-xs font-bold text-slate-800">
-                    Click or tap to upload house photo
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Snap a picture from your phone camera or select from album
-                  </p>
-                </div>
-              )}
+                )}
 
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
-                id="house-photo-input"
-              />
-            </div>
-
-            {uploadError && (
-              <p className="text-xs font-semibold text-rose-600">{uploadError}</p>
-            )}
-          </div>
-
-          {/* Family / Household Name */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Family / House Name *
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. The Berenji Family"
-              value={familyName}
-              onChange={(e) => setFamilyName(e.target.value)}
-              className="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 font-bold text-slate-900"
-            />
-          </div>
-
-          {/* House Motto or Address */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Family Motto / Goal / Description
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Clean spaces, happy smiles & teamwork! ✨"
-              value={houseAddressOrMotto}
-              onChange={(e) => setHouseAddressOrMotto(e.target.value)}
-              className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 font-medium text-slate-800"
-            />
-          </div>
-
-          {/* Quick House Suggestions */}
-          <div className="pt-1">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-              Quick Motto Ideas:
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                'Teamwork makes our dream work! 🌟',
-                'Clean house, clear minds, happy hearts ❤️',
-                'Every helper earns stars and smiles 🚀',
-                'Work hard, play hard, help Mom & Dad! 🏆',
-              ].map((motto) => (
-                <button
-                  key={motto}
-                  type="button"
-                  onClick={() => {
-                    soundFX.playPop();
-                    setHouseAddressOrMotto(motto);
-                  }}
-                  className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-                >
-                  {motto}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Parent Mode Security & PIN Controls */}
-          <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Lock className="w-4 h-4 text-amber-700" />
-                <span className="text-xs font-bold text-amber-950 uppercase tracking-wider">
-                  Mom / Admin PIN Security
-                </span>
-              </div>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <span className="text-[11px] font-semibold text-amber-900">
-                  {isPinEnabled ? 'PIN Protection Active' : 'Disabled'}
-                </span>
                 <input
-                  type="checkbox"
-                  checked={isPinEnabled}
-                  onChange={(e) => {
-                    const enabled = e.target.checked;
-                    setIsPinEnabled(enabled);
-                    setPinProtectionEnabled(enabled);
-                    soundFX.playPop();
-                  }}
-                  className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                  id="house-photo-input"
                 />
-              </label>
-            </div>
 
-            <p className="text-xs text-amber-900/80 leading-relaxed">
-              When PIN protection is enabled, kids cannot switch into Mom Mode to grade themselves, inspect tasks, edit points, or change family rules without entering your 4-digit PIN.
-            </p>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-amber-200/60">
-              <div className="text-xs text-amber-950">
-                Current PIN: <strong className="tracking-widest font-mono">••••</strong> <span className="text-amber-800 text-[11px]">(Default is 1234)</span>
+                {uploadError && (
+                  <p className="text-xs font-semibold text-rose-600 mt-2">{uploadError}</p>
+                )}
               </div>
 
-              {!isEditingPin ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundFX.playPop();
-                    setIsEditingPin(true);
-                    setPinNotice(null);
-                  }}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-200/80 hover:bg-amber-200 px-3 py-1.5 rounded-xl transition-colors"
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  <span>Update PIN</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-1.5 w-full sm:w-auto">
-                  <input
-                    type="password"
-                    maxLength={4}
-                    pattern="[0-9]*"
-                    placeholder="New 4-digit PIN"
-                    value={customPinInput}
-                    onChange={(e) => setCustomPinInput(e.target.value)}
-                    className="w-32 text-center text-xs p-1.5 rounded-lg border border-amber-300 bg-white font-bold"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!/^\d{4}$/.test(customPinInput)) {
-                        setPinNotice('PIN must be 4 digits');
-                        return;
-                      }
-                      if (setParentPin(customPinInput, householdInfo.householdId)) {
-                        soundFX.playRewardCoin();
-                        setPinNotice(householdInfo.isCloudSynced ? 'PIN updated & synced across family devices! ☁️' : 'PIN updated!');
-                        setIsEditingPin(false);
-                        setCustomPinInput('');
-                      }
-                    }}
-                    className="px-2.5 py-1.5 bg-amber-800 text-white rounded-lg text-xs font-bold hover:bg-amber-900 transition-colors"
-                  >
-                    Save PIN
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditingPin(false);
-                      setCustomPinInput('');
-                      setPinNotice(null);
-                    }}
-                    className="px-2 py-1.5 text-slate-500 text-xs hover:text-slate-800"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
+              {/* Family Name Row */}
+              <div className="p-3.5 flex flex-col sm:flex-row sm:items-center gap-2">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 w-32 shrink-0">
+                  Family Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. The Berenji Family"
+                  value={familyName}
+                  onChange={(e) => setFamilyName(e.target.value)}
+                  className="flex-1 text-xs font-bold p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-rose-500 text-slate-900 dark:text-white"
+                />
+              </div>
 
-            {pinNotice && (
-              <p className="text-xs font-semibold text-emerald-800">{pinNotice}</p>
-            )}
+              {/* Motto Row */}
+              <div className="p-3.5 flex flex-col sm:flex-row sm:items-center gap-2">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 w-32 shrink-0">
+                  Family Motto
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Clean spaces, happy smiles & teamwork! ✨"
+                  value={houseAddressOrMotto}
+                  onChange={(e) => setHouseAddressOrMotto(e.target.value)}
+                  className="flex-1 text-xs font-medium p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-rose-500 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Admin Maintenance / Danger Zone: Reset Data */}
-          {onResetDemo && (
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <RotateCcw className="w-4 h-4 text-slate-500" />
-                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Admin Data Management
-                  </span>
-                </div>
-              </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Restore sample demo chores, family helper profiles, and default household motto.
-              </p>
+          {/* SECTION 2: MOM / PARENT PIN SECURITY (Apple Inset Grouped) */}
+          <div className="space-y-2">
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+              Mom / Parent Mode Security
+            </span>
 
-              {!showResetConfirm ? (
-                <button
-                  type="button"
-                  id="admin-reset-demo-btn"
-                  onClick={() => {
-                    soundFX.playPop();
-                    setShowResetConfirm(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-rose-700 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-colors shadow-2xs"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset All to Sample Demo Data</span>
-                </button>
-              ) : (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-2 animate-in fade-in duration-150">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Are you sure? This resets all chores, members & points back to default demo.</span>
+            <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+              
+              {/* Toggle Row */}
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                    <Lock className="w-4 h-4" />
                   </div>
-                  <div className="flex items-center gap-2 pt-1">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white">
+                      PIN Protection
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Require 4-digit PIN for Mom Mode & grading
+                    </p>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isPinEnabled}
+                    onChange={(e) => {
+                      const enabled = e.target.checked;
+                      setIsPinEnabled(enabled);
+                      setPinProtectionEnabled(enabled, householdInfo.householdId);
+                      soundFX.playPop();
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
+              {/* PIN Config Row */}
+              <div className="p-4 bg-amber-50/40 dark:bg-amber-950/20 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="text-xs text-slate-700 dark:text-slate-300">
+                    Parent PIN: <strong className="font-mono tracking-widest bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded-md text-amber-900 dark:text-amber-200">••••</strong>
+                  </div>
+
+                  {!isEditingPin ? (
                     <button
                       type="button"
                       onClick={() => {
                         soundFX.playPop();
-                        onResetDemo();
-                        setShowResetConfirm(false);
-                        onClose();
+                        setIsEditingPin(true);
+                        setPinNotice(null);
                       }}
-                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors"
+                      className="min-h-[36px] px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     >
-                      Yes, Reset All Data
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>Change PIN</span>
                     </button>
+                  ) : (
+                    <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                      <input
+                        type="password"
+                        maxLength={4}
+                        pattern="[0-9]*"
+                        placeholder="New 4-digit PIN"
+                        value={customPinInput}
+                        onChange={(e) => setCustomPinInput(e.target.value)}
+                        className="w-32 text-center text-xs font-bold p-2 rounded-xl border border-amber-300 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-amber-500"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!/^\d{4}$/.test(customPinInput)) {
+                            setPinNotice('PIN must be exactly 4 digits');
+                            soundFX.playPop();
+                            return;
+                          }
+                          if (setParentPin(customPinInput, householdInfo.householdId)) {
+                            soundFX.playRewardCoin();
+                            setPinNotice('PIN updated & synced live to all devices! ☁️');
+                            setIsEditingPin(false);
+                            setCustomPinInput('');
+                          }
+                        }}
+                        className="min-h-[36px] px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditingPin(false);
+                          setCustomPinInput('');
+                          setPinNotice(null);
+                        }}
+                        className="min-h-[36px] px-2.5 py-1.5 text-slate-500 text-xs hover:text-slate-800 dark:hover:text-white cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {pinNotice && (
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 animate-in fade-in flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>{pinNotice}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 3: MAINTENANCE / DANGER ZONE */}
+          {onResetDemo && (
+            <div className="space-y-2">
+              <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+                Data Maintenance
+              </span>
+
+              <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Reset Demo Household
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Restore default demo chores and sample helpers
+                    </p>
+                  </div>
+
+                  {!showResetConfirm ? (
                     <button
                       type="button"
-                      onClick={() => setShowResetConfirm(false)}
-                      className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-medium border border-slate-200 transition-colors"
+                      id="admin-reset-demo-btn"
+                      onClick={() => {
+                        soundFX.playPop();
+                        setShowResetConfirm(true);
+                      }}
+                      className="min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900 transition-colors cursor-pointer"
                     >
-                      Cancel
+                      Reset Data
                     </button>
-                  </div>
+                  ) : null}
                 </div>
-              )}
+
+                {showResetConfirm && (
+                  <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl space-y-2 animate-in fade-in">
+                    <p className="text-xs text-rose-800 dark:text-rose-300 font-semibold flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>Are you sure? This restores sample data on this device.</span>
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundFX.playPop();
+                          onResetDemo();
+                          setShowResetConfirm(false);
+                          onClose();
+                        }}
+                        className="min-h-[36px] px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                      >
+                        Yes, Reset
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowResetConfirm(false)}
+                        className="min-h-[36px] px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2">
+          {/* Action Buttons */}
+          <div className="pt-2 flex items-center justify-end gap-3 sticky bottom-0 bg-slate-50 dark:bg-slate-900 py-3 border-t border-slate-200/80 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+              className="min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isProcessingPhoto}
-              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-colors flex items-center gap-1.5"
+              className="min-h-[44px] px-6 py-2.5 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-md transition-all flex items-center gap-2 cursor-pointer"
             >
-              <Check className="w-4 h-4 text-emerald-400" />
-              <span>Save Household Info</span>
+              <Check className="w-4 h-4 text-white" />
+              <span>Save & Sync Changes</span>
             </button>
           </div>
 
@@ -420,3 +420,4 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
     </div>
   );
 };
+

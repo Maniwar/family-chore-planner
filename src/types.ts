@@ -83,6 +83,15 @@ export interface ChoreAssignmentLog {
   bonusPoints?: number;
   checklistStatus?: { [index: number]: boolean };
   completedNote?: string;
+  originalDueDate?: string;
+  extendedDueDate?: string;
+  penaltyWaived?: boolean;
+  penaltyWaivedReason?: string;
+  isMissed?: boolean;
+  daysLate?: number;
+  deductionApplied?: number;
+  latenessMultiplier?: number;
+  qualityMultiplier?: number;
 }
 
 export interface RewardItem {
@@ -103,18 +112,99 @@ export interface RewardClaim {
   memberName: string;
   pointCost: number;
   claimedAt: string;
-  status: 'pending' | 'approved' | 'delivered';
+  status: 'pending' | 'approved' | 'delivered' | 'rejected';
+  note?: string;
+  parentNote?: string;
+  approvedAt?: string;
+  deliveredAt?: string;
+  rejectedAt?: string;
 }
 
 export type ViewMode = 
   | 'today'
+  | 'status'
   | 'weekly'
   | 'inspection'
   | 'members'
   | 'library'
   | 'rewards'
+  | 'redemptions'
   | 'reports'
   | 'calendar';
+
+export type PersonStatusType = 'on_track' | 'behind' | 'way_behind';
+
+export interface PenaltyTierSchedule {
+  tier1MaxDays: number; // < 1 day late -> 75%
+  tier1Multiplier: number; // 0.75
+  tier2MaxDays: number; // 1 to 2 days late -> 50%
+  tier2Multiplier: number; // 0.50
+  tier3MaxDays: number; // 3 to 6 days late -> 0% earn + 25% balance deduction
+  tier3Multiplier: number; // 0
+  tier3DeductionPercent: number; // 0.25
+  tier4MinDays: number; // 7+ days late / Missed -> 0% earn + 100% balance deduction
+  tier4Multiplier: number; // 0
+  tier4DeductionPercent: number; // 1.00
+}
+
+export interface QualityGradeMultipliers {
+  'A+': number; // 1.00
+  'A': number;  // 0.90
+  'B': number;  // 0.75
+  'C': number;  // 0.50
+  'Redo': number; // 0.00
+}
+
+export interface HouseholdPenaltySettings {
+  timezone: string; // e.g. "America/Los_Angeles"
+  shipDate: string; // ISO date string - penalties count forward from here
+  allowNegativeBalance: boolean; // default: false
+  latenessTiers: PenaltyTierSchedule;
+  gradeMultipliers: QualityGradeMultipliers;
+}
+
+export type ChoreEventType = 
+  | 'late' 
+  | 'missed' 
+  | 'failed_inspection' 
+  | 'penalty_applied' 
+  | 'penalty_waived' 
+  | 'due_extended' 
+  | 'nudge_sent';
+
+export interface ChoreEvent {
+  id: string;
+  householdId: string;
+  type: ChoreEventType;
+  memberId: string;
+  memberName: string;
+  choreId?: string;
+  choreTitle?: string;
+  pointsBefore?: number;
+  pointsAfter?: number;
+  pointsDelta?: number; // e.g. -10 or 0
+  reason?: string;
+  extendedToDate?: string;
+  tier?: number;
+  weekNumber: number;
+  year: number;
+  createdAt: string;
+}
+
+export interface NudgeRecord {
+  id: string;
+  householdId: string;
+  memberId: string;
+  memberName: string;
+  senderRole: MemberRole;
+  senderName: string;
+  message: string;
+  choreId?: string;
+  choreTitle?: string;
+  createdAt: string;
+  acknowledged?: boolean;
+  acknowledgedAt?: string;
+}
 
 export interface AIAssignmentSuggestion {
   choreId: string;

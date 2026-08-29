@@ -1,13 +1,53 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Roboto", "Plus Jakarta Sans", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    overscroll-behavior-y: none;
+    touch-action: manipulation;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Roboto", "Outfit", system-ui, sans-serif;
   }
+}
+
+/* Mobile & Android Touch Target & Scrollbar optimizations */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Hide scrollbar for clean horizontal swipe tabs on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Smooth momentum scrolling for Android & iOS drawers and lists */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Cross-Platform Safe Area Utilities */
+.safe-area-pt {
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+
+.safe-area-pb {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.safe-area-bottom-bar {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
 @media print {
@@ -42,3 +82,4 @@
     display: none !important;
   }
 }
+

@@ -21,17 +21,26 @@ import {
   resetAllToDemo, 
   getTodayDateString, 
   triggerConfettiCelebration, 
-  triggerBigCelebration 
+  triggerBigCelebration,
+  loadStoredPenaltySettings,
+  savePenaltySettings,
+  loadStoredEvents,
+  saveEvents,
+  loadStoredNudges,
+  saveNudges,
+  DEFAULT_PENALTY_SETTINGS
 } from './utils/storage';
-import { HouseholdMember, Chore, ChoreAssignmentLog, RewardItem, RewardClaim, ViewMode, HouseholdInfo } from './types';
+import { HouseholdMember, Chore, ChoreAssignmentLog, RewardItem, RewardClaim, ViewMode, HouseholdInfo, HouseholdPenaltySettings, ChoreEvent, NudgeRecord } from './types';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { DailyScheduleView } from './components/DailyScheduleView';
 import { WeeklyScheduleView } from './components/WeeklyScheduleView';
 import { InspectionQueueView } from './components/InspectionQueueView';
+import { StatusView } from './components/StatusView';
 import { ChoreLibraryView } from './components/ChoreLibraryView';
 import { FamilyMembersView } from './components/FamilyMembersView';
 import { RewardsView } from './components/RewardsView';
+import { RedemptionsManagerView } from './components/RedemptionsManagerView';
 import { ReportsAndPrintView } from './components/ReportsAndPrintView';
 import { InspectionModal } from './components/InspectionModal';
 import { ChoreModal } from './components/ChoreModal';
@@ -41,9 +50,11 @@ import { AIAssignModal } from './components/AIAssignModal';
 import { GoogleCalendarView } from './components/GoogleCalendarView';
 import { ParentPinModal } from './components/ParentPinModal';
 import { HouseholdSyncModal } from './components/HouseholdSyncModal';
+import { QuickSettingsModal } from './components/QuickSettingsModal';
 import { soundFX } from './utils/audio';
 import { SupportedLanguage, getTranslation } from './utils/i18n';
 import { ThemePreset, THEMES } from './utils/theme';
+import { evaluateHouseholdStatus, calculateInspectionAward, calculateDaysLate } from './utils/penaltyEngine';
 import { isPinProtectionEnabled, isParentSessionUnlocked, setParentSessionUnlocked, syncParentPinFromCloud, getParentPin } from './utils/parentLock';
 import { 
   CloudHousehold, 
@@ -51,6 +62,7 @@ import {
   setCurrentHouseholdId,
   findHouseholdByCode,
   getHousehold, 
+  getPrimaryHousehold,
   subscribeHouseholdFull,
   syncCompleteHouseholdToCloud
 } from './utils/firebaseSync';
@@ -63,14 +75,19 @@ export default function App() {
   const [rewards, setRewards] = useState<RewardItem[]>(() => loadStoredRewards());
   const [claims, setClaims] = useState<RewardClaim[]>(() => loadStoredClaims());
   const [householdInfo, setHouseholdInfo] = useState<HouseholdInfo>(() => loadStoredHouseholdInfo());
+  const [penaltySettings, setPenaltySettings] = useState<HouseholdPenaltySettings>(() => loadStoredPenaltySettings());
+  const [events, setEvents] = useState<ChoreEvent[]>(() => loadStoredEvents());
+  const [nudges, setNudges] = useState<NudgeRecord[]>(() => loadStoredNudges());
+  const [activeNudgeBanner, setActiveNudgeBanner] = useState<NudgeRecord | null>(null);
 
   // Cloud multi-tenant household state
   const [activeHousehold, setActiveHousehold] = useState<CloudHousehold | null>(null);
   const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState<boolean>(false);
 
-  // Deduplication ref to prevent bouncing echoes between devices
+  // Deduplication & hydration refs to prevent bouncing echoes or premature clobbers between devices
   const lastSyncedHashRef = useRef<string>('');
   const isReceivingRemoteUpdateRef = useRef<boolean>(false);
+  const isCloudHydratedRef = useRef<boolean>(false);
 
   const [currentDateStr, setCurrentDateStr] = useState<string>(getTodayDateString());
   const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
@@ -95,6 +112,18 @@ export default function App() {
   });
 
   const theme = THEMES[currentTheme] || THEMES.rose;
+
+  // Sync document.documentElement 'dark' class with theme
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (theme.isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, [theme.isDark]);
+
   const [isSoundEnabled, setIsSoundEnabled] = useState<boolean>(() => soundFX.getEnabled());
 
   const t = getTranslation(language);
@@ -122,6 +151,7 @@ export default function App() {
   // Modals state
   const [isAIAssignModalOpen, setIsAIAssignModalOpen] = useState<boolean>(false);
   const [isHouseSettingsModalOpen, setIsHouseSettingsModalOpen] = useState<boolean>(false);
+  const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState<boolean>(false);
 
   const [inspectModalData, setInspectModalData] = useState<{
     isOpen: boolean;
@@ -224,47 +254,115 @@ export default function App() {
     saveHouseholdInfo(householdInfo);
   }, [householdInfo]);
 
-  // Auto-connect via Invite Link / URL parameter (?join=CODE or ?code=CODE or ?hh=ID)
   useEffect(() => {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const inviteCode = urlParams.get('join') || urlParams.get('code') || urlParams.get('hh') || urlParams.get('household');
-      if (inviteCode) {
-        findHouseholdByCode(inviteCode).then((hh) => {
-          if (hh) {
-            setCurrentHouseholdId(hh.id);
-            setActiveHousehold(hh);
-            if (hh.adminPin || hh.pinProtectionEnabled !== undefined) {
-              syncParentPinFromCloud(hh.adminPin, hh.pinProtectionEnabled);
-            }
-            if (hh.members && hh.members.length > 0) setMembers(hh.members);
-            if (hh.chores && hh.chores.length > 0) setChores(hh.chores);
-            if (hh.logs) setLogs(hh.logs);
-            if (hh.rewards && hh.rewards.length > 0) setRewards(hh.rewards);
-            if (hh.claims) setClaims(hh.claims);
-            setHouseholdInfo(prev => ({
-              ...prev,
-              familyName: hh.familyName || prev.familyName,
-              houseAddressOrMotto: hh.houseAddressOrMotto || prev.houseAddressOrMotto,
-              housePhotoUrl: hh.housePhotoUrl || prev.housePhotoUrl,
-              householdCode: hh.householdCode,
-              householdId: hh.id,
-              isCloudSynced: true,
-            }));
-            soundFX.playFanfare();
-            showToast(`Connected to "${hh.familyName}" via invite link! 🎉`);
-            // Clean URL without reloading
+    savePenaltySettings(penaltySettings);
+  }, [penaltySettings]);
+
+  useEffect(() => {
+    saveEvents(events);
+  }, [events]);
+
+  useEffect(() => {
+    saveNudges(nudges);
+  }, [nudges]);
+
+  // Auto-connect via Invite Link / URL parameter OR auto-hydrate primary household
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initializeCloudSession() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteCode = urlParams.get('join') || urlParams.get('code') || urlParams.get('hh') || urlParams.get('household');
+        
+        let targetHh: CloudHousehold | null = null;
+
+        if (inviteCode) {
+          targetHh = await findHouseholdByCode(inviteCode);
+          if (targetHh) {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
-        }).catch(console.warn);
+        }
+
+        if (!targetHh) {
+          const savedHhId = getCurrentHouseholdId();
+          if (savedHhId) {
+            targetHh = await getHousehold(savedHhId);
+          }
+        }
+
+        // If still no household found (e.g. fresh phone/tablet opening the app for the first time),
+        // fetch the primary family household from server/cloud so all devices share the same live state
+        if (!targetHh) {
+          targetHh = await getPrimaryHousehold();
+        }
+
+        if (targetHh && isMounted) {
+          setCurrentHouseholdId(targetHh.id);
+          setActiveHousehold(targetHh);
+
+          // Synchronize Mom PIN & settings
+          if (targetHh.adminPin || targetHh.pinProtectionEnabled !== undefined) {
+            syncParentPinFromCloud(targetHh.adminPin, targetHh.pinProtectionEnabled);
+          }
+
+          if (targetHh.members && targetHh.members.length > 0) setMembers(targetHh.members);
+          if (targetHh.chores && targetHh.chores.length > 0) setChores(targetHh.chores);
+          if (targetHh.logs) setLogs(targetHh.logs);
+          if (targetHh.rewards && targetHh.rewards.length > 0) setRewards(targetHh.rewards);
+          if (targetHh.claims) setClaims(targetHh.claims);
+          if (targetHh.penaltySettings) setPenaltySettings(targetHh.penaltySettings);
+          if (targetHh.events) setEvents(targetHh.events);
+          if (targetHh.nudges) setNudges(targetHh.nudges);
+
+          setHouseholdInfo(prev => ({
+            ...prev,
+            familyName: targetHh!.familyName || prev.familyName,
+            houseAddressOrMotto: targetHh!.houseAddressOrMotto || prev.houseAddressOrMotto,
+            housePhotoUrl: targetHh!.housePhotoUrl || prev.housePhotoUrl,
+            householdCode: targetHh!.householdCode,
+            householdId: targetHh!.id,
+            isCloudSynced: true,
+          }));
+
+          // Set hash baseline so debounced effect does not push identical copy
+          lastSyncedHashRef.current = JSON.stringify({
+            familyName: targetHh.familyName,
+            houseAddressOrMotto: targetHh.houseAddressOrMotto,
+            housePhotoUrl: targetHh.housePhotoUrl,
+            householdCode: targetHh.householdCode,
+            adminPin: targetHh.adminPin || getParentPin(),
+            pinProtectionEnabled: targetHh.pinProtectionEnabled !== undefined ? targetHh.pinProtectionEnabled : isPinProtectionEnabled(),
+            members: targetHh.members || members,
+            chores: targetHh.chores || chores,
+            logs: targetHh.logs || logs,
+            rewards: targetHh.rewards || rewards,
+            claims: targetHh.claims || claims,
+            penaltySettings: targetHh.penaltySettings || penaltySettings,
+            events: targetHh.events || events,
+            nudges: targetHh.nudges || nudges,
+          });
+
+          isCloudHydratedRef.current = true;
+        } else if (isMounted) {
+          isCloudHydratedRef.current = true;
+        }
+      } catch (err) {
+        console.warn('Initialization notice:', err);
+        if (isMounted) isCloudHydratedRef.current = true;
       }
-    } catch (e) {
-      console.warn('URL invite check notice:', e);
     }
+
+    initializeCloudSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Debounced cloud sync to prevent quota exhaustion and duplicate sync echoes
   useEffect(() => {
+    if (!isCloudHydratedRef.current) return;
     if (!activeHousehold?.id) return;
     if (isReceivingRemoteUpdateRef.current) return;
 
@@ -280,6 +378,9 @@ export default function App() {
       logs,
       rewards,
       claims,
+      penaltySettings,
+      events,
+      nudges,
     };
 
     const currentHash = JSON.stringify(dataPayload);
@@ -288,45 +389,20 @@ export default function App() {
     const timer = setTimeout(() => {
       lastSyncedHashRef.current = currentHash;
       syncCompleteHouseholdToCloud(activeHousehold.id, dataPayload).catch(console.warn);
-    }, 800);
+    }, 600);
 
     return () => clearTimeout(timer);
-  }, [members, chores, logs, rewards, claims, householdInfo, activeHousehold?.id]);
+  }, [members, chores, logs, rewards, claims, penaltySettings, events, nudges, householdInfo, activeHousehold?.id]);
 
   // Real-time Cloud Sync Subscription (Dual Firestore + Fast Polling Engine)
   useEffect(() => {
-    const savedHhId = getCurrentHouseholdId();
-    if (!savedHhId) return;
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    if (!targetHhId) return;
 
     let isMounted = true;
 
-    // 1. Fetch initial household record
-    getHousehold(savedHhId).then((hh) => {
-      if (hh && isMounted) {
-        setActiveHousehold(hh);
-        if (hh.adminPin || hh.pinProtectionEnabled !== undefined) {
-          syncParentPinFromCloud(hh.adminPin, hh.pinProtectionEnabled);
-        }
-        if (hh.members && hh.members.length > 0) setMembers(hh.members);
-        if (hh.chores && hh.chores.length > 0) setChores(hh.chores);
-        if (hh.logs) setLogs(hh.logs);
-        if (hh.rewards && hh.rewards.length > 0) setRewards(hh.rewards);
-        if (hh.claims) setClaims(hh.claims);
-
-        setHouseholdInfo(prev => ({
-          ...prev,
-          familyName: hh.familyName || prev.familyName,
-          houseAddressOrMotto: hh.houseAddressOrMotto || prev.houseAddressOrMotto,
-          housePhotoUrl: hh.housePhotoUrl || prev.housePhotoUrl,
-          householdCode: hh.householdCode,
-          householdId: hh.id,
-          isCloudSynced: true,
-        }));
-      }
-    }).catch(console.warn);
-
-    // 2. Real-time multi-device subscription
-    const unsubscribe = subscribeHouseholdFull(savedHhId, (cloudHh) => {
+    // Real-time multi-device subscription (listens for Firestore events or 2s server polling)
+    const unsubscribe = subscribeHouseholdFull(targetHhId, (cloudHh) => {
       if (!isMounted) return;
       isReceivingRemoteUpdateRef.current = true;
 
@@ -339,6 +415,9 @@ export default function App() {
       if (cloudHh.logs) setLogs(cloudHh.logs);
       if (cloudHh.rewards && cloudHh.rewards.length > 0) setRewards(cloudHh.rewards);
       if (cloudHh.claims) setClaims(cloudHh.claims);
+      if (cloudHh.penaltySettings) setPenaltySettings(cloudHh.penaltySettings);
+      if (cloudHh.events) setEvents(cloudHh.events);
+      if (cloudHh.nudges) setNudges(cloudHh.nudges);
 
       setHouseholdInfo(prev => ({
         ...prev,
@@ -356,13 +435,16 @@ export default function App() {
         houseAddressOrMotto: cloudHh.houseAddressOrMotto,
         housePhotoUrl: cloudHh.housePhotoUrl,
         householdCode: cloudHh.householdCode,
-        adminPin: getParentPin(),
-        pinProtectionEnabled: isPinProtectionEnabled(),
+        adminPin: cloudHh.adminPin || getParentPin(),
+        pinProtectionEnabled: cloudHh.pinProtectionEnabled !== undefined ? cloudHh.pinProtectionEnabled : isPinProtectionEnabled(),
         members: cloudHh.members,
         chores: cloudHh.chores,
         logs: cloudHh.logs,
         rewards: cloudHh.rewards,
         claims: cloudHh.claims,
+        penaltySettings: cloudHh.penaltySettings,
+        events: cloudHh.events,
+        nudges: cloudHh.nudges,
       });
 
       setTimeout(() => {
@@ -377,6 +459,7 @@ export default function App() {
   }, [activeHousehold?.id]);
 
   const handleHouseholdConnected = (household: CloudHousehold) => {
+    isCloudHydratedRef.current = true;
     setActiveHousehold(household);
     if (household.adminPin || household.pinProtectionEnabled !== undefined) {
       syncParentPinFromCloud(household.adminPin, household.pinProtectionEnabled);
@@ -386,11 +469,15 @@ export default function App() {
     if (household.logs && household.logs.length > 0) setLogs(household.logs);
     if (household.rewards && household.rewards.length > 0) setRewards(household.rewards);
     if (household.claims && household.claims.length > 0) setClaims(household.claims);
+    if (household.events && household.events.length > 0) setEvents(household.events);
+    if (household.nudges && household.nudges.length > 0) setNudges(household.nudges);
+    if (household.penaltySettings) setPenaltySettings(household.penaltySettings);
 
     setHouseholdInfo(prev => ({
       ...prev,
       familyName: household.familyName,
       houseAddressOrMotto: household.houseAddressOrMotto,
+      housePhotoUrl: household.housePhotoUrl,
       householdCode: household.householdCode,
       householdId: household.id,
       isCloudSynced: true,
@@ -616,9 +703,20 @@ export default function App() {
   ) => {
     if (!inspectModalData.chore) return;
     const { chore, log } = inspectModalData;
-    const basePoints = chore.defaultPoints;
-    const totalPoints = isRedo ? 0 : basePoints + bonusPoints;
+    const memberId = chore.assignedMemberId || log?.memberId || 'unassigned';
+    const daysLate = calculateDaysLate(chore, log, currentDateStr, penaltySettings);
+    
+    // Calculate effective award points factoring in lateness and quality multipliers
+    const awardResult = calculateInspectionAward(
+      chore.defaultPoints,
+      grade,
+      daysLate,
+      log?.penaltyWaived,
+      penaltySettings
+    );
+
     const newStatus = isRedo ? 'needs_redo' : 'approved';
+    const finalPointsAwarded = isRedo ? 0 : awardResult.finalPoints + (bonusPoints || 0);
 
     if (log) {
       setLogs(prev => prev.map(l => {
@@ -628,11 +726,12 @@ export default function App() {
             status: newStatus,
             qualityScore: score,
             qualityGrade: grade,
-            pointsAwarded: isRedo ? 0 : basePoints,
+            pointsAwarded: isRedo ? 0 : awardResult.finalPoints,
             bonusPoints: isRedo ? 0 : bonusPoints,
             feedbackNote,
             checklistStatus,
             reviewedAt: new Date().toISOString(),
+            daysLate: daysLate,
           };
         }
         return l;
@@ -641,28 +740,29 @@ export default function App() {
       const newLog: ChoreAssignmentLog = {
         id: logId,
         choreId: chore.id,
-        memberId: chore.assignedMemberId || 'unassigned',
+        memberId: memberId,
         date: currentDateStr,
         status: newStatus,
         completedAt: new Date().toISOString(),
         qualityScore: score,
         qualityGrade: grade,
-        pointsAwarded: isRedo ? 0 : basePoints,
+        pointsAwarded: isRedo ? 0 : awardResult.finalPoints,
         bonusPoints: isRedo ? 0 : bonusPoints,
         feedbackNote,
         checklistStatus,
         reviewedAt: new Date().toISOString(),
+        daysLate: daysLate,
       };
       setLogs(prev => [...prev, newLog]);
     }
 
-    if (!isRedo && totalPoints > 0) {
+    if (!isRedo && finalPointsAwarded > 0) {
       setMembers(prev => prev.map(m => {
-        if (m.id === chore.assignedMemberId) {
+        if (m.id === memberId) {
           return {
             ...m,
-            currentPoints: m.currentPoints + totalPoints,
-            lifetimePoints: m.lifetimePoints + totalPoints,
+            currentPoints: m.currentPoints + finalPointsAwarded,
+            lifetimePoints: m.lifetimePoints + finalPointsAwarded,
             starsCount: score === 5 ? m.starsCount + 1 : m.starsCount,
           };
         }
@@ -675,13 +775,345 @@ export default function App() {
         triggerConfettiCelebration();
       }
       soundFX.playRewardCoin();
-      showToast(`Approved! Awarded ${grade} (${score}⭐) and ${totalPoints} points.`);
+      showToast(`Approved! Awarded ${grade} (${score}⭐) and ${finalPointsAwarded} points.`);
+    } else if (isRedo) {
+      soundFX.playPop();
+      const member = members.find(m => m.id === memberId);
+      const redoEvent: ChoreEvent = {
+        id: `evt_redo_${Date.now()}`,
+        householdId: activeHousehold?.id || 'default',
+        type: 'failed_inspection',
+        memberId: memberId,
+        memberName: member?.name || 'Helper',
+        choreId: chore.id,
+        choreTitle: chore.title || 'Chore',
+        reason: feedbackNote ? `Quality Redo: "${feedbackNote}"` : 'Needs Redo / Quality correction requested during parent inspection',
+        weekNumber: 35,
+        year: 2026,
+        createdAt: new Date().toISOString(),
+      };
+      setEvents(prev => [redoEvent, ...prev]);
+      showToast(`Chore marked for Redo. Feedback left for helper.`);
     } else {
       soundFX.playPop();
-      showToast(`Chore marked for Redo. Feedback left for helper.`);
+      showToast(`Approved! ${finalPointsAwarded} points awarded.`);
     }
 
     setInspectModalData({ isOpen: false, chore: null, log: null });
+  };
+
+  // Status & Penalty Administration Handlers
+  const handleSendNudge = async (
+    memberId: string, 
+    memberName: string, 
+    message: string, 
+    choreId?: string, 
+    choreTitle?: string
+  ) => {
+    const now = new Date().toISOString();
+    const hhId = activeHousehold?.id || 'default';
+    const newNudge: NudgeRecord = {
+      id: `nudge_${Date.now()}`,
+      householdId: hhId,
+      memberId,
+      memberName,
+      senderRole: 'parent',
+      senderName: 'Mom / Parent',
+      choreId,
+      choreTitle,
+      message,
+      createdAt: now,
+      acknowledged: false,
+    };
+
+    const newEvent: ChoreEvent = {
+      id: `evt_${Date.now()}`,
+      householdId: hhId,
+      type: 'nudge_sent',
+      memberId,
+      memberName,
+      choreId,
+      choreTitle,
+      reason: `Nudge reminder: "${message}"`,
+      createdAt: now,
+      weekNumber: 35,
+      year: 2026,
+    };
+
+    const updatedNudges = [newNudge, ...nudges];
+    const updatedEvents = [newEvent, ...events];
+
+    setNudges(updatedNudges);
+    setEvents(updatedEvents);
+    showToast(`Nudge delivered to ${memberName}! 🔔`);
+
+    // Call server endpoint
+    if (activeHousehold?.id) {
+      fetch(`/api/household/${encodeURIComponent(activeHousehold.id)}/nudge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newNudge),
+      }).catch(console.warn);
+
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        nudges: updatedNudges,
+        events: updatedEvents,
+      }).catch(console.warn);
+    }
+  };
+
+  const handleWaivePenalty = (
+    choreId: string, 
+    logId: string, 
+    memberId: string, 
+    reason: string,
+    choreDate?: string
+  ) => {
+    const now = new Date().toISOString();
+    const member = members.find(m => m.id === memberId);
+    const chore = chores.find(c => c.id === choreId);
+    const hhId = activeHousehold?.id || 'default';
+    const targetDate = choreDate || (logId && logId.includes('_') ? logId.split('_')[2] : undefined) || currentDateStr;
+
+    const existingIndex = logs.findIndex(l => 
+      l.id === logId || 
+      (l.choreId === choreId && l.memberId === memberId && (targetDate ? l.date === targetDate : true))
+    );
+
+    let updatedLogs: ChoreAssignmentLog[];
+    if (existingIndex >= 0) {
+      updatedLogs = logs.map((l, idx) => {
+        if (idx === existingIndex || l.id === logId) {
+          return {
+            ...l,
+            penaltyWaived: true,
+            penaltyWaivedReason: reason,
+            status: l.status === 'pending' || l.status === 'needs_redo' ? 'approved' as const : l.status,
+            reviewedAt: now,
+          };
+        }
+        return l;
+      });
+    } else {
+      const newLog: ChoreAssignmentLog = {
+        id: logId && logId.startsWith('log_') ? logId : `log_${choreId}_${targetDate}_${Date.now()}`,
+        choreId,
+        memberId,
+        date: targetDate,
+        originalDueDate: targetDate,
+        status: 'approved',
+        penaltyWaived: true,
+        penaltyWaivedReason: reason,
+        reviewedAt: now,
+      };
+      updatedLogs = [...logs, newLog];
+    }
+
+    const newEvent: ChoreEvent = {
+      id: `evt_${Date.now()}`,
+      householdId: hhId,
+      type: 'penalty_waived',
+      memberId,
+      memberName: member?.name || 'Helper',
+      choreId,
+      choreTitle: chore?.title || 'Chore',
+      reason: `Waiver granted for ${targetDate}: ${reason}`,
+      createdAt: now,
+      weekNumber: 35,
+      year: 2026,
+    };
+
+    const updatedEvents = [newEvent, ...events];
+    setLogs(updatedLogs);
+    setEvents(updatedEvents);
+    showToast(`Penalty waived for ${member?.name || 'Helper'} on ${chore?.title || 'task'}! ⭐`);
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        logs: updatedLogs,
+        events: updatedEvents,
+      }).catch(console.warn);
+    }
+  };
+
+  const handleBatchWaivePenalties = (
+    itemsToWaive: { choreId: string; logId?: string; memberId: string; date: string; title?: string }[],
+    reason: string
+  ) => {
+    const now = new Date().toISOString();
+    const hhId = activeHousehold?.id || 'default';
+
+    const newLogsToAdd: ChoreAssignmentLog[] = [];
+    const updatedLogs = logs.map(l => {
+      const match = itemsToWaive.find(i => 
+        (i.logId && l.id === i.logId) || 
+        (l.choreId === i.choreId && l.memberId === i.memberId && l.date === i.date)
+      );
+      if (match) {
+        return {
+          ...l,
+          penaltyWaived: true,
+          penaltyWaivedReason: reason,
+          status: l.status === 'pending' || l.status === 'needs_redo' ? 'approved' as const : l.status,
+          reviewedAt: now,
+        };
+      }
+      return l;
+    });
+
+    // Check for items that did not have an existing log in logs
+    itemsToWaive.forEach(item => {
+      const exists = updatedLogs.some(l => 
+        (item.logId && l.id === item.logId) || 
+        (l.choreId === item.choreId && l.memberId === item.memberId && l.date === item.date)
+      );
+      if (!exists) {
+        newLogsToAdd.push({
+          id: item.logId || `log_${item.choreId}_${item.date}_${Date.now()}`,
+          choreId: item.choreId,
+          memberId: item.memberId,
+          date: item.date,
+          originalDueDate: item.date,
+          status: 'approved',
+          penaltyWaived: true,
+          penaltyWaivedReason: reason,
+          reviewedAt: now,
+        });
+      }
+    });
+
+    const finalLogs = [...updatedLogs, ...newLogsToAdd];
+
+    const firstMember = members.find(m => m.id === itemsToWaive[0]?.memberId);
+    const newEvent: ChoreEvent = {
+      id: `evt_${Date.now()}`,
+      householdId: hhId,
+      type: 'penalty_waived',
+      memberId: itemsToWaive[0]?.memberId || 'household',
+      memberName: firstMember?.name || 'Household',
+      reason: `Batch waiver granted for ${itemsToWaive.length} overdue task(s): ${reason}`,
+      createdAt: now,
+      weekNumber: 35,
+      year: 2026,
+    };
+
+    const updatedEvents = [newEvent, ...events];
+    setLogs(finalLogs);
+    setEvents(updatedEvents);
+    triggerConfettiCelebration();
+    soundFX.playStarChime(5);
+    showToast(`Waived ${itemsToWaive.length} overdue task(s)! ⭐`);
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        logs: finalLogs,
+        events: updatedEvents,
+      }).catch(console.warn);
+    }
+  };
+
+  const handleExtendDueDate = (
+    choreId: string, 
+    logId: string, 
+    memberId: string, 
+    newDueDate: string, 
+    reason: string,
+    choreDate?: string
+  ) => {
+    const now = new Date().toISOString();
+    const member = members.find(m => m.id === memberId);
+    const chore = chores.find(c => c.id === choreId);
+    const hhId = activeHousehold?.id || 'default';
+    const targetDate = choreDate || (logId && logId.includes('_') ? logId.split('_')[2] : undefined) || currentDateStr;
+
+    const existingIndex = logs.findIndex(l => 
+      l.id === logId || 
+      (l.choreId === choreId && l.memberId === memberId && (targetDate ? l.date === targetDate : true))
+    );
+
+    let updatedLogs: ChoreAssignmentLog[];
+    if (existingIndex >= 0) {
+      updatedLogs = logs.map((l, idx) => {
+        if (idx === existingIndex || l.id === logId) {
+          return {
+            ...l,
+            extendedDueDate: newDueDate,
+            penaltyWaivedReason: reason,
+          };
+        }
+        return l;
+      });
+    } else {
+      const newLog: ChoreAssignmentLog = {
+        id: logId && logId.startsWith('log_') ? logId : `log_${choreId}_${targetDate}_${Date.now()}`,
+        choreId,
+        memberId,
+        date: targetDate,
+        originalDueDate: targetDate,
+        extendedDueDate: newDueDate,
+        status: 'pending',
+        penaltyWaivedReason: reason,
+      };
+      updatedLogs = [...logs, newLog];
+    }
+
+    const newEvent: ChoreEvent = {
+      id: `evt_${Date.now()}`,
+      householdId: hhId,
+      type: 'due_extended',
+      memberId,
+      memberName: member?.name || 'Helper',
+      choreId,
+      choreTitle: chore?.title || 'Chore',
+      reason: `Due date for ${targetDate} extended to ${newDueDate}: ${reason}`,
+      createdAt: now,
+      weekNumber: 35,
+      year: 2026,
+    };
+
+    const updatedEvents = [newEvent, ...events];
+    setLogs(updatedLogs);
+    setEvents(updatedEvents);
+    showToast(`Due date extended to ${newDueDate}! 📅`);
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        logs: updatedLogs,
+        events: updatedEvents,
+      }).catch(console.warn);
+    }
+  };
+
+  const handleUpdatePenaltySettings = (newSettings: HouseholdPenaltySettings) => {
+    setPenaltySettings(newSettings);
+    showToast('Penalty & grade rules updated!');
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        penaltySettings: newSettings,
+      }).catch(console.warn);
+    }
+  };
+
+  // Check unread nudges for currently selected member
+  useEffect(() => {
+    if (selectedMemberId && selectedMemberId !== 'all') {
+      const unread = nudges.find(n => n.memberId === selectedMemberId && !n.isRead);
+      if (unread) {
+        setActiveNudgeBanner(unread);
+        soundFX.playPop();
+      } else {
+        setActiveNudgeBanner(null);
+      }
+    } else {
+      setActiveNudgeBanner(null);
+    }
+  }, [selectedMemberId, nudges]);
+
+  const handleDismissNudge = (nudgeId: string) => {
+    const updated = nudges.map(n => n.id === nudgeId ? { ...n, isRead: true } : n);
+    setNudges(updated);
+    setActiveNudgeBanner(null);
   };
 
   const handleSaveChore = (savedChore: Chore) => {
@@ -712,8 +1144,9 @@ export default function App() {
   };
 
   const handleSaveMember = (memberData: Omit<HouseholdMember, 'id' | 'currentPoints' | 'lifetimePoints' | 'starsCount' | 'streakDays'> & { id?: string }) => {
+    let updatedList: HouseholdMember[];
     if (memberData.id) {
-      setMembers(prev => prev.map(m => {
+      updatedList = members.map(m => {
         if (m.id === memberData.id) {
           return {
             ...m,
@@ -721,7 +1154,8 @@ export default function App() {
           };
         }
         return m;
-      }));
+      });
+      setMembers(updatedList);
       showToast(`Helper ${memberData.name} updated!`);
     } else {
       const newMember: HouseholdMember = {
@@ -732,34 +1166,56 @@ export default function App() {
         starsCount: 0,
         streakDays: 1,
       };
-      setMembers(prev => [...prev, newMember]);
+      updatedList = [...members, newMember];
+      setMembers(updatedList);
       showToast(`New family helper ${memberData.name} added!`);
     }
     soundFX.playPop();
+
+    // Instant cloud sync push for avatar photos/profile edits
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        members: updatedList,
+      }).catch(console.warn);
+    }
   };
 
   const handleDeleteMember = (memberId: string) => {
-    setMembers(prev => prev.filter(m => m.id !== memberId));
+    const updated = members.filter(m => m.id !== memberId);
+    setMembers(updated);
     if (selectedMemberId === memberId) {
       setSelectedMemberId('all');
     }
     showToast('Family helper removed.');
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        members: updated,
+      }).catch(console.warn);
+    }
   };
 
   const handleAdjustPoints = (memberId: string, delta: number, reason: string) => {
-    setMembers(prev => prev.map(m => {
+    const updated = members.map(m => {
       if (m.id === memberId) {
-        const updated = Math.max(0, m.currentPoints + delta);
+        const nextPts = Math.max(0, m.currentPoints + delta);
         return {
           ...m,
-          currentPoints: updated,
+          currentPoints: nextPts,
           lifetimePoints: delta > 0 ? m.lifetimePoints + delta : m.lifetimePoints,
         };
       }
       return m;
-    }));
+    });
+    setMembers(updated);
     soundFX.playRewardCoin();
     showToast(`Points adjusted: ${delta > 0 ? '+' : ''}${delta} pts (${reason}).`);
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        members: updated,
+      }).catch(console.warn);
+    }
   };
 
   const handleClaimReward = (rewardId: string, memberId: string) => {
@@ -772,7 +1228,7 @@ export default function App() {
       return;
     }
 
-    setMembers(prev => prev.map(m => {
+    const updatedMembers = members.map(m => {
       if (m.id === memberId) {
         return {
           ...m,
@@ -780,7 +1236,8 @@ export default function App() {
         };
       }
       return m;
-    }));
+    });
+    setMembers(updatedMembers);
 
     const newClaim: RewardClaim = {
       id: `claim_${Date.now()}`,
@@ -793,38 +1250,115 @@ export default function App() {
       status: 'pending',
     };
 
-    setClaims(prev => [newClaim, ...prev]);
+    const updatedClaims = [newClaim, ...claims];
+    setClaims(updatedClaims);
     soundFX.playRewardCoin();
     showToast(`Reward "${reward.title}" requested for ${member.name}! Mom will review.`);
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        members: updatedMembers,
+        claims: updatedClaims,
+      }).catch(console.warn);
+    }
   };
 
-  const handleApproveClaim = (claimId: string) => {
-    setClaims(prev => prev.map(c => {
+  const handleApproveClaim = (claimId: string, parentNote?: string) => {
+    const updated = claims.map(c => {
       if (c.id === claimId) {
         return {
           ...c,
-          status: 'approved',
+          status: 'approved' as const,
+          parentNote: parentNote || c.parentNote,
+          approvedAt: new Date().toISOString(),
         };
       }
       return c;
-    }));
+    });
+    setClaims(updated);
     triggerConfettiCelebration();
     soundFX.playRewardCoin();
-    showToast('Reward claim approved!');
+    showToast('Reward claim approved! 🎉 Ready to enjoy.');
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        claims: updated,
+      }).catch(console.warn);
+    }
   };
 
-  const handleDeliverClaim = (claimId: string) => {
-    setClaims(prev => prev.map(c => {
+  const handleDeliverClaim = (claimId: string, parentNote?: string) => {
+    const updated = claims.map(c => {
       if (c.id === claimId) {
         return {
           ...c,
-          status: 'delivered',
+          status: 'delivered' as const,
+          parentNote: parentNote || c.parentNote,
+          deliveredAt: new Date().toISOString(),
         };
       }
       return c;
-    }));
-    soundFX.playRewardCoin();
-    showToast('Reward marked as delivered to helper!');
+    });
+    setClaims(updated);
+    soundFX.playFanfare();
+    showToast('Reward marked as delivered & fulfilled! 🎁');
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        claims: updated,
+      }).catch(console.warn);
+    }
+  };
+
+  const handleRejectClaim = (claimId: string, parentNote?: string) => {
+    const targetClaim = claims.find(c => c.id === claimId);
+    if (!targetClaim) return;
+
+    // Refund points to member
+    const updatedMembers = members.map(m => {
+      if (m.id === targetClaim.memberId) {
+        return {
+          ...m,
+          currentPoints: m.currentPoints + targetClaim.pointCost,
+        };
+      }
+      return m;
+    });
+    setMembers(updatedMembers);
+
+    const updatedClaims = claims.map(c => {
+      if (c.id === claimId) {
+        return {
+          ...c,
+          status: 'rejected' as const,
+          parentNote: parentNote || c.parentNote,
+          rejectedAt: new Date().toISOString(),
+        };
+      }
+      return c;
+    });
+    setClaims(updatedClaims);
+    soundFX.playPop();
+    showToast(`Claim refunded! ${targetClaim.pointCost} points returned to ${targetClaim.memberName}.`);
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        members: updatedMembers,
+        claims: updatedClaims,
+      }).catch(console.warn);
+    }
+  };
+
+  const handleDeleteClaim = (claimId: string) => {
+    const updated = claims.filter(c => c.id !== claimId);
+    setClaims(updated);
+    showToast('Redemption record deleted.');
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        claims: updated,
+      }).catch(console.warn);
+    }
   };
 
   const handleAddNewReward = (newReward: Omit<RewardItem, 'id'>) => {
@@ -832,17 +1366,31 @@ export default function App() {
       ...newReward,
       id: `reward_${Date.now()}`,
     };
-    setRewards(prev => [...prev, reward]);
+    const updated = [...rewards, reward];
+    setRewards(updated);
     showToast(`Reward "${reward.title}" added to catalog.`);
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        rewards: updated,
+      }).catch(console.warn);
+    }
   };
 
   const handleDeleteReward = (rewardId: string) => {
-    setRewards(prev => prev.filter(r => r.id !== rewardId));
+    const updated = rewards.filter(r => r.id !== rewardId);
+    setRewards(updated);
     showToast('Reward deleted.');
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        rewards: updated,
+      }).catch(console.warn);
+    }
   };
 
   const handleApplyAIAssignments = (newAssignments: { choreId: string; memberId: string }[]) => {
-    setChores(prev => prev.map(chore => {
+    const updatedChores = chores.map(chore => {
       const match = newAssignments.find(a => a.choreId === chore.id);
       if (match) {
         return {
@@ -851,15 +1399,30 @@ export default function App() {
         };
       }
       return chore;
-    }));
+    });
+    setChores(updatedChores);
     triggerBigCelebration();
     soundFX.playComplete();
     showToast(`AI successfully auto-assigned ${newAssignments.length} chores based on helper ages and skill levels!`);
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        chores: updatedChores,
+      }).catch(console.warn);
+    }
   };
 
   const handleSaveHouseholdInfo = (newInfo: HouseholdInfo) => {
     setHouseholdInfo(newInfo);
     showToast('Household profile and photo saved successfully! 🏡');
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        familyName: newInfo.familyName,
+        houseAddressOrMotto: newInfo.houseAddressOrMotto,
+        housePhotoUrl: newInfo.housePhotoUrl,
+      }).catch(console.warn);
+    }
   };
 
   const handleResetDemo = () => {
@@ -895,6 +1458,7 @@ export default function App() {
         members={members}
         householdInfo={householdInfo}
         onOpenCloudSync={() => setIsCloudSyncModalOpen(true)}
+        onOpenQuickSettings={() => setIsQuickSettingsOpen(true)}
         onOpenHouseSettings={() => {
           if (!isMomMode) {
             requestParentAuth(
@@ -924,6 +1488,31 @@ export default function App() {
         onToggleSound={handleToggleSound}
       />
 
+      {/* Live Nudge Alert Banner for Kids & Family */}
+      {activeNudgeBanner && (
+        <div className="fixed top-18 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-3.5 rounded-2xl shadow-xl border border-amber-300 flex items-center justify-between gap-3 animate-in slide-in-from-top-4 duration-300 no-print">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <span className="text-base">🔔</span>
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11px] font-black uppercase tracking-wider text-amber-100">
+                {activeNudgeBanner.senderName} says:
+              </div>
+              <p className="text-xs font-bold truncate">
+                {activeNudgeBanner.message}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => handleDismissNudge(activeNudgeBanner.id)}
+            className="px-2.5 py-1 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-black shrink-0 cursor-pointer min-h-[32px]"
+          >
+            Got it!
+          </button>
+        </div>
+      )}
+
       {/* Navigation Tabs Bar */}
       <Navigation
         currentView={currentView}
@@ -933,13 +1522,14 @@ export default function App() {
         }}
         pendingInspectionCount={pendingInspectionCount}
         pendingRewardCount={pendingRewardCount}
+        overdueStatusCount={evaluateHouseholdStatus(members, chores, logs, penaltySettings).behindMembers.length}
         isMomMode={isMomMode}
         language={language}
         currentTheme={currentTheme}
       />
 
       {/* Primary Page Canvas */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 relative z-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 pb-28 sm:pb-8">
         {currentView === 'today' && (
           <DailyScheduleView
             currentDateStr={currentDateStr}
@@ -960,6 +1550,26 @@ export default function App() {
             onEditChore={(chore) => setChoreModalData({ isOpen: true, choreToEdit: chore })}
             onOpenAIAssign={() => setIsAIAssignModalOpen(true)}
             onOpenGoogleCalendar={() => setCurrentView('calendar')}
+            onNavigateView={(v) => setCurrentView(v)}
+          />
+        )}
+
+        {currentView === 'status' && (
+          <StatusView
+            members={members}
+            chores={chores}
+            logs={logs}
+            penaltySettings={penaltySettings}
+            events={events}
+            nudges={nudges}
+            isMomMode={isMomMode}
+            currentTheme={currentTheme}
+            onSendNudge={handleSendNudge}
+            onWaivePenalty={handleWaivePenalty}
+            onExtendDueDate={handleExtendDueDate}
+            onBatchWaivePenalties={handleBatchWaivePenalties}
+            onUpdatePenaltySettings={handleUpdatePenaltySettings}
+            onNavigateToInspection={() => setCurrentView('inspection')}
           />
         )}
 
@@ -974,6 +1584,7 @@ export default function App() {
             logs={logs}
             members={members}
             selectedMemberId={selectedMemberId}
+            currentTheme={currentTheme}
             onSelectMember={(id) => setSelectedMemberId(id)}
             onOpenInspect={(chore, log) => handleOpenInspect(chore, log)}
             onOpenPrintView={() => setCurrentView('reports')}
@@ -985,6 +1596,8 @@ export default function App() {
             chores={chores}
             logs={logs}
             members={members}
+            language={language}
+            currentTheme={currentTheme}
             onOpenInspect={(chore, log) => handleOpenInspect(chore, log)}
             onQuickApprove={handleQuickApprove}
             onBatchApproveAll={handleBatchApproveAll}
@@ -995,6 +1608,7 @@ export default function App() {
           <ChoreLibraryView
             chores={chores}
             members={members}
+            currentTheme={currentTheme}
             onOpenNewChore={() => setChoreModalData({ isOpen: true, choreToEdit: null })}
             onEditChore={(chore) => setChoreModalData({ isOpen: true, choreToEdit: chore })}
             onDeleteChore={handleDeleteChore}
@@ -1009,6 +1623,7 @@ export default function App() {
             chores={chores}
             householdInfo={householdInfo}
             isMomMode={isMomMode}
+            currentTheme={currentTheme}
             onOpenNewMember={() => setMemberModalData({ isOpen: true, memberToEdit: null })}
             onEditMember={(member) => setMemberModalData({ isOpen: true, memberToEdit: member })}
             onDeleteMember={handleDeleteMember}
@@ -1023,11 +1638,29 @@ export default function App() {
             claims={claims}
             members={members}
             isMomMode={isMomMode}
+            currentTheme={currentTheme}
             onClaimReward={handleClaimReward}
             onApproveClaim={handleApproveClaim}
             onDeliverClaim={handleDeliverClaim}
+            onRejectClaim={handleRejectClaim}
             onAddNewReward={handleAddNewReward}
             onDeleteReward={handleDeleteReward}
+            onNavigateToRedemptions={() => setCurrentView('redemptions')}
+          />
+        )}
+
+        {currentView === 'redemptions' && (
+          <RedemptionsManagerView
+            claims={claims}
+            rewards={rewards}
+            members={members}
+            isMomMode={isMomMode}
+            currentTheme={currentTheme}
+            onApproveClaim={handleApproveClaim}
+            onDeliverClaim={handleDeliverClaim}
+            onRejectClaim={handleRejectClaim}
+            onDeleteClaim={handleDeleteClaim}
+            onNavigateToRewards={() => setCurrentView('rewards')}
           />
         )}
 
@@ -1068,6 +1701,7 @@ export default function App() {
           onClose={() => setIsAIAssignModalOpen(false)}
           members={members}
           chores={chores}
+          currentTheme={currentTheme}
           onApplyAssignments={handleApplyAIAssignments}
         />
       )}
@@ -1080,6 +1714,7 @@ export default function App() {
           chore={inspectModalData.chore}
           log={inspectModalData.log}
           assignee={members.find(m => m.id === inspectModalData.chore?.assignedMemberId) || null}
+          currentTheme={currentTheme}
           onSaveGrading={handleSaveGrading}
         />
       )}
@@ -1091,6 +1726,7 @@ export default function App() {
           onClose={() => setChoreModalData({ isOpen: false, choreToEdit: null })}
           choreToEdit={choreModalData.choreToEdit}
           members={members}
+          currentTheme={currentTheme}
           onSaveChore={handleSaveChore}
         />
       )}
@@ -1101,6 +1737,7 @@ export default function App() {
           isOpen={memberModalData.isOpen}
           onClose={() => setMemberModalData({ isOpen: false, memberToEdit: null })}
           memberToEdit={memberModalData.memberToEdit}
+          currentTheme={currentTheme}
           onSaveMember={handleSaveMember}
         />
       )}
@@ -1121,6 +1758,7 @@ export default function App() {
           }}
           actionTitle={pinModalTitle}
           actionDescription={pinModalDesc}
+          currentTheme={currentTheme}
         />
       )}
 
@@ -1134,6 +1772,46 @@ export default function App() {
         onHouseholdConnected={handleHouseholdConnected}
         onHouseholdDisconnected={handleHouseholdDisconnected}
         onShowToast={(msg) => showToast(msg)}
+      />
+
+      {/* Quick Settings & Tools Modal */}
+      <QuickSettingsModal
+        isOpen={isQuickSettingsOpen}
+        onClose={() => setIsQuickSettingsOpen(false)}
+        language={language}
+        onSelectLanguage={handleSelectLanguage}
+        currentTheme={currentTheme}
+        onSelectTheme={handleSelectTheme}
+        isSoundEnabled={isSoundEnabled}
+        onToggleSound={handleToggleSound}
+        householdInfo={householdInfo}
+        onOpenCloudSync={() => setIsCloudSyncModalOpen(true)}
+        onOpenGoogleCalendar={() => setCurrentView('calendar')}
+        onOpenPrintView={() => setCurrentView('reports')}
+        onOpenFamilyMembers={() => {
+          if (!isMomMode) {
+            requestParentAuth(
+              () => setCurrentView('members'),
+              'Household Members Security',
+              'Enter Parent PIN to manage members, avatars, and PINs.'
+            );
+          } else {
+            setCurrentView('members');
+          }
+        }}
+        onOpenHouseSettings={() => {
+          if (!isMomMode) {
+            requestParentAuth(
+              () => setIsHouseSettingsModalOpen(true),
+              'Household Settings Security',
+              'Enter Parent PIN to manage house profile, PIN settings, and family goals.'
+            );
+          } else {
+            setIsHouseSettingsModalOpen(true);
+          }
+        }}
+        onResetDemo={handleResetDemo}
+        isMomMode={isMomMode}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -6,18 +6,19 @@ import {
   CheckCircle2, 
   Sparkles, 
   Clock, 
-  User, 
   Printer, 
   ArrowRight,
-  Filter,
   Home,
-  Users
+  Users,
+  Layers,
+  CalendarDays
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
 import { getWeekDates, parseLocalDate, isChoreScheduledForDate, formatTimeDisplay } from '../utils/storage';
 import { WeeklyWorkloadChart } from './WeeklyWorkloadChart';
 import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
+import { ThemePreset, THEMES } from '../utils/theme';
 
 interface WeeklyScheduleViewProps {
   currentDateStr: string;
@@ -26,6 +27,7 @@ interface WeeklyScheduleViewProps {
   logs: ChoreAssignmentLog[];
   members: HouseholdMember[];
   selectedMemberId: string;
+  currentTheme?: ThemePreset;
   onSelectMember: (id: string) => void;
   onOpenInspect: (chore: Chore, log: ChoreAssignmentLog) => void;
   onOpenPrintView: () => void;
@@ -38,13 +40,25 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
   logs,
   members,
   selectedMemberId,
+  currentTheme = 'rose',
   onSelectMember,
   onOpenInspect,
   onOpenPrintView,
 }) => {
+  const theme = THEMES[currentTheme] || THEMES.rose;
   const [centerDate, setCenterDate] = useState<string>(currentDateStr);
+  const [selectedMobileDay, setSelectedMobileDay] = useState<string>(currentDateStr);
+  const [mobileViewMode, setMobileViewMode] = useState<'single_day' | 'all_days'>('single_day');
 
   const weekDays = getWeekDates(centerDate);
+
+  // Keep selectedMobileDay valid when week changes
+  useEffect(() => {
+    if (!weekDays.some(d => d.dateStr === selectedMobileDay)) {
+      const todayInWeek = weekDays.find(d => d.isToday);
+      setSelectedMobileDay(todayInWeek ? todayInWeek.dateStr : weekDays[0].dateStr);
+    }
+  }, [centerDate, weekDays, selectedMobileDay]);
 
   const handlePrevWeek = () => {
     soundFX.playPop();
@@ -53,7 +67,9 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    setCenterDate(`${yyyy}-${mm}-${dd}`);
+    const nextDate = `${yyyy}-${mm}-${dd}`;
+    setCenterDate(nextDate);
+    setSelectedMobileDay(nextDate);
   };
 
   const handleNextWeek = () => {
@@ -63,77 +79,77 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    setCenterDate(`${yyyy}-${mm}-${dd}`);
+    const nextDate = `${yyyy}-${mm}-${dd}`;
+    setCenterDate(nextDate);
+    setSelectedMobileDay(nextDate);
   };
 
-  const activeMembers = selectedMemberId === 'all' 
-    ? members 
-    : members.filter(m => m.id === selectedMemberId);
-
   return (
-    <div className="space-y-6">
-      {/* Week Navigation & Contextual Filter Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700">
-              <Calendar className="w-5 h-5" />
+    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto pb-8">
+      {/* iOS Navigation Header & Family Filter */}
+      <div className="space-y-3">
+        {/* Top Week Range & Action Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                Weekly Schedule
+              </h1>
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900">
-                Weekly Family Schedule Board
-              </h2>
-              <p className="text-xs text-slate-500">
-                Week of {weekDays[0].dayName}, {weekDays[0].dateStr} — {weekDays[6].dayName}, {weekDays[6].dateStr}
-              </p>
-            </div>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+              Week of {weekDays[0].dayName}, {weekDays[0].dateStr.slice(5)} — {weekDays[6].dayName}, {weekDays[6].dateStr.slice(5)}
+            </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrevWeek}
-              className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-              title="Previous Week"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+          {/* Week Date Pager & Print Button */}
+          <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+            <div className="inline-flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-2xs">
+              <button
+                onClick={handlePrevWeek}
+                className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center active:scale-95"
+                title="Previous Week"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
 
-            <button
-              onClick={() => {
-                soundFX.playPop();
-                setCenterDate(new Date().toISOString().split('T')[0]);
-              }}
-              className="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
-            >
-              This Week
-            </button>
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  const today = new Date().toISOString().split('T')[0];
+                  setCenterDate(today);
+                  setSelectedMobileDay(today);
+                }}
+                className="text-xs font-bold px-3.5 py-1.5 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-white transition-all cursor-pointer min-h-[38px] flex items-center"
+              >
+                This Week
+              </button>
 
-            <button
-              onClick={handleNextWeek}
-              className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-              title="Next Week"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+              <button
+                onClick={handleNextWeek}
+                className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white transition-all cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center active:scale-95"
+                title="Next Week"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
 
             <button
               onClick={() => {
                 soundFX.playPop();
                 onOpenPrintView();
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors ml-2 cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer active:scale-95 shadow-2xs min-h-[44px]"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print Fridge Grid</span>
+              <Printer className="w-4 h-4" />
+              <span>Print Grid</span>
             </button>
           </div>
         </div>
 
-        {/* Member Filter Chips for the Weekly Matrix */}
-        <div className="pt-3 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1">
-            <Users className="w-3.5 h-3.5 text-indigo-500" />
-            <span>Filter Schedule:</span>
+        {/* Member Filter Chips (Apple Horizontal Carousel) */}
+        <div className="bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center gap-2 overflow-x-auto scrollbar-none">
+          <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 shrink-0 ml-1 mr-0.5">
+            Helper:
           </span>
 
           <button
@@ -142,17 +158,17 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
               soundFX.playPop();
               onSelectMember('all');
             }}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 cursor-pointer min-h-[40px] active:scale-95 ${
               selectedMemberId === 'all'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                ? `${theme.primaryBg} ${theme.primaryText} shadow-xs font-black`
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80'
             }`}
           >
-            <Home className="w-3.5 h-3.5" />
+            <Home className="w-4 h-4" />
             <span>Whole Family</span>
           </button>
 
-          {members.map((m) => {
+          {members.filter(m => m.role !== 'parent').map((m) => {
             const isSelected = selectedMemberId === m.id;
             return (
               <button
@@ -162,10 +178,10 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                   soundFX.playPop();
                   onSelectMember(m.id);
                 }}
-                className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 cursor-pointer ${
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 cursor-pointer min-h-[40px] active:scale-95 ${
                   isSelected
-                    ? 'bg-rose-500 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? `${theme.primaryBg} ${theme.primaryText} shadow-xs font-black`
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80'
                 }`}
               >
                 <Avatar
@@ -175,8 +191,8 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                   size="xs"
                   showBorder={false}
                 />
-                <span>{m.name}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                <span>{m.name.split(' ')[0]}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
                   isSelected ? 'bg-black/20 text-white' : 'bg-slate-200 text-slate-700'
                 }`}>
                   {m.currentPoints} pts
@@ -196,10 +212,195 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
         showInsights={true}
       />
 
-      {/* 7-Day Columns Matrix */}
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+      {/* Mobile Day Selector Strip (Visible on small screens < md) */}
+      <div className="md:hidden space-y-3">
+        {/* iOS Weekday Picker Strip */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-3 shadow-2xs">
+          <div className="flex items-center justify-between px-1 py-1 mb-2 border-b border-slate-100 pb-2">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+              Select Day:
+            </span>
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                setMobileViewMode(mobileViewMode === 'single_day' ? 'all_days' : 'single_day');
+              }}
+              className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer active:scale-95 min-h-[32px]"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>{mobileViewMode === 'single_day' ? 'Expand All Days' : 'Focus Single Day'}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1.5">
+            {weekDays.map((day) => {
+              const isSelected = selectedMobileDay === day.dateStr;
+              const scheduled = chores.filter(c => isChoreScheduledForDate(c, day.dateStr));
+              const filteredScheduled = selectedMemberId === 'all'
+                ? scheduled
+                : scheduled.filter(c => c.assignedMemberId === selectedMemberId);
+              
+              const dayLogs = logs.filter(l => l.date === day.dateStr);
+              const approvedCount = dayLogs.filter(l => l.status === 'approved' && filteredScheduled.some(c => c.id === l.choreId)).length;
+              const hasReview = dayLogs.some(l => l.status === 'needs_review' && filteredScheduled.some(c => c.id === l.choreId));
+
+              return (
+                <button
+                  key={day.dateStr}
+                  onClick={() => {
+                    soundFX.playPop();
+                    setSelectedMobileDay(day.dateStr);
+                    setMobileViewMode('single_day');
+                  }}
+                  className={`py-2.5 px-1 rounded-2xl text-center transition-all flex flex-col items-center justify-center relative cursor-pointer min-h-[64px] active:scale-95 ${
+                    isSelected
+                      ? `${theme.primaryBg} ${theme.primaryText} shadow-xs font-extrabold`
+                      : day.isToday
+                      ? `${theme.badgeBg} ${theme.badgeText} border ${theme.badgeBorder}`
+                      : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isSelected ? 'opacity-90' : 'text-slate-400'}`}>
+                    {day.dayName.slice(0, 3)}
+                  </span>
+                  <span className="text-base font-black leading-tight my-0.5">
+                    {day.dayNumber}
+                  </span>
+                  <span className={`text-[10px] font-bold ${isSelected ? 'opacity-95' : 'text-slate-500'}`}>
+                    {approvedCount}/{filteredScheduled.length}
+                  </span>
+                  {hasReview && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 animate-pulse ring-2 ring-white" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Mobile Focused Day Card (when in single_day mode) */}
+        {mobileViewMode === 'single_day' && (() => {
+          const focusedDay = weekDays.find(d => d.dateStr === selectedMobileDay) || weekDays[0];
+          const scheduled = chores.filter(c => isChoreScheduledForDate(c, focusedDay.dateStr));
+          const filteredScheduled = selectedMemberId === 'all'
+            ? scheduled
+            : scheduled.filter(c => c.assignedMemberId === selectedMemberId);
+
+          const dayLogs = logs.filter(l => l.date === focusedDay.dateStr);
+          const approvedCount = dayLogs.filter(l => l.status === 'approved' && filteredScheduled.some(c => c.id === l.choreId)).length;
+          const reviewCount = dayLogs.filter(l => l.status === 'needs_review' && filteredScheduled.some(c => c.id === l.choreId)).length;
+
+          return (
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-black text-slate-900">
+                      {focusedDay.dayName}, {focusedDay.dateStr}
+                    </h3>
+                    {focusedDay.isToday && (
+                      <span className={`px-2.5 py-0.5 rounded-full ${theme.primaryBg} ${theme.primaryText} text-[10px] font-black`}>
+                        TODAY
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {approvedCount} of {filteredScheduled.length} completed
+                    {reviewCount > 0 && ` • ${reviewCount} waiting inspection`}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => onSelectDate(focusedDay.dateStr)}
+                  className={`px-4 py-2 rounded-xl ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} text-xs font-black flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer min-h-[40px]`}
+                >
+                  <span>Open Day</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Chores list */}
+              {filteredScheduled.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400 italic">
+                  No chores scheduled for this day
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {filteredScheduled.map((chore) => {
+                    const log = logs.find(l => l.choreId === chore.id && l.date === focusedDay.dateStr);
+                    const assignee = members.find(m => m.id === chore.assignedMemberId);
+                    const status = log?.status || 'pending';
+
+                    return (
+                      <div
+                        key={`${chore.id}_${focusedDay.dateStr}`}
+                        onClick={() => {
+                          if (status === 'needs_review' && log) {
+                            onOpenInspect(chore, log);
+                          } else {
+                            onSelectDate(focusedDay.dateStr);
+                          }
+                        }}
+                        className={`p-3.5 rounded-2xl border text-xs cursor-pointer transition-all flex items-center justify-between gap-3 active:scale-[0.99] min-h-[56px] ${
+                          status === 'approved'
+                            ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                            : status === 'needs_review'
+                            ? 'bg-amber-50 border-amber-300 text-amber-950 ring-1 ring-amber-200'
+                            : status === 'needs_redo'
+                            ? 'bg-rose-50 border-rose-200 text-rose-950'
+                            : 'bg-white border-slate-200 hover:border-slate-300 text-slate-900 shadow-2xs'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {assignee && (
+                            <Avatar
+                              photoUrl={assignee.avatarPhotoUrl}
+                              emoji={assignee.avatarEmoji}
+                              name={assignee.name}
+                              size="sm"
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-bold text-xs truncate text-slate-900">
+                              {chore.title}
+                            </p>
+                            <p className="text-[11px] text-slate-500 font-medium">
+                              {formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)} • ⭐ {chore.defaultPoints} pts
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0">
+                          {status === 'approved' && (
+                            <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-black text-xs flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              {log?.qualityGrade || 'A+'}
+                            </span>
+                          )}
+                          {status === 'needs_review' && (
+                            <span className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs">
+                              Inspect 🔍
+                            </span>
+                          )}
+                          {status === 'pending' && (
+                            <span className="text-slate-400 text-sm font-bold pr-1">
+                              →
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* 7-Day Columns Matrix (Desktop OR when Mobile 'all_days' mode is selected) */}
+      <div className={`grid grid-cols-1 md:grid-cols-7 gap-3 ${mobileViewMode === 'single_day' ? 'hidden md:grid' : 'grid'}`}>
         {weekDays.map((day) => {
-          // Get chores scheduled for this specific date
           const scheduled = chores.filter(c => isChoreScheduledForDate(c, day.dateStr));
           const filteredScheduled = selectedMemberId === 'all'
             ? scheduled
@@ -212,10 +413,10 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
           return (
             <div
               key={day.dateStr}
-              className={`bg-white rounded-xl border transition-all flex flex-col min-h-[380px] ${
+              className={`bg-white rounded-2xl border transition-all flex flex-col min-h-[380px] overflow-hidden ${
                 day.isToday
                   ? 'border-rose-300 ring-2 ring-rose-100 shadow-sm'
-                  : 'border-slate-200 hover:border-slate-300 shadow-xs'
+                  : 'border-slate-200 hover:border-slate-300 shadow-2xs'
               }`}
             >
               {/* Day Column Header */}
@@ -227,20 +428,20 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                     : 'bg-slate-50/70 border-slate-100 text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400 mb-0.5">
                   <span>{day.dayName}</span>
                   {day.isToday && (
-                    <span className="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[9px]">
+                    <span className="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[9px] font-black">
                       TODAY
                     </span>
                   )}
                 </div>
-                <div className="text-lg font-extrabold text-slate-900">
+                <div className="text-lg font-black text-slate-900">
                   {day.dayNumber}
                 </div>
 
-                <div className="mt-1 flex items-center justify-center gap-1 text-[10px] text-slate-500">
-                  <span className="font-semibold">{approvedCount}/{filteredScheduled.length}</span> done
+                <div className="mt-1 flex items-center justify-center gap-1 text-[10px] text-slate-500 font-medium">
+                  <span className="font-bold">{approvedCount}/{filteredScheduled.length}</span> done
                   {reviewCount > 0 && (
                     <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse ml-0.5" title={`${reviewCount} need review`} />
                   )}
@@ -250,7 +451,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
               {/* Chores List in Day Column */}
               <div className="p-2 space-y-2 flex-1 overflow-y-auto max-h-[420px]">
                 {filteredScheduled.length === 0 ? (
-                  <div className="py-8 text-center text-[11px] text-slate-400">
+                  <div className="py-8 text-center text-[11px] text-slate-400 italic">
                     No chores
                   </div>
                 ) : (
@@ -269,7 +470,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                             onSelectDate(day.dateStr);
                           }
                         }}
-                        className={`p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                        className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all active:scale-[0.98] ${
                           status === 'approved'
                             ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
                             : status === 'needs_review'
@@ -280,22 +481,22 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                         }`}
                       >
                         <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600">
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-lg bg-slate-100 text-slate-600">
                             {formatTimeDisplay(chore.scheduledTime, chore.timeOfDay).split(' ')[0]}
                           </span>
 
-                          <span className="text-[10px] font-bold text-amber-700">
+                          <span className="text-[10px] font-black text-amber-700">
                             ⭐{chore.defaultPoints}
                           </span>
                         </div>
 
-                        <p className="font-semibold text-[11px] leading-tight line-clamp-2 mb-1.5">
+                        <p className="font-bold text-[11px] leading-tight line-clamp-2 mb-1.5">
                           {chore.title}
                         </p>
 
                         <div className="flex items-center justify-between text-[10px]">
                           {assignee && (
-                            <span className="flex items-center gap-1 text-slate-500">
+                            <span className="flex items-center gap-1 text-slate-500 font-semibold">
                               <span>{assignee.avatarEmoji}</span>
                               <span className="truncate max-w-[50px]">{assignee.name.split(' ')[0]}</span>
                             </span>
@@ -309,7 +510,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                           )}
 
                           {status === 'needs_review' && (
-                            <span className="text-amber-700 font-bold bg-amber-100 px-1 py-0.2 rounded text-[9px]">
+                            <span className="text-amber-800 font-bold bg-amber-100 px-1.5 py-0.2 rounded-md text-[9px]">
                               Inspect
                             </span>
                           )}
@@ -324,7 +525,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
               <div className="p-2 border-t border-slate-100 text-center">
                 <button
                   onClick={() => onSelectDate(day.dateStr)}
-                  className="w-full text-[11px] font-semibold text-slate-500 hover:text-slate-900 py-1 hover:bg-slate-50 rounded transition-colors flex items-center justify-center gap-1"
+                  className="w-full text-[11px] font-bold text-slate-500 hover:text-slate-900 py-1 hover:bg-slate-50 rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <span>Open Day</span>
                   <ArrowRight className="w-3 h-3" />

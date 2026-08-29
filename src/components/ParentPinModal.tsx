@@ -8,6 +8,7 @@ import { Lock, Unlock, KeyRound, X, Check, AlertCircle, ShieldAlert, ArrowLeft, 
 import { verifyParentPin, setParentPin, setParentSessionUnlocked, getParentPin, isPinProtectionEnabled } from '../utils/parentLock';
 import { getCurrentHouseholdId } from '../utils/firebaseSync';
 import { soundFX } from '../utils/audio';
+import { ThemePreset, THEMES } from '../utils/theme';
 
 interface ParentPinModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface ParentPinModalProps {
   onSuccess: () => void;
   actionTitle?: string;
   actionDescription?: string;
+  currentTheme?: ThemePreset;
 }
 
 export const ParentPinModal: React.FC<ParentPinModalProps> = ({
@@ -23,7 +25,9 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
   onSuccess,
   actionTitle = 'Mom / Parent Mode Access',
   actionDescription = 'Enter the 4-digit Parent PIN to access inspection scores, approvals, and house controls.',
+  currentTheme = 'rose',
 }) => {
+  const theme = THEMES[currentTheme] || THEMES.rose;
   const [pin, setPin] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState<boolean>(false);
@@ -171,7 +175,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
         }`}
       >
         {/* Top Header */}
-        <div className="bg-gradient-to-r from-rose-600 to-amber-500 p-4 sm:p-5 text-white flex items-center justify-between">
+        <div className={`${theme.primaryBg} p-4 sm:p-5 ${theme.primaryText} flex items-center justify-between`}>
           <div className="flex items-center space-x-2.5">
             <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-lg shadow-xs">
               <Lock className="w-5 h-5 text-white" />
@@ -180,7 +184,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
               <h2 className="text-sm sm:text-base font-bold leading-tight">
                 {isChangingPin ? 'Change Parent PIN' : actionTitle}
               </h2>
-              <p className="text-[11px] text-rose-100">
+              <p className="text-[11px] opacity-85">
                 {isChangingPin ? (isCloud ? 'Cloud-synced across all family devices ☁️' : 'Set a custom 4-digit code') : 'Parent & Admin Security'}
               </p>
             </div>
@@ -213,7 +217,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
                     key={index}
                     className={`w-4 h-4 rounded-full transition-all duration-150 ${
                       filled
-                        ? 'bg-rose-500 scale-110 shadow-xs'
+                        ? `${theme.primaryBg} scale-110 shadow-xs`
                         : 'bg-slate-200 border border-slate-300'
                     }`}
                   />

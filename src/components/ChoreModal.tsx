@@ -13,12 +13,14 @@ import {
   Wand2
 } from 'lucide-react';
 import { Chore, ChoreCategory, ChoreFrequency, HouseholdMember, TimeOfDay } from '../types';
+import { ThemePreset, THEMES } from '../utils/theme';
 
 interface ChoreModalProps {
   isOpen: boolean;
   onClose: () => void;
   choreToEdit: Chore | null;
   members: HouseholdMember[];
+  currentTheme?: ThemePreset;
   onSaveChore: (choreData: Omit<Chore, 'id'> & { id?: string }) => void;
 }
 
@@ -27,9 +29,12 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
   onClose,
   choreToEdit,
   members,
+  currentTheme = 'rose',
   onSaveChore,
 }) => {
   if (!isOpen) return null;
+
+  const theme = THEMES[currentTheme] || THEMES.rose;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -214,22 +219,27 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div 
         id="chore-form-modal"
-        className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 duration-200 max-h-[92vh] sm:max-h-[94vh] flex flex-col"
       >
+        {/* iOS Drag Handle for Mobile */}
+        <div className={`sm:hidden pt-2.5 pb-1 flex justify-center ${theme.primaryBg} shrink-0`}>
+          <div className="w-10 h-1 rounded-full bg-white/40" />
+        </div>
+
         {/* Header */}
-        <div className="bg-slate-900 p-5 text-white flex items-center justify-between">
+        <div className={`${theme.primaryBg} px-4 py-3.5 sm:p-5 text-white flex items-center justify-between shrink-0 shadow-xs`}>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-xs">
               📝
             </div>
             <div>
-              <h2 className="text-lg font-bold">
+              <h2 className="text-base sm:text-lg font-bold leading-tight">
                 {choreToEdit ? 'Edit Household Chore' : 'Create New Household Chore'}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] text-white/80">
                 Set schedules, quality inspection criteria, and point rewards
               </p>
             </div>
@@ -237,7 +247,8 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            aria-label="Close modal"
+            className="p-2 rounded-2xl text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -245,49 +256,50 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
 
         {/* Quick Presets for New Chores */}
         {!choreToEdit && (
-          <div className="bg-slate-50 px-5 py-2.5 border-b border-slate-200 flex items-center gap-2 overflow-x-auto scrollbar-none text-xs">
-            <span className="text-slate-500 font-semibold flex items-center gap-1 shrink-0">
-              <Wand2 className="w-3.5 h-3.5 text-rose-500" /> Presets:
+          <div className="bg-slate-50/90 px-3 sm:px-5 py-2 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto scrollbar-none text-xs shrink-0">
+            <span className="text-slate-500 font-semibold flex items-center gap-1 shrink-0 text-[11px]">
+              <Wand2 className={`w-3.5 h-3.5 ${theme.badgeText}`} /> Presets:
             </span>
             <button
               type="button"
               onClick={() => applyTemplatePreset('dishwasher')}
-              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-md font-medium text-slate-700 whitespace-nowrap"
+              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-lg font-medium text-slate-700 whitespace-nowrap active:scale-95 text-xs"
             >
               🍽️ Dishwasher
             </button>
             <button
               type="button"
               onClick={() => applyTemplatePreset('bedroom')}
-              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-md font-medium text-slate-700 whitespace-nowrap"
+              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-lg font-medium text-slate-700 whitespace-nowrap active:scale-95 text-xs"
             >
               🛏️ Tidy Room
             </button>
             <button
               type="button"
               onClick={() => applyTemplatePreset('bathroom')}
-              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-md font-medium text-slate-700 whitespace-nowrap"
+              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-lg font-medium text-slate-700 whitespace-nowrap active:scale-95 text-xs"
             >
               🛁 Bathroom
             </button>
             <button
               type="button"
               onClick={() => applyTemplatePreset('trash')}
-              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-md font-medium text-slate-700 whitespace-nowrap"
+              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-lg font-medium text-slate-700 whitespace-nowrap active:scale-95 text-xs"
             >
               🗑️ Trash Bins
             </button>
             <button
               type="button"
               onClick={() => applyTemplatePreset('pets')}
-              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-md font-medium text-slate-700 whitespace-nowrap"
+              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 rounded-lg font-medium text-slate-700 whitespace-nowrap active:scale-95 text-xs"
             >
               🐶 Pet Feeding
             </button>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           
           {/* Chore Title */}
           <div>
@@ -301,7 +313,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
               placeholder="e.g. Unload & Reload Dishwasher"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full text-sm p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 font-medium"
+              className={`w-full text-sm p-2.5 rounded-xl border border-slate-300 focus:ring-2 ${theme.accentRing} font-medium`}
             />
           </div>
 
@@ -316,7 +328,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
               placeholder="Provide simple, clear steps for how this chore should be done."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500"
+              className={`w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 ${theme.accentRing}`}
             />
           </div>
 
@@ -329,7 +341,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as ChoreCategory)}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-rose-500 font-medium"
+                className={`w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 ${theme.accentRing} font-medium`}
               >
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -344,7 +356,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
               <select
                 value={assignedMemberId}
                 onChange={(e) => setAssignedMemberId(e.target.value)}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-rose-500 font-medium"
+                className={`w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 ${theme.accentRing} font-medium`}
               >
                 <option value="unassigned">🤝 Unassigned / Open Pool</option>
                 {members.map((m) => (
@@ -416,10 +428,10 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                       key={idx}
                       type="button"
                       onClick={() => toggleDay(idx)}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
                         isSelected
-                          ? 'bg-rose-600 text-white shadow-xs'
-                          : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
+                          ? `${theme.primaryBg} text-white shadow-xs`
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                       }`}
                     >
                       {day}
@@ -442,7 +454,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                 max="200"
                 value={defaultPoints}
                 onChange={(e) => setDefaultPoints(Number(e.target.value))}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 font-bold text-amber-900 focus:ring-2 focus:ring-rose-500"
+                className={`w-full text-xs p-2.5 rounded-xl border border-slate-300 font-bold text-amber-900 focus:ring-2 ${theme.accentRing}`}
               />
             </div>
 
@@ -456,7 +468,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                 max="240"
                 value={estimatedMinutes}
                 onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 font-medium focus:ring-2 focus:ring-rose-500"
+                className={`w-full text-xs p-2.5 rounded-xl border border-slate-300 font-medium focus:ring-2 ${theme.accentRing}`}
               />
             </div>
 
@@ -467,7 +479,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
-                className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-rose-500"
+                className={`w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 ${theme.accentRing}`}
               >
                 <option value="easy">🟢 Easy</option>
                 <option value="medium">🟡 Medium</option>
@@ -495,7 +507,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveChecklistItem(idx)}
-                    className="text-slate-400 hover:text-rose-600 p-0.5"
+                    className="text-slate-400 hover:text-rose-600 p-0.5 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -516,31 +528,33 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                     handleAddChecklistItem();
                   }
                 }}
-                className="flex-1 text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-rose-500"
+                className={`flex-1 text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 ${theme.accentRing}`}
               />
               <button
                 type="button"
                 onClick={handleAddChecklistItem}
-                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors shrink-0"
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors shrink-0 cursor-pointer"
               >
                 + Add Step
               </button>
             </div>
           </div>
 
-          {/* Footer Save Buttons */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2">
+          </div>
+
+          {/* Sticky Footer Save Buttons */}
+          <div className="p-3 sm:p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors min-h-[44px] cursor-pointer"
             >
               Cancel
             </button>
             <button
               id="btn-save-chore"
               type="submit"
-              className="px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-colors"
+              className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold ${theme.primaryBg} ${theme.primaryHover} ${theme.primaryText} shadow-xs transition-transform active:scale-[0.98] cursor-pointer min-h-[44px]`}
             >
               {choreToEdit ? 'Save Changes' : 'Create Chore'}
             </button>
