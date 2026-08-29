@@ -26,7 +26,7 @@ import { Chore, ChoreAssignmentLog, HouseholdMember, ChoreCategory, TimeOfDay, V
 import { ChoreCard } from './ChoreCard';
 import { Avatar } from './Avatar';
 import { WeeklyWorkloadChart } from './WeeklyWorkloadChart';
-import { formatDisplayDate, parseLocalDate, getTodayDateString, isChoreScheduledForDate } from '../utils/storage';
+import { formatDisplayDate, parseLocalDate, getTodayDateString, isChoreScheduledForDate, getChoreAssigneeForDate } from '../utils/storage';
 import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getTranslation, getCategoryTranslation } from '../utils/i18n';
 import { ThemePreset, THEMES } from '../utils/theme';
@@ -194,7 +194,8 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     if (!isChoreScheduledForDate(chore, currentDateStr)) {
       return false;
     }
-    if (selectedMemberId !== 'all' && chore.assignedMemberId !== selectedMemberId) {
+    const effectiveAssigneeId = getChoreAssigneeForDate(chore, currentDateStr);
+    if (selectedMemberId !== 'all' && effectiveAssigneeId !== selectedMemberId) {
       return false;
     }
     return true;
@@ -203,7 +204,8 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   // Pair chores with their logs for this date
   const choresWithLogs = scheduledChores.map((chore) => {
     const log = logs.find((l) => l.choreId === chore.id && l.date === currentDateStr);
-    const assignee = members.find((m) => m.id === chore.assignedMemberId);
+    const effectiveAssigneeId = getChoreAssigneeForDate(chore, currentDateStr);
+    const assignee = members.find((m) => m.id === effectiveAssigneeId);
     return { chore, log, assignee };
   });
 

@@ -24,7 +24,7 @@ import {
   Feather
 } from 'lucide-react';
 import { Chore, HouseholdMember } from '../types';
-import { getWeekDates, isChoreScheduledForDate } from '../utils/storage';
+import { getWeekDates, isChoreScheduledForDate, getChoreAssigneeForDate } from '../utils/storage';
 import { soundFX } from '../utils/audio';
 
 interface WeeklyWorkloadChartProps {
@@ -80,7 +80,7 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
       // Breakdown by member
       const memberBreakdown: Record<string, number> = {};
       members.forEach((m) => {
-        const memberChores = scheduledChores.filter(c => c.assignedMemberId === m.id);
+        const memberChores = scheduledChores.filter(c => getChoreAssigneeForDate(c, day.dateStr) === m.id);
         memberBreakdown[`mem_${m.id}`] = metricMode === 'count'
           ? memberChores.length
           : memberChores.reduce((sum, c) => sum + (c.estimatedMinutes || 15), 0);
@@ -145,7 +145,7 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden transition-all">
-      {/* Apple Card Header with Unified Action Row */}
+      {/* Card Header with Unified Action Row */}
       <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3.5 bg-gradient-to-b from-slate-50/70 to-white">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-xs shrink-0">
@@ -173,7 +173,7 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
           </div>
         </div>
 
-        {/* Clean Apple-style Segmented Controls */}
+        {/* Clean Segmented Controls */}
         <div className="flex items-center gap-2 flex-wrap self-stretch md:self-auto justify-between md:justify-end">
           {/* Metric Toggle: Count vs Time */}
           <div className="inline-flex rounded-xl p-1 bg-slate-100 border border-slate-200 text-xs">

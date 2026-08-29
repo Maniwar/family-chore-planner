@@ -15,12 +15,17 @@ import {
   RotateCcw,
   ChevronRight,
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  ListTodo,
+  Gift,
+  Wand2
 } from 'lucide-react';
 import { SupportedLanguage, SUPPORTED_LANGUAGES } from '../utils/i18n';
 import { ThemePreset, THEMES } from '../utils/theme';
 import { HouseholdInfo } from '../types';
 import { soundFX } from '../utils/audio';
+import { useBottomSheet } from '../hooks/useBottomSheet';
+import { BottomSheetGrabber } from './BottomSheetGrabber';
 
 interface QuickSettingsModalProps {
   isOpen: boolean;
@@ -36,6 +41,9 @@ interface QuickSettingsModalProps {
   onOpenGoogleCalendar?: () => void;
   onOpenPrintView?: () => void;
   onOpenFamilyMembers?: () => void;
+  onOpenChoreLibrary?: () => void;
+  onOpenAIAssign?: () => void;
+  onOpenRedemptions?: () => void;
   onOpenHouseSettings?: () => void;
   onResetDemo?: () => void;
   isMomMode?: boolean;
@@ -55,10 +63,18 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
   onOpenGoogleCalendar,
   onOpenPrintView,
   onOpenFamilyMembers,
+  onOpenChoreLibrary,
+  onOpenAIAssign,
+  onOpenRedemptions,
   onOpenHouseSettings,
   onResetDemo,
   isMomMode = true,
 }) => {
+  const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
+    onClose,
+    threshold: 60,
+  });
+
   if (!isOpen) return null;
 
   const theme = THEMES[currentTheme] || THEMES.rose;
@@ -66,21 +82,28 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
   return (
     <div 
       className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
-      onClick={onClose}
+      onClick={handleDismiss}
     >
       {/* iOS Bottom Sheet / Modal Card */}
       <div 
+        style={sheetStyle}
         className="relative w-full max-w-lg bg-white rounded-t-[32px] sm:rounded-[28px] border-t sm:border border-slate-200/90 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col z-10 animate-in slide-in-from-bottom-6 duration-300 safe-area-pb"
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* Apple HIG Sheet Grabber */}
-        <div className="pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing select-none">
-          <div className="w-10 h-1.2 rounded-full bg-slate-300" />
-        </div>
+        {/* Interactive Grabber Touch Bar */}
+        <BottomSheetGrabber dragHandleProps={dragHandleProps} onClose={handleDismiss} />
 
-        {/* Apple HIG Navigation Bar Header */}
-        <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 backdrop-blur-sm">
+        {/* Navigation Bar Header with Drag Handle Support */}
+        <div 
+          className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 backdrop-blur-sm touch-none select-none cursor-grab active:cursor-grabbing"
+          onTouchStart={dragHandleProps.onTouchStart}
+          onTouchMove={dragHandleProps.onTouchMove}
+          onTouchEnd={dragHandleProps.onTouchEnd}
+          onPointerDown={dragHandleProps.onPointerDown}
+          onPointerMove={dragHandleProps.onPointerMove}
+          onPointerUp={dragHandleProps.onPointerUp}
+        >
           <div className="flex items-center space-x-2.5">
             <div className={`w-8 h-8 rounded-xl ${theme.primaryBg} ${theme.primaryText} flex items-center justify-center text-sm font-black shadow-2xs`}>
               ⚙️
@@ -98,7 +121,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
           <button
             onClick={() => {
               soundFX.playPop();
-              onClose();
+              handleDismiss();
             }}
             className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all active:scale-90 cursor-pointer min-h-[36px] min-w-[36px]"
             title="Close Settings"
@@ -154,7 +177,101 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 </div>
               </button>
 
-              {/* Row 2: House Photo & Motto Settings */}
+              {/* Row 2: Chore Library & Routine Templates */}
+              <button
+                id="settings-chore-library-btn"
+                onClick={() => {
+                  soundFX.playPop();
+                  onClose();
+                  if (onOpenChoreLibrary) onOpenChoreLibrary();
+                }}
+                className="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-slate-100/80 active:bg-slate-200/60 transition-colors cursor-pointer min-h-[52px] group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center shrink-0 shadow-2xs">
+                    <ListTodo className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                        Chore Library & Templates
+                      </p>
+                      <span className="text-[10px] font-extrabold px-1.5 py-0.2 bg-pink-50 text-pink-700 rounded-full border border-pink-200 shrink-0">
+                        Library
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      Routine templates, schedules & inspection standards
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-600 transition-colors">
+                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                </div>
+              </button>
+
+              {/* Row 3: AI Smart Chore Assigner & Coach */}
+              <button
+                id="settings-ai-assign-btn"
+                onClick={() => {
+                  soundFX.playPop();
+                  onClose();
+                  if (onOpenAIAssign) onOpenAIAssign();
+                }}
+                className="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-slate-100/80 active:bg-slate-200/60 transition-colors cursor-pointer min-h-[52px] group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                        AI Smart Assigner & Coach
+                      </p>
+                      <span className="text-[10px] font-extrabold px-1.5 py-0.2 bg-purple-50 text-purple-700 rounded-full border border-purple-200 shrink-0">
+                        ✨ Gemini AI
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      AI age-appropriate workload balancing & parenting advice
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-600 transition-colors">
+                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                </div>
+              </button>
+
+              {/* Row 4: Reward Redemptions & Claims Log */}
+              <button
+                id="settings-redemptions-btn"
+                onClick={() => {
+                  soundFX.playPop();
+                  onClose();
+                  if (onOpenRedemptions) onOpenRedemptions();
+                }}
+                className="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-slate-100/80 active:bg-slate-200/60 transition-colors cursor-pointer min-h-[52px] group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 shadow-2xs">
+                    <Gift className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                      Reward Redemptions & Claims
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      Review & approve helper prize claims & points ledger
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-600 transition-colors">
+                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                </div>
+              </button>
+
+              {/* Row 5: House Photo & Motto Settings */}
               <button
                 id="settings-house-motto-btn"
                 onClick={() => {
@@ -182,7 +299,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 </div>
               </button>
 
-              {/* Row 3: Fridge Printouts */}
+              {/* Row 6: Fridge Printouts */}
               <button
                 onClick={() => {
                   soundFX.playPop();
@@ -209,7 +326,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 </div>
               </button>
 
-              {/* Row 4: Google Calendar */}
+              {/* Row 7: Google Calendar */}
               <button
                 onClick={() => {
                   soundFX.playPop();

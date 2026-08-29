@@ -200,6 +200,152 @@ Provide helpful, empathetic, concise, and structured advice. Use bullet points a
   }
 });
 
+// AI Smart Chore Creator / Template Generator Endpoint
+app.post("/api/ai/generate-chores", async (req, res) => {
+  try {
+    const { prompt: userPrompt, roomCategory, targetAge, targetMemberName, memberRole, count = 3 } = req.body;
+    const ai = getGeminiClient();
+
+    const systemPrompt = `
+You are an expert pediatric child development specialist and home management organizer.
+Generate ${count} highly practical, motivating, age-appropriate household chores with clear step-by-step quality inspection criteria.
+
+Context & Preferences:
+- User Prompt / Goal: ${userPrompt || 'Standard family routine chores'}
+- Target Room / Category: ${roomCategory || 'Any'}
+- Target Child / Helper: ${targetMemberName || 'General helper'} (Age: ${targetAge || 'all ages'}, Role: ${memberRole || 'child'})
+
+Requirements for each generated chore:
+1. Title: Crisp, clear, actionable (e.g. "Fold & Put Away Laundry Hamper", "Scrub Kitchen Sinks & Polish Faucets").
+2. Description: 1-2 friendly sentences with clear boundaries.
+3. Category: One of ["Kitchen", "Living Room", "Bedrooms", "Bathrooms", "Pets", "Laundry", "Yard & Outdoor", "Daily Routine", "General"].
+4. Difficulty: "easy" | "medium" | "hard" matched to age.
+5. DefaultPoints: Fair star points (e.g. 5-10 for easy/toddler, 15-20 for standard elementary/teen, 25-35 for deep cleaning).
+6. EstimatedMinutes: 5 to 45 mins.
+7. Frequency: "daily" | "weekdays" | "weekends" | "weekly" | "custom_days".
+8. TimeOfDay: "morning" | "afternoon" | "evening" | "bedtime" | "anytime".
+9. ScheduledTime: "08:00", "16:00", "19:00", etc.
+10. QualityChecklist: Exactly 3 to 5 concrete, observable inspection bullet points that Mom or Dad can easily verify.
+
+Return your response strictly adhering to JSON schema.
+`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: systemPrompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            chores: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  category: { type: Type.STRING },
+                  difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
+                  defaultPoints: { type: Type.NUMBER },
+                  estimatedMinutes: { type: Type.NUMBER },
+                  frequency: { type: Type.STRING, enum: ["daily", "weekdays", "weekends", "weekly", "custom_days"] },
+                  timeOfDay: { type: Type.STRING, enum: ["morning", "afternoon", "evening", "bedtime", "anytime"] },
+                  scheduledTime: { type: Type.STRING },
+                  qualityChecklist: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING }
+                  },
+                  rationale: { type: Type.STRING, description: "Why this chore is great for this helper's growth." }
+                },
+                required: ["title", "description", "category", "difficulty", "defaultPoints", "estimatedMinutes", "frequency", "timeOfDay", "scheduledTime", "qualityChecklist"]
+              }
+            }
+          },
+          required: ["chores"]
+        }
+      }
+    });
+
+    const text = response.text || "{}";
+    const result = JSON.parse(text);
+    return res.json(result);
+  } catch (error: any) {
+    console.error("AI Generate Chores error:", error);
+    return res.status(500).json({ error: error.message || "Failed to generate chores with AI" });
+  }
+});
+
+// AI Automatic Quality Inspection Checklist Drafter
+app.post("/api/ai/draft-quality-checklist", async (req, res) => {
+  try {
+    const { 
+      title, 
+      category = "General", 
+      description = "", 
+      difficulty = "medium",
+      targetMemberName,
+      targetAge,
+      memberRole 
+    } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: "Chore title is required to draft a quality checklist." });
+    }
+
+    const ai = getGeminiClient();
+
+    const systemPrompt = `
+You are a family quality inspector and positive home organization coach.
+A parent is creating a household chore: "${title.trim()}".
+Category: ${category}
+Description/Notes: ${description || 'Standard routine'}
+Difficulty Level: ${difficulty}
+Target Helper: ${targetMemberName ? `${targetMemberName} (${memberRole || 'child'}, age ${targetAge || 'school-age'})` : 'Family member / kid'}
+
+Your job is to draft exactly 3 to 5 clear, objective, observable inspection checklist criteria so the helper knows precisely what a "Done Right" job looks like, and Mom/Dad can verify it in 5 seconds.
+
+Rules:
+1. Avoid vague lines like "Make it clean" or "Do a good job".
+2. Use concrete observable actions (e.g. "Pillows fluffed and placed at the top of the mattress", "No shoes left on the floor", "Sink basin rinsed and free of toothpaste or soap scum").
+3. Keep items friendly, actionable, and age-appropriate.
+4. Also estimate reasonable minutes and points for completing this chore thoroughly.
+
+Return strictly conforming to the JSON schema.
+`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.7-flash",
+      contents: systemPrompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            qualityChecklist: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "3 to 5 clear, observable verification checklist steps"
+            },
+            suggestedPoints: { type: Type.NUMBER, description: "Suggested star points (5-50)" },
+            suggestedMinutes: { type: Type.NUMBER, description: "Estimated completion time in minutes (5-60)" },
+            suggestedDifficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
+            inspectionTip: { type: Type.STRING, description: "One short 1-sentence tip for parents when reviewing." }
+          },
+          required: ["qualityChecklist", "suggestedPoints", "suggestedMinutes", "suggestedDifficulty"]
+        }
+      }
+    });
+
+    const text = response.text || "{}";
+    const result = JSON.parse(text);
+    return res.json(result);
+  } catch (error: any) {
+    console.error("AI Draft Quality Checklist error:", error);
+    return res.status(500).json({ error: error.message || "Failed to draft quality checklist with AI" });
+  }
+});
+
 // ==========================================
 // RESILIENT SERVER-BACKED CLOUD HOUSEHOLD SYNC
 // ==========================================

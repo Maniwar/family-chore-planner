@@ -53,7 +53,8 @@ export interface Chore {
   title: string;
   description: string;
   category: ChoreCategory;
-  assignedMemberId: string; // 'unassigned' or memberId
+  assignedMemberId: string; // 'unassigned' or default memberId
+  dayAssignments?: { [dayOfWeek: number]: string }; // 0=Sun, 1=Mon, ..., 6=Sat -> memberId for multi-helper day assignments
   frequency: ChoreFrequency;
   scheduledDays: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
   timeOfDay: TimeOfDay;

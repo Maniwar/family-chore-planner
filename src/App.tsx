@@ -150,6 +150,7 @@ export default function App() {
 
   // Modals state
   const [isAIAssignModalOpen, setIsAIAssignModalOpen] = useState<boolean>(false);
+  const [aiAssignInitialTab, setAiAssignInitialTab] = useState<'assigner' | 'creator' | 'coach'>('assigner');
   const [isHouseSettingsModalOpen, setIsHouseSettingsModalOpen] = useState<boolean>(false);
   const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState<boolean>(false);
 
@@ -1142,6 +1143,19 @@ export default function App() {
     setActiveNudgeBanner(null);
   };
 
+  const handleOpenAIAssign = (tab: 'assigner' | 'creator' | 'coach' = 'assigner') => {
+    setAiAssignInitialTab(tab);
+    if (!isMomMode) {
+      requestParentAuth(
+        () => setIsAIAssignModalOpen(true),
+        'AI Smart Assigner & Creator',
+        'Enter Parent PIN to run AI auto-assignment or generate chore templates.'
+      );
+    } else {
+      setIsAIAssignModalOpen(true);
+    }
+  };
+
   const handleSaveChore = (savedChore: Chore) => {
     const index = chores.findIndex(c => c.id === savedChore.id);
     if (index >= 0) {
@@ -1153,6 +1167,19 @@ export default function App() {
       setChores([...chores, savedChore]);
       showToast(`New chore "${savedChore.title}" added.`);
     }
+  };
+
+  const handleBatchAddChores = (newChores: (Omit<Chore, 'id'> & { id?: string })[]) => {
+    const choresWithIds: Chore[] = newChores.map(c => ({
+      ...c,
+      id: c.id || `chore_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      isActive: c.isActive !== undefined ? c.isActive : true,
+      qualityChecklist: c.qualityChecklist || [],
+    }));
+    setChores(prev => [...prev, ...choresWithIds]);
+    soundFX.playRewardCoin();
+    triggerConfettiCelebration();
+    showToast(`Added ${choresWithIds.length} new chore template(s) to Library! ✨`);
   };
 
   const handleDeleteChore = (choreId: string) => {
@@ -1635,11 +1662,11 @@ export default function App() {
             chores={chores}
             members={members}
             currentTheme={currentTheme}
-            onOpenNewChore={() => setChoreModalData({ isOpen: true, choreToEdit: null })}
+            onOpenCreateChore={() => setChoreModalData({ isOpen: true, choreToEdit: null })}
             onEditChore={(chore) => setChoreModalData({ isOpen: true, choreToEdit: chore })}
             onDeleteChore={handleDeleteChore}
             onToggleChoreActive={handleToggleChoreActive}
-            onOpenAIAssign={() => setIsAIAssignModalOpen(true)}
+            onOpenAIAssign={handleOpenAIAssign}
           />
         )}
 
@@ -1728,7 +1755,9 @@ export default function App() {
           members={members}
           chores={chores}
           currentTheme={currentTheme}
+          initialTab={aiAssignInitialTab}
           onApplyAssignments={handleApplyAIAssignments}
+          onAddGeneratedChores={handleBatchAddChores}
         />
       )}
 
@@ -1823,6 +1852,39 @@ export default function App() {
             );
           } else {
             setCurrentView('members');
+          }
+        }}
+        onOpenChoreLibrary={() => {
+          if (!isMomMode) {
+            requestParentAuth(
+              () => setCurrentView('library'),
+              'Chore Library Security',
+              'Enter Parent PIN to manage routine chore templates and schedules.'
+            );
+          } else {
+            setCurrentView('library');
+          }
+        }}
+        onOpenAIAssign={() => {
+          if (!isMomMode) {
+            requestParentAuth(
+              () => setIsAIAssignModalOpen(true),
+              'AI Smart Assigner Security',
+              'Enter Parent PIN to run AI auto-assignment and chore advice.'
+            );
+          } else {
+            setIsAIAssignModalOpen(true);
+          }
+        }}
+        onOpenRedemptions={() => {
+          if (!isMomMode) {
+            requestParentAuth(
+              () => setCurrentView('redemptions'),
+              'Reward Redemptions Security',
+              'Enter Parent PIN to review and approve helper reward claims.'
+            );
+          } else {
+            setCurrentView('redemptions');
           }
         }}
         onOpenHouseSettings={() => {

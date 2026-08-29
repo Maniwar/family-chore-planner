@@ -6,20 +6,43 @@ import {
   CheckCircle2, 
   TrendingUp, 
   UserCheck, 
-  ShieldCheck, 
   Clock, 
   ArrowRight, 
   Sliders, 
-  RefreshCw,
-  HelpCircle,
-  MessageSquare,
-  ChevronRight,
-  Award,
-  Zap
+  RefreshCw, 
+  HelpCircle, 
+  MessageSquare, 
+  ChevronRight, 
+  Award, 
+  Zap, 
+  Plus, 
+  Check, 
+  ListTodo, 
+  Wand2, 
+  Flame, 
+  Home, 
+  Calendar 
 } from 'lucide-react';
-import { HouseholdMember, Chore, AIAssignmentResult, AIAssignmentSuggestion } from '../types';
+import { HouseholdMember, Chore, AIAssignmentResult, AIAssignmentSuggestion, ChoreCategory } from '../types';
 import { getMemberEffectiveAge } from '../utils/age';
 import { ThemePreset, THEMES } from '../utils/theme';
+import { soundFX } from '../utils/audio';
+import { useBottomSheet } from '../hooks/useBottomSheet';
+import { BottomSheetGrabber } from './BottomSheetGrabber';
+
+interface GeneratedChoreTemplate {
+  title: string;
+  description: string;
+  category: ChoreCategory;
+  difficulty: 'easy' | 'medium' | 'hard';
+  defaultPoints: number;
+  estimatedMinutes: number;
+  frequency: 'daily' | 'weekdays' | 'weekends' | 'weekly' | 'custom_days';
+  timeOfDay: 'morning' | 'afternoon' | 'evening' | 'bedtime' | 'anytime';
+  scheduledTime: string;
+  qualityChecklist: string[];
+  rationale?: string;
+}
 
 interface AIAssignModalProps {
   isOpen: boolean;
@@ -28,6 +51,8 @@ interface AIAssignModalProps {
   chores: Chore[];
   currentTheme?: ThemePreset;
   onApplyAssignments: (assignments: { choreId: string; assignedMemberId: string }[]) => void;
+  onAddGeneratedChores?: (newChores: GeneratedChoreTemplate[]) => void;
+  initialTab?: 'assigner' | 'creator' | 'coach';
 }
 
 export const AIAssignModal: React.FC<AIAssignModalProps> = ({
@@ -37,26 +62,44 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
   chores,
   currentTheme = 'rose',
   onApplyAssignments,
+  onAddGeneratedChores,
+  initialTab = 'assigner',
 }) => {
-  if (!isOpen) return null;
-  const theme = THEMES[currentTheme] || THEMES.rose;
+  const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
+    onClose,
+    threshold: 60,
+  });
 
-  const [activeTab, setActiveTab] = useState<'assigner' | 'coach'>('assigner');
+  const [activeTab, setActiveTab] = useState<'assigner' | 'creator' | 'coach'>(initialTab);
+  
+  // Assigner tab state
   const [focusGoal, setFocusGoal] = useState<'balanced_developmental' | 'skill_building' | 'rotation'>('balanced_developmental');
   const [includeParents, setIncludeParents] = useState<boolean>(false);
   const [targetScope, setTargetScope] = useState<'all' | 'unassigned_only'>('all');
-
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<AIAssignmentResult | null>(null);
   const [selectedChoreIds, setSelectedChoreIds] = useState<{ [choreId: string]: boolean }>({});
+
+  // Creator tab state
+  const [creatorPrompt, setCreatorPrompt] = useState('');
+  const [creatorRoom, setCreatorRoom] = useState<string>('Kitchen');
+  const [creatorTargetMemberId, setCreatorTargetMemberId] = useState<string>('all');
+  const [isGeneratingChores, setIsGeneratingChores] = useState(false);
+  const [generatedChores, setGeneratedChores] = useState<GeneratedChoreTemplate[]>([]);
+  const [selectedGeneratedIdxs, setSelectedGeneratedIdxs] = useState<{ [index: number]: boolean }>({});
+  const [creatorError, setCreatorError] = useState<string | null>(null);
 
   // AI Coach state
   const [coachQuestion, setCoachQuestion] = useState('');
   const [coachAnswer, setCoachAnswer] = useState<string | null>(null);
   const [isCoachLoading, setIsCoachLoading] = useState(false);
 
+  if (!isOpen) return null;
+  const theme = THEMES[currentTheme] || THEMES.rose;
+
   const handleGenerateAssignments = async () => {
+    soundFX.playPop();
     setIsLoading(true);
     setError(null);
 
@@ -105,8 +148,8 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
 
       const data: AIAssignmentResult = await response.json();
       setAiResult(data);
+      soundFX.playRewardCoin();
 
-      // Default select all suggestions
       const initialSelected: { [id: string]: boolean } = {};
       data.suggestions.forEach(s => {
         initialSelected[s.choreId] = true;
@@ -114,7 +157,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
       setSelectedChoreIds(initialSelected);
     } catch (err: any) {
       console.error('Error generating AI assignments:', err);
-      setError(err.message || 'Failed to generate assignments. Please ensure the Gemini API key is configured.');
+      setError(err.message || 'Failed to generate assignments. Please verify server connection.');
     } finally {
       setIsLoading(false);
     }
@@ -135,6 +178,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
       return;
     }
 
+    soundFX.playStarChime(5);
     onApplyAssignments(toApply);
     onClose();
   };
@@ -148,416 +192,616 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
     setSelectedChoreIds(updated);
   };
 
-  const handleAskCoach = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!coachQuestion.trim()) return;
+  // Generate new chore templates using AI
+  const handleAIGenerateChores = async () => {
+    soundFX.playPop();
+    setIsGeneratingChores(true);
+    setCreatorError(null);
 
+    const targetMember = members.find(m => m.id === creatorTargetMemberId);
+
+    try {
+      const response = await fetch('/api/ai/generate-chores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: creatorPrompt.trim() || `Practical family chores for ${creatorRoom}`,
+          roomCategory: creatorRoom,
+          targetAge: targetMember ? getMemberEffectiveAge(targetMember) : undefined,
+          targetMemberName: targetMember?.name,
+          memberRole: targetMember?.role,
+          count: 3,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to generate chores with AI');
+      }
+
+      const data = await response.json();
+      if (data.chores && Array.isArray(data.chores)) {
+        setGeneratedChores(data.chores);
+        soundFX.playRewardCoin();
+        const initialSelected: { [idx: number]: boolean } = {};
+        data.chores.forEach((_: any, i: number) => {
+          initialSelected[i] = true;
+        });
+        setSelectedGeneratedIdxs(initialSelected);
+      }
+    } catch (err: any) {
+      console.error('AI Chore Creator error:', err);
+      setCreatorError(err.message || 'Failed to create chores with AI.');
+    } finally {
+      setIsGeneratingChores(false);
+    }
+  };
+
+  const handleApplyGeneratedChores = () => {
+    const selected = generatedChores.filter((_, idx) => selectedGeneratedIdxs[idx] !== false);
+    if (selected.length === 0) {
+      alert('Please select at least one chore to add.');
+      return;
+    }
+    if (onAddGeneratedChores) {
+      onAddGeneratedChores(selected);
+    }
+    onClose();
+  };
+
+  // AI Coach query handler
+  const handleAskCoach = async (qText?: string) => {
+    const textToSend = qText || coachQuestion;
+    if (!textToSend.trim()) return;
+
+    soundFX.playPop();
     setIsCoachLoading(true);
+    setCoachAnswer(null);
+
     try {
       const response = await fetch('/api/ai/chore-advice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          question: coachQuestion.trim(),
-          members: members.map(m => ({ 
-            name: m.name, 
-            role: m.role, 
+          question: textToSend,
+          members: members.map(m => ({
+            name: m.name,
+            role: m.role,
             age: getMemberEffectiveAge(m),
-            birthDate: m.birthDate 
+            points: m.currentPoints,
           })),
-          chores: chores.map(c => ({ title: c.title, category: c.category })),
+          chores: chores.map(c => ({
+            title: c.title,
+            category: c.category,
+            points: c.defaultPoints,
+          })),
         }),
       });
 
-      if (!response.ok) throw new Error('Could not get response from AI coach.');
+      if (!response.ok) {
+        throw new Error('Failed to get coaching advice.');
+      }
+
       const data = await response.json();
-      setCoachAnswer(data.advice);
+      setCoachAnswer(data.advice || 'No advice received.');
+      soundFX.playRewardCoin();
     } catch (err: any) {
-      setCoachAnswer(`Error: ${err.message || 'Could not load advice.'}`);
+      setCoachAnswer(`Could not load coach response: ${err.message}`);
     } finally {
       setIsCoachLoading(false);
     }
   };
 
-  const quickQuestions = [
-    'What chores are best for a 6-8 year old child?',
-    'How do I motivate kids without having to nag?',
-    'How should we tie chore points to weekly allowance?',
-    'What is a fair inspection checklist for bedroom cleaning?',
+  const roomsList: ChoreCategory[] = [
+    'Kitchen', 'Living Room', 'Bedrooms', 'Bathrooms', 'Pets', 'Laundry', 'Yard & Outdoor', 'Daily Routine', 'General'
   ];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+      onClick={handleDismiss}
+    >
       <div 
-        id="ai-auto-assign-modal"
-        className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150"
+        style={sheetStyle}
+        className="relative w-full max-w-2xl bg-white rounded-t-[32px] sm:rounded-[28px] border-t sm:border border-slate-200/90 shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col z-10 animate-in slide-in-from-bottom-6 duration-300 safe-area-pb"
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Top Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center text-xl shadow-xs">
-              <Sparkles className="w-5 h-5 text-white" />
+        {/* Interactive Grabber Touch Bar */}
+        <BottomSheetGrabber dragHandleProps={dragHandleProps} onClose={handleDismiss} />
+
+        {/* Navigation Bar Header */}
+        <div 
+          className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 backdrop-blur-sm touch-none select-none cursor-grab active:cursor-grabbing shrink-0"
+          onTouchStart={dragHandleProps.onTouchStart}
+          onTouchMove={dragHandleProps.onTouchMove}
+          onTouchEnd={dragHandleProps.onTouchEnd}
+          onPointerDown={dragHandleProps.onPointerDown}
+          onPointerMove={dragHandleProps.onPointerMove}
+          onPointerUp={dragHandleProps.onPointerUp}
+        >
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-sm font-black shadow-2xs">
+              <Sparkles className="w-4 h-4 text-amber-300" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold">AI Smart Chore Assigner & Coach</h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                  Gemini 3.7
-                </span>
-              </div>
-              <p className="text-xs text-slate-300">
-                Optimizes household task distribution based on child age, developmental milestones, and fair workload
+              <h2 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight">
+                AI Smart Assistant
+              </h2>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Gemini 3.7 Flash · Age & Workload Intelligence
               </p>
             </div>
           </div>
-
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Tab Selection */}
-        <div className="bg-slate-100 px-5 pt-2 border-b border-slate-200 flex items-center gap-4">
-          <button
-            onClick={() => setActiveTab('assigner')}
-            className={`pb-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'assigner'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Brain className="w-4 h-4 text-indigo-600" />
-            <span>Smart Auto-Assignment</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('coach')}
-            className={`pb-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'coach'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4 text-rose-500" />
-            <span>Family Advice & Age Milestones</span>
-          </button>
-        </div>
-
-        {/* Modal Scrollable Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
           
-          {/* TAB 1: SMART ASSIGNER */}
+          <button
+            onClick={() => {
+              soundFX.playPop();
+              handleDismiss();
+            }}
+            className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all active:scale-90 cursor-pointer min-h-[36px] min-w-[36px]"
+            title="Close Assistant"
+            aria-label="Close Assistant"
+          >
+            <X className="w-4 h-4 stroke-[2.5]" />
+          </button>
+        </div>
+
+        {/* Apple HIG Segmented Control */}
+        <div className="px-4 pt-3 pb-2 bg-white shrink-0">
+          <div className="bg-slate-100/90 p-1 rounded-xl flex items-center gap-1 border border-slate-200/70 shadow-2xs">
+            <button
+              onClick={() => { soundFX.playPop(); setActiveTab('assigner'); }}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all min-h-[36px] cursor-pointer ${
+                activeTab === 'assigner'
+                  ? 'bg-white text-slate-900 shadow-2xs font-black'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Brain className="w-3.5 h-3.5 text-purple-600" />
+              <span>Smart Assigner</span>
+            </button>
+
+            <button
+              onClick={() => { soundFX.playPop(); setActiveTab('creator'); }}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all min-h-[36px] cursor-pointer ${
+                activeTab === 'creator'
+                  ? 'bg-white text-slate-900 shadow-2xs font-black'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Wand2 className="w-3.5 h-3.5 text-indigo-600" />
+              <span>AI Chore Creator</span>
+            </button>
+
+            <button
+              onClick={() => { soundFX.playPop(); setActiveTab('coach'); }}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all min-h-[36px] cursor-pointer ${
+                activeTab === 'coach'
+                  ? 'bg-white text-slate-900 shadow-2xs font-black'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Family Coach</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable Body */}
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+          
+          {/* TAB 1: AUTO-ASSIGNER */}
           {activeTab === 'assigner' && (
-            <div className="space-y-6">
-              
-              {/* Configuration Controls */}
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-4">
+            <div className="space-y-4">
+              {/* Configuration Inset Card */}
+              <div className="bg-slate-50/90 rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 space-y-3.5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Optimization Goal</span>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                    Assignment Rules & Balance Strategy
                   </span>
-                  <span className="text-xs text-slate-400">{members.length} Members • {chores.length} Chores</span>
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                    {members.length} Helpers · {chores.length} Chores
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setFocusGoal('balanced_developmental')}
-                    className={`p-3 rounded-xl text-left border transition-all ${
-                      focusGoal === 'balanced_developmental'
-                        ? 'bg-white border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs'
-                        : 'bg-white/60 border-slate-200 hover:bg-white text-slate-600'
-                    }`}
-                  >
-                    <div className="text-xs font-bold text-slate-900 mb-0.5">🌱 Age & Development</div>
-                    <p className="text-[11px] text-slate-500 leading-tight">Matches chores to pediatric motor & cognitive age milestones.</p>
-                  </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Focus Goal
+                    </label>
+                    <select
+                      value={focusGoal}
+                      onChange={(e) => setFocusGoal(e.target.value as any)}
+                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-purple-500 min-h-[44px]"
+                    >
+                      <option value="balanced_developmental">🌱 Balanced & Age-Appropriate</option>
+                      <option value="skill_building">🚀 Skill Building & Growth</option>
+                      <option value="rotation">🔄 Fresh Variety & Fair Rotation</option>
+                    </select>
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setFocusGoal('skill_building')}
-                    className={`p-3 rounded-xl text-left border transition-all ${
-                      focusGoal === 'skill_building'
-                        ? 'bg-white border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs'
-                        : 'bg-white/60 border-slate-200 hover:bg-white text-slate-600'
-                    }`}
-                  >
-                    <div className="text-xs font-bold text-slate-900 mb-0.5">⭐ Skill Building</div>
-                    <p className="text-[11px] text-slate-500 leading-tight">Assigns stretch tasks to teach new household life skills.</p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFocusGoal('rotation')}
-                    className={`p-3 rounded-xl text-left border transition-all ${
-                      focusGoal === 'rotation'
-                        ? 'bg-white border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs'
-                        : 'bg-white/60 border-slate-200 hover:bg-white text-slate-600'
-                    }`}
-                  >
-                    <div className="text-xs font-bold text-slate-900 mb-0.5">🔄 Fair Rotation</div>
-                    <p className="text-[11px] text-slate-500 leading-tight">Rotates rooms to prevent chore boredom and keep tasks fresh.</p>
-                  </button>
-                </div>
-
-                {/* Additional checkboxes */}
-                <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
-                  <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={includeParents}
-                      onChange={(e) => setIncludeParents(e.target.checked)}
-                      className="rounded text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span>Include adult parents in daily routine chore assignments</span>
-                  </label>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500">Scope:</span>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Target Chore Scope
+                    </label>
                     <select
                       value={targetScope}
                       onChange={(e) => setTargetScope(e.target.value as any)}
-                      className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-semibold text-slate-700"
+                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-purple-500 min-h-[44px]"
                     >
-                      <option value="all">All {chores.length} Chores</option>
-                      <option value="unassigned_only">Unassigned Chores Only</option>
+                      <option value="all">📋 Re-evaluate All Chores</option>
+                      <option value="unassigned_only">🤝 Unassigned Chores Only</option>
                     </select>
                   </div>
                 </div>
 
-                <button
-                  onClick={handleGenerateAssignments}
-                  disabled={isLoading}
-                  className="w-full py-3 px-4 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white shadow-xs transition-all flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
-                      <span>Gemini is analyzing ages, milestones, and workloads...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 text-amber-400" />
-                      <span>Generate AI Age-Appropriate Assignments</span>
-                    </>
-                  )}
-                </button>
+                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={includeParents}
+                      onChange={(e) => setIncludeParents(e.target.checked)}
+                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                    />
+                    <span>Include Parents in Routine Chores</span>
+                  </label>
+
+                  <button
+                    onClick={handleGenerateAssignments}
+                    disabled={isLoading}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 min-h-[42px]"
+                  >
+                    {isLoading ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Analyzing Family...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Run AI Assignment</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {/* Error display */}
               {error && (
-                <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
-                  <span className="font-bold">Error: </span>
-                  {error}
+                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-bold text-rose-700">
+                  ⚠️ {error}
                 </div>
               )}
 
-              {/* AI RESULTS DISPLAY */}
+              {/* AI Results */}
               {aiResult && (
-                <div className="space-y-5 animate-in fade-in duration-200">
-                  
-                  {/* Fairness Rating & Summary Card */}
-                  <div className="bg-gradient-to-br from-indigo-50 via-purple-50/50 to-amber-50/40 rounded-2xl p-5 border border-indigo-100 shadow-xs space-y-3">
+                <div className="space-y-3 animate-in fade-in duration-200">
+                  {/* Fairness Badge & Summary */}
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50/70 p-3.5 sm:p-4 rounded-2xl border border-purple-200/80 shadow-2xs space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-indigo-600" />
-                        <h3 className="text-sm font-bold text-slate-900">AI Fairness & Developmental Assessment</h3>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        {aiResult.fairnessRating}/100 Balanced
+                      <span className="text-[11px] font-extrabold text-purple-800 uppercase tracking-wider">
+                        Fairness & Developmental Rating
+                      </span>
+                      <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-purple-600 text-white shadow-2xs">
+                        {aiResult.fairnessRating || 95}% Balanced
                       </span>
                     </div>
-
-                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                      {aiResult.fairnessSummary}
+                    <p className="text-xs text-purple-950 font-medium leading-relaxed">
+                      "{aiResult.fairnessSummary}"
                     </p>
+                  </div>
 
-                    {/* Member Insights Badges */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-indigo-100">
-                      {aiResult.ageTierInsights.map((insight) => (
-                        <div key={insight.memberId} className="bg-white/80 rounded-xl p-2.5 border border-indigo-100 text-xs">
-                          <div className="flex items-center justify-between font-bold text-slate-900 mb-1">
-                            <span>{insight.memberName} {insight.age ? `(${insight.age}y)` : ''}</span>
-                            <span className="text-[10px] text-amber-700 font-extrabold">{insight.assignedChoresCount} chores • {insight.totalPoints} pts</span>
-                          </div>
-                          <p className="text-[11px] text-slate-600 leading-snug">{insight.insight}</p>
-                        </div>
-                      ))}
+                  {/* Header for Suggestions */}
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                      Recommended Chore Assignments ({aiResult.suggestions.length})
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleSelectAll(true)}
+                        className="text-[11px] font-bold text-purple-700 hover:underline cursor-pointer"
+                      >
+                        Select All
+                      </button>
+                      <span className="text-slate-300">·</span>
+                      <button
+                        onClick={() => toggleSelectAll(false)}
+                        className="text-[11px] font-bold text-slate-500 hover:underline cursor-pointer"
+                      >
+                        Deselect All
+                      </button>
                     </div>
                   </div>
 
-                  {/* Proposed Assignments Table */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                        Proposed Chore Assignments ({aiResult.suggestions.length})
-                      </h4>
-                      <div className="flex items-center gap-2 text-xs">
-                        <button
-                          onClick={() => toggleSelectAll(true)}
-                          className="text-indigo-600 hover:underline font-semibold"
+                  {/* Suggestions List */}
+                  <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                    {aiResult.suggestions.map((suggestion) => {
+                      const isSelected = selectedChoreIds[suggestion.choreId] !== false;
+                      const member = members.find(m => m.id === suggestion.assignedMemberId);
+
+                      return (
+                        <div
+                          key={suggestion.choreId}
+                          onClick={() => {
+                            setSelectedChoreIds(prev => ({
+                              ...prev,
+                              [suggestion.choreId]: !isSelected,
+                            }));
+                          }}
+                          className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                            isSelected
+                              ? 'bg-purple-50/40 border-purple-300 shadow-2xs'
+                              : 'bg-white border-slate-200 opacity-60'
+                          }`}
                         >
-                          Select All
-                        </button>
-                        <span className="text-slate-300">|</span>
-                        <button
-                          onClick={() => toggleSelectAll(false)}
-                          className="text-slate-500 hover:underline font-semibold"
-                        >
-                          Deselect All
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="divide-y divide-slate-200 border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
-                      {aiResult.suggestions.map((suggestion) => {
-                        const chore = chores.find(c => c.id === suggestion.choreId);
-                        const member = members.find(m => m.id === suggestion.assignedMemberId);
-                        const currentMember = chore ? members.find(m => m.id === chore.assignedMemberId) : null;
-                        const isChecked = selectedChoreIds[suggestion.choreId] !== false;
-
-                        return (
-                          <div
-                            key={suggestion.choreId}
-                            className={`p-4 transition-colors flex items-start gap-3.5 ${
-                              isChecked ? 'bg-white' : 'bg-slate-50 opacity-60'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => setSelectedChoreIds({
-                                ...selectedChoreIds,
-                                [suggestion.choreId]: e.target.checked,
-                              })}
-                              className="mt-1 rounded text-indigo-600 focus:ring-indigo-500"
-                            />
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                                <span className="text-sm font-bold text-slate-900 truncate">
-                                  {suggestion.choreTitle}
-                                </span>
-
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                  🎯 {suggestion.developmentalFocus}
-                                </span>
-                              </div>
-
-                              {/* Assignee comparison */}
-                              <div className="flex items-center gap-2 text-xs font-semibold my-1.5">
-                                <span className="text-slate-400">Current: {currentMember ? currentMember.name : 'Unassigned'}</span>
-                                <ArrowRight className="w-3.5 h-3.5 text-indigo-500" />
-                                <span className="text-slate-900 flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                                  <span>{member?.avatarEmoji || '👤'}</span>
-                                  <span>{suggestion.assignedMemberName}</span>
-                                  {member?.age && <span className="text-slate-500 font-normal">({member.age} yrs)</span>}
-                                </span>
-                              </div>
-
-                              {/* AI Reason */}
-                              <p className="text-xs text-slate-600 mt-1">
-                                <span className="font-semibold text-slate-700">Why this fits: </span>
-                                {suggestion.reason}
-                              </p>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            className="mt-0.5 w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-0.5">
+                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                {suggestion.choreTitle}
+                              </h4>
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
+                                {suggestion.developmentalFocus || 'Responsibility'}
+                              </span>
                             </div>
+
+                            <p className="text-[11px] text-purple-900 font-semibold mb-1">
+                              Assign to: <span className="font-extrabold">{member?.avatarEmoji} {suggestion.assignedMemberName}</span>
+                            </p>
+
+                            <p className="text-[11px] text-slate-500 leading-tight">
+                              {suggestion.reason}
+                            </p>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  {/* Apply Actions */}
-                  <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-200">
+                  {/* Apply Action Bar */}
+                  <div className="pt-2">
                     <button
-                      type="button"
-                      onClick={onClose}
-                      className="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
                       onClick={handleApply}
-                      className="px-6 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all flex items-center gap-1.5"
+                      className="w-full py-3 rounded-2xl text-xs sm:text-sm font-black bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md active:scale-98 transition-transform cursor-pointer flex items-center justify-center gap-2 min-h-[46px]"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>Apply Selected AI Assignments</span>
                     </button>
                   </div>
-
                 </div>
               )}
-
             </div>
           )}
 
-          {/* TAB 2: AI FAMILY ADVICE & COACH */}
-          {activeTab === 'coach' && (
-            <div className="space-y-5">
-              <div className="bg-gradient-to-br from-rose-50 to-amber-50 rounded-2xl p-5 border border-rose-200 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-rose-600" />
-                  <h3 className="text-sm font-bold text-slate-900">Gemini Household Advisor & Age Guide</h3>
+          {/* TAB 2: AI CHORE CREATOR */}
+          {activeTab === 'creator' && (
+            <div className="space-y-4">
+              <div className="bg-slate-50/90 rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 space-y-3.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                    Chore Generator Preferences
+                  </span>
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                    1-Tap Routine Builder
+                  </span>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Ask any questions about chore allowances, teaching habits to stubborn toddlers, or designing age-appropriate routines.
-                </p>
 
-                {/* Quick Prompts */}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {quickQuestions.map((q, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCoachQuestion(q)}
-                      className="text-[11px] font-medium bg-white hover:bg-rose-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors text-left"
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    What chores do you want to create or improve?
+                  </label>
+                  <input
+                    type="text"
+                    value={creatorPrompt}
+                    onChange={(e) => setCreatorPrompt(e.target.value)}
+                    placeholder="e.g. Morning school prep, bathroom sanitizing, puppy care, car wash"
+                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 min-h-[44px]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Room / Area
+                    </label>
+                    <select
+                      value={creatorRoom}
+                      onChange={(e) => setCreatorRoom(e.target.value)}
+                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 min-h-[44px]"
                     >
-                      💡 {q}
-                    </button>
-                  ))}
+                      {roomsList.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Tailor to Helper (Age Appropriate)
+                    </label>
+                    <select
+                      value={creatorTargetMemberId}
+                      onChange={(e) => setCreatorTargetMemberId(e.target.value)}
+                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 min-h-[44px]"
+                    >
+                      <option value="all">👨‍👩‍👧‍👦 General Family</option>
+                      {members.map(m => (
+                        <option key={m.id} value={m.id}>
+                          {m.avatarEmoji} {m.name} ({getMemberEffectiveAge(m) ? `${getMemberEffectiveAge(m)} yrs` : m.role})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleAIGenerateChores}
+                  disabled={isGeneratingChores}
+                  className="w-full py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 min-h-[42px] flex items-center justify-center gap-1.5"
+                >
+                  {isGeneratingChores ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Generating Routine Templates...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Generate 3 Custom Chores with AI</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {creatorError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-bold text-rose-700">
+                  ⚠️ {creatorError}
+                </div>
+              )}
+
+              {/* Generated Chores List */}
+              {generatedChores.length > 0 && (
+                <div className="space-y-3 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                      Generated Chore Templates ({generatedChores.length})
+                    </span>
+                    <span className="text-[10px] font-bold text-indigo-600">
+                      Select which to add to Library
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    {generatedChores.map((chore, idx) => {
+                      const isSelected = selectedGeneratedIdxs[idx] !== false;
+
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => {
+                            setSelectedGeneratedIdxs(prev => ({
+                              ...prev,
+                              [idx]: !isSelected,
+                            }));
+                          }}
+                          className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                            isSelected
+                              ? 'bg-indigo-50/40 border-indigo-300 shadow-2xs'
+                              : 'bg-white border-slate-200 opacity-60'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            className="mt-1 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                {chore.title}
+                              </h4>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                  {chore.category}
+                                </span>
+                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                  ⭐ {chore.defaultPoints} pts
+                                </span>
+                              </div>
+                            </div>
+
+                            <p className="text-[11px] text-slate-600 mb-2">
+                              {chore.description}
+                            </p>
+
+                            <div className="bg-white/80 rounded-xl p-2 border border-slate-200/80 text-[10px] text-slate-500 space-y-1">
+                              <p className="font-bold text-slate-700">Inspection Checklist:</p>
+                              <ul className="list-disc pl-3.5 space-y-0.5">
+                                {chore.qualityChecklist.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={handleApplyGeneratedChores}
+                    className="w-full py-3 rounded-2xl text-xs sm:text-sm font-black bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md active:scale-98 transition-transform cursor-pointer flex items-center justify-center gap-2 min-h-[46px]"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Selected Chores to Chore Library</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: FAMILY COACH */}
+          {activeTab === 'coach' && (
+            <div className="space-y-4">
+              <div className="bg-slate-50/90 rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 space-y-3 shadow-2xs">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                  Ask the Household Coach
+                </span>
+
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => handleAskCoach("How do I motivate kids without complaining?")}
+                    className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 active:scale-95 transition-all cursor-pointer"
+                  >
+                    💡 Motivate without nagging
+                  </button>
+                  <button
+                    onClick={() => handleAskCoach("What chores are best for a 5 year old?")}
+                    className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 active:scale-95 transition-all cursor-pointer"
+                  >
+                    👶 Chores for 5-yr-olds
+                  </button>
+                  <button
+                    onClick={() => handleAskCoach("How should we handle chore redo inspections fairly?")}
+                    className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 active:scale-95 transition-all cursor-pointer"
+                  >
+                    🔍 Fair Redo inspections
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={coachQuestion}
+                    onChange={(e) => setCoachQuestion(e.target.value)}
+                    placeholder="Ask any parenting, routine or habit question..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAskCoach();
+                    }}
+                    className="flex-1 text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500 min-h-[44px]"
+                  />
+                  <button
+                    onClick={() => handleAskCoach()}
+                    disabled={isCoachLoading || !coachQuestion.trim()}
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 cursor-pointer min-h-[44px]"
+                  >
+                    {isCoachLoading ? 'Thinking...' : 'Ask'}
+                  </button>
                 </div>
               </div>
 
-              {/* Question input */}
-              <form onSubmit={handleAskCoach} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-                    Ask Gemini Parenting & Chore Coach:
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g. How do I split chores between an 8-year-old and 13-year-old fairly?"
-                      value={coachQuestion}
-                      onChange={(e) => setCoachQuestion(e.target.value)}
-                      className="flex-1 text-xs p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 font-medium"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isCoachLoading || !coachQuestion.trim()}
-                      className="px-5 py-3 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white shadow-xs transition-colors flex items-center gap-1.5"
-                    >
-                      {isCoachLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-amber-400" />}
-                      <span>Ask AI</span>
-                    </button>
-                  </div>
-                </div>
-              </form>
-
-              {/* Answer display */}
               {coachAnswer && (
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-3 animate-in fade-in">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900 border-b pb-2">
-                    <Sparkles className="w-4 h-4 text-amber-500" />
-                    <span>Coach Guidance</span>
-                  </div>
-                  <div className="text-xs text-slate-700 space-y-2 whitespace-pre-wrap leading-relaxed">
-                    {coachAnswer}
-                  </div>
+                <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-xs text-slate-800 leading-relaxed space-y-2 animate-in fade-in duration-200 shadow-2xs whitespace-pre-line">
+                  <p className="font-extrabold text-emerald-900 flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Coach Guidance:</span>
+                  </p>
+                  <p>{coachAnswer}</p>
                 </div>
               )}
             </div>

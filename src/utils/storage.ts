@@ -406,6 +406,11 @@ export const isChoreScheduledForDate = (chore: Chore, dateStr: string): boolean 
   const date = parseLocalDate(dateStr);
   const dayOfWeek = date.getDay(); // 0=Sunday, 6=Saturday
 
+  // If dayAssignments is configured, check if this day is assigned or scheduled
+  if (chore.dayAssignments && Object.keys(chore.dayAssignments).length > 0) {
+    return Object.prototype.hasOwnProperty.call(chore.dayAssignments, dayOfWeek);
+  }
+
   switch (chore.frequency) {
     case 'daily':
       return true;
@@ -415,11 +420,54 @@ export const isChoreScheduledForDate = (chore: Chore, dateStr: string): boolean 
       return dayOfWeek === 0 || dayOfWeek === 6;
     case 'weekly':
     case 'custom_days':
-      return chore.scheduledDays.includes(dayOfWeek);
+      return Array.isArray(chore.scheduledDays) && chore.scheduledDays.includes(dayOfWeek);
     case 'as_needed':
       return true;
     default:
       return true;
+  }
+};
+
+export const getChoreAssigneeForDate = (chore: Chore, dateStr: string): string => {
+  const date = parseLocalDate(dateStr);
+  const dayOfWeek = date.getDay(); // 0=Sunday..6=Saturday
+  if (chore.dayAssignments && chore.dayAssignments[dayOfWeek]) {
+    return chore.dayAssignments[dayOfWeek];
+  }
+  return chore.assignedMemberId || 'unassigned';
+};
+
+export const formatChoreScheduleDisplay = (chore: Chore): string => {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // If dayAssignments are present with individual days
+  if (chore.dayAssignments && Object.keys(chore.dayAssignments).length > 0) {
+    const assignedDays = Object.keys(chore.dayAssignments).map(Number).sort((a, b) => a - b);
+    if (assignedDays.length === 7) return 'Every Day (Rotating)';
+    if (assignedDays.length === 5 && [1, 2, 3, 4, 5].every(d => assignedDays.includes(d))) return 'Weekdays (Rotating)';
+    if (assignedDays.length === 2 && [0, 6].every(d => assignedDays.includes(d))) return 'Weekends (Rotating)';
+    return assignedDays.map(d => dayNames[d]).join(', ');
+  }
+
+  switch (chore.frequency) {
+    case 'daily':
+      return 'Every Day';
+    case 'weekdays':
+      return 'Weekdays (Mon–Fri)';
+    case 'weekends':
+      return 'Weekends (Sat & Sun)';
+    case 'as_needed':
+      return 'As Needed';
+    case 'weekly':
+    case 'custom_days':
+    default: {
+      if (!chore.scheduledDays || chore.scheduledDays.length === 0) return 'Weekly';
+      if (chore.scheduledDays.length === 7) return 'Every Day';
+      if (chore.scheduledDays.length === 5 && [1, 2, 3, 4, 5].every(d => chore.scheduledDays.includes(d))) return 'Weekdays (Mon–Fri)';
+      if (chore.scheduledDays.length === 2 && [0, 6].every(d => chore.scheduledDays.includes(d))) return 'Weekends (Sat & Sun)';
+      const sorted = [...chore.scheduledDays].sort((a, b) => a - b);
+      return sorted.map(d => dayNames[d]).join(', ');
+    }
   }
 };
 

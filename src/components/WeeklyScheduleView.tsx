@@ -14,7 +14,7 @@ import {
   CalendarDays
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
-import { getWeekDates, parseLocalDate, isChoreScheduledForDate, formatTimeDisplay } from '../utils/storage';
+import { getWeekDates, parseLocalDate, isChoreScheduledForDate, getChoreAssigneeForDate, formatTimeDisplay } from '../utils/storage';
 import { WeeklyWorkloadChart } from './WeeklyWorkloadChart';
 import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
@@ -86,7 +86,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto pb-8">
-      {/* iOS Navigation Header & Family Filter */}
+      {/* Navigation Header & Family Filter */}
       <div className="space-y-3">
         {/* Top Week Range & Action Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
@@ -214,7 +214,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
 
       {/* Mobile Day Selector Strip (Visible on small screens < md) */}
       <div className="md:hidden space-y-3">
-        {/* iOS Weekday Picker Strip */}
+        {/* Weekday Picker Strip */}
         <div className="bg-white rounded-3xl border border-slate-200/90 p-3 shadow-2xs">
           <div className="flex items-center justify-between px-1 py-1 mb-2 border-b border-slate-100 pb-2">
             <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
@@ -238,7 +238,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
               const scheduled = chores.filter(c => isChoreScheduledForDate(c, day.dateStr));
               const filteredScheduled = selectedMemberId === 'all'
                 ? scheduled
-                : scheduled.filter(c => c.assignedMemberId === selectedMemberId);
+                : scheduled.filter(c => getChoreAssigneeForDate(c, day.dateStr) === selectedMemberId);
               
               const dayLogs = logs.filter(l => l.date === day.dateStr);
               const approvedCount = dayLogs.filter(l => l.status === 'approved' && filteredScheduled.some(c => c.id === l.choreId)).length;
@@ -284,7 +284,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
           const scheduled = chores.filter(c => isChoreScheduledForDate(c, focusedDay.dateStr));
           const filteredScheduled = selectedMemberId === 'all'
             ? scheduled
-            : scheduled.filter(c => c.assignedMemberId === selectedMemberId);
+            : scheduled.filter(c => getChoreAssigneeForDate(c, focusedDay.dateStr) === selectedMemberId);
 
           const dayLogs = logs.filter(l => l.date === focusedDay.dateStr);
           const approvedCount = dayLogs.filter(l => l.status === 'approved' && filteredScheduled.some(c => c.id === l.choreId)).length;
@@ -328,7 +328,8 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                 <div className="space-y-2.5">
                   {filteredScheduled.map((chore) => {
                     const log = logs.find(l => l.choreId === chore.id && l.date === focusedDay.dateStr);
-                    const assignee = members.find(m => m.id === chore.assignedMemberId);
+                    const effectiveAssigneeId = getChoreAssigneeForDate(chore, focusedDay.dateStr);
+                    const assignee = members.find(m => m.id === effectiveAssigneeId);
                     const status = log?.status || 'pending';
 
                     return (
@@ -404,7 +405,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
           const scheduled = chores.filter(c => isChoreScheduledForDate(c, day.dateStr));
           const filteredScheduled = selectedMemberId === 'all'
             ? scheduled
-            : scheduled.filter(c => c.assignedMemberId === selectedMemberId);
+            : scheduled.filter(c => getChoreAssigneeForDate(c, day.dateStr) === selectedMemberId);
 
           const dayLogs = logs.filter(l => l.date === day.dateStr);
           const approvedCount = dayLogs.filter(l => l.status === 'approved' && filteredScheduled.some(c => c.id === l.choreId)).length;
@@ -457,7 +458,8 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                 ) : (
                   filteredScheduled.map((chore) => {
                     const log = logs.find(l => l.choreId === chore.id && l.date === day.dateStr);
-                    const assignee = members.find(m => m.id === chore.assignedMemberId);
+                    const effectiveAssigneeId = getChoreAssigneeForDate(chore, day.dateStr);
+                    const assignee = members.find(m => m.id === effectiveAssigneeId);
                     const status = log?.status || 'pending';
 
                     return (

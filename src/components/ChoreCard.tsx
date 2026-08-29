@@ -346,7 +346,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
     );
   }
 
-  // STANDARD COMPACT LIST VIEW MODE (Apple Reminders / Health standard)
+  // STANDARD COMPACT LIST VIEW MODE
   return (
     <div 
       id={`chore-card-${chore.id}`}
