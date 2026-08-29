@@ -12,7 +12,10 @@ import {
   Square,
   Edit2,
   ChevronRight,
-  Hand
+  Hand,
+  X,
+  User,
+  Info
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
 import { formatTimeDisplay } from '../utils/storage';
@@ -53,6 +56,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
   const t = getTranslation(language);
   const theme = THEMES[currentTheme] || THEMES.rose;
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [checkedItems, setCheckedItems] = useState<{ [key: number]: boolean }>(
     log?.checklistStatus || {}
   );
@@ -80,6 +84,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
   const handleChildSubmit = () => {
     soundFX.playComplete();
     onMarkComplete(chore.id, kidNote, checkedItems);
+    setIsDetailOpen(false);
   };
 
   // Touch Swipe Handlers
@@ -195,37 +200,497 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
   const isThresholdMetRight = dragOffset >= SWIPE_THRESHOLD;
   const isThresholdMetLeft = dragOffset <= -SWIPE_THRESHOLD;
 
+  // Handle whole card click (Intentional Tap)
+  const handleCardClick = () => {
+    // If the user was dragging/swiping, ignore click
+    if (Math.abs(dragOffset) > 6) return;
+    soundFX.playPop();
+
+    if (viewMode === 'grid') {
+      if (isMomMode) {
+        const targetLog = log || {
+          id: `quick_log_${chore.id}`,
+          choreId: chore.id,
+          memberId: chore.assignedMemberId,
+          date: new Date().toISOString().split('T')[0],
+          status: 'pending'
+        };
+        onOpenInspect(chore, targetLog);
+      } else {
+        setIsDetailOpen(true);
+      }
+    } else {
+      // List view mode
+      if (totalChecklistCount > 0) {
+        setIsExpanded(prev => !prev);
+      } else if (isMomMode) {
+        const targetLog = log || {
+          id: `quick_log_${chore.id}`,
+          choreId: chore.id,
+          memberId: chore.assignedMemberId,
+          date: new Date().toISOString().split('T')[0],
+          status: 'pending'
+        };
+        onOpenInspect(chore, targetLog);
+      } else {
+        setIsDetailOpen(true);
+      }
+    }
+  };
+
+  // Reusable Chore Detail & Quality Checklist Modal
+  const renderDetailModal = () => {
+    if (!isDetailOpen) return null;
+
+    return (
+      <div 
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsDetailOpen(false);
+        }}
+      >
+        <div 
+          className="bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* iOS Grabber for Mobile */}
+          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mt-3 sm:hidden" />
+
+          {/* Modal Header */}
+          <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
+            <div className="space-y-1.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black border flex items-center gap-1.5 ${getCategoryColor(chore.category)}`}>
+                  <span>{catShort.emoji}</span>
+                  <span>{getCategoryTranslation(chore.category, language)}</span>
+                </span>
+
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black bg-amber-100 text-amber-900 border border-amber-200 shadow-2xs">
+                  ⭐ {chore.defaultPoints} {t.pts}
+                </span>
+
+                {status === 'approved' ? (
+                  <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    ✅ Done & Approved
+                  </span>
+                ) : status === 'needs_review' ? (
+                  <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-amber-100 text-amber-800 border border-amber-200">
+                    ✨ Waiting for Review
+                  </span>
+                ) : status === 'needs_redo' ? (
+                  <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-rose-100 text-rose-800 border border-rose-200">
+                    🔄 Touch-up Needed
+                  </span>
+                ) : null}
+              </div>
+
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-snug">
+                {chore.title}
+              </h3>
+            </div>
+
+            <button
+              onClick={() => setIsDetailOpen(false)}
+              className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center shrink-0"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Modal Scrollable Body */}
+          <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+            {/* Description if available */}
+            {chore.description && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p className="font-semibold text-slate-800 dark:text-slate-200 mb-0.5 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-indigo-500" />
+                  Instructions:
+                </p>
+                {chore.description}
+              </div>
+            )}
+
+            {/* Chore Meta Details (Time & Assignee) */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] font-extrabold uppercase text-slate-400 block mb-1">
+                  Scheduled Time
+                </span>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)}</span>
+                  {chore.estimatedMinutes && (
+                    <span className="text-slate-400 font-normal">({chore.estimatedMinutes}m)</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] font-extrabold uppercase text-slate-400 block mb-1">
+                  Assigned Helper
+                </span>
+                {assignee ? (
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                    <Avatar photoUrl={assignee.avatarPhotoUrl} emoji={assignee.avatarEmoji} name={assignee.name} size="xs" showBorder={false} />
+                    <span className="truncate">{assignee.name}</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-slate-400 italic">Unassigned</span>
+                )}
+              </div>
+            </div>
+
+            {/* Touch-up feedback alert if needs redo */}
+            {status === 'needs_redo' && log?.feedbackNote && (
+              <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 rounded-2xl border border-rose-200 dark:border-rose-800 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>Mom's Feedback:</span>
+                </div>
+                <p className="text-xs text-rose-700 dark:text-rose-400 italic bg-white/80 dark:bg-slate-900/60 p-2 rounded-xl border border-rose-100 dark:border-rose-900">
+                  "{log.feedbackNote}"
+                </p>
+              </div>
+            )}
+
+            {/* Quality Checklist Items */}
+            {totalChecklistCount > 0 ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold uppercase tracking-wide text-slate-500 flex items-center gap-1.5">
+                    <CheckSquare className="w-4 h-4 text-indigo-500" />
+                    <span>Quality Criteria Checklist ({completedChecklistCount}/{totalChecklistCount})</span>
+                  </span>
+                  {completedChecklistCount === totalChecklistCount && (
+                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      All criteria met! 🎉
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  {chore.qualityChecklist.map((item, idx) => {
+                    const isChecked = !!checkedItems[idx];
+                    return (
+                      <div
+                        key={idx}
+                        role="checkbox"
+                        aria-checked={isChecked}
+                        tabIndex={0}
+                        onClick={() => handleToggleChecklistItem(idx)}
+                        onKeyDown={(e) => {
+                          if (e.key === ' ' || e.key === 'Enter') {
+                            e.preventDefault();
+                            handleToggleChecklistItem(idx);
+                          }
+                        }}
+                        className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all active:scale-[0.99] touch-target select-none border ${
+                          isChecked
+                            ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800 shadow-2xs'
+                            : 'bg-slate-50 dark:bg-slate-800/40 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        <div className="shrink-0 flex items-center justify-center">
+                          {isChecked ? (
+                            <div className="w-5 h-5 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                              <CheckSquare className="w-3.5 h-3.5 text-white" />
+                            </div>
+                          ) : (
+                            <div className="w-5 h-5 rounded-lg border-2 border-slate-400 bg-white dark:bg-slate-800 flex items-center justify-center" />
+                          )}
+                        </div>
+                        <span className={`text-xs sm:text-sm leading-snug font-semibold flex-1 ${isChecked ? 'line-through opacity-75' : ''}`}>
+                          {item}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs text-slate-500 text-center">
+                ✨ No specific checklist criteria for this chore. Complete it according to house standards!
+              </div>
+            )}
+
+            {/* Completed Note input if pending or needs redo */}
+            {status !== 'approved' && (
+              <div className="space-y-1.5 pt-1">
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                  <MessageSquareQuote className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Note for Mom (optional):</span>
+                </label>
+                <input
+                  type="text"
+                  value={kidNote}
+                  onChange={(e) => setKidNote(e.target.value)}
+                  placeholder="e.g. Cleaned under the microwave and wiped counters!"
+                  className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Modal Sticky Bottom Action Bar */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+            <button
+              onClick={() => setIsDetailOpen(false)}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 transition-colors cursor-pointer min-h-[44px]"
+            >
+              Close
+            </button>
+
+            {status === 'approved' ? (
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-100/80 px-4 py-2.5 rounded-xl border border-emerald-200 min-h-[44px]">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Awarded +{ (log?.pointsAwarded || chore.defaultPoints) + (log?.bonusPoints || 0) } {t.pts}</span>
+              </div>
+            ) : status === 'needs_review' ? (
+              isMomMode ? (
+                <button
+                  onClick={() => {
+                    setIsDetailOpen(false);
+                    if (log) onOpenInspect(chore, log);
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-600 text-white shadow-xs transition-transform active:scale-95 cursor-pointer min-h-[44px] flex-1"
+                >
+                  <Sparkles className="w-4 h-4 text-white" />
+                  <span>Inspect & Grade</span>
+                </button>
+              ) : (
+                <span className="text-xs font-bold text-amber-800 bg-amber-100 px-4 py-2.5 rounded-xl border border-amber-200 flex items-center gap-1.5 min-h-[44px]">
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span>Waiting for Mom's Review</span>
+                </span>
+              )
+            ) : (
+              <button
+                onClick={handleChildSubmit}
+                className={`inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black ${theme.primaryBg} ${theme.primaryHover} ${theme.primaryText} shadow-md transition-all active:scale-95 cursor-pointer min-h-[44px] flex-1`}
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                <span>{status === 'needs_redo' ? t.fixedSubmit : `${t.markDone} (+${chore.defaultPoints} pts)`}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // COMPACT GRID / 2-COLUMN VIEW MODE
   if (viewMode === 'grid') {
     return (
+      <>
+        {renderDetailModal()}
+        <div 
+          id={`chore-card-grid-${chore.id}`}
+          className="relative rounded-2xl overflow-hidden shadow-2xs select-none touch-pan-y"
+        >
+          {/* Background Swipe Actions Layer */}
+          <div 
+            className={`absolute inset-0 flex items-center justify-between px-3 font-black text-[11px] transition-colors duration-200 rounded-2xl ${
+              isSwipeRightActive
+                ? isThresholdMetRight ? 'bg-emerald-600 text-white' : 'bg-emerald-500/90 text-white'
+                : isSwipeLeftActive && isMomMode
+                ? isThresholdMetLeft ? 'bg-amber-600 text-white' : 'bg-amber-500/90 text-white'
+                : 'bg-slate-100 text-slate-400'
+            }`}
+          >
+            <div className={`flex items-center gap-1 transition-transform ${isSwipeRightActive ? 'opacity-100 scale-105' : 'opacity-0 scale-95'}`}>
+              <CheckCircle2 className="w-4 h-4 text-white" />
+              <span className="text-[10px] uppercase font-black tracking-tight">{isThresholdMetRight ? 'Done!' : 'Done'}</span>
+            </div>
+            {isMomMode && (
+              <div className={`flex items-center gap-1 transition-transform ml-auto ${isSwipeLeftActive ? 'opacity-100 scale-105' : 'opacity-0 scale-95'}`}>
+                <span className="text-[10px] uppercase font-black tracking-tight">Grade</span>
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+            )}
+          </div>
+
+          {/* Foreground Card */}
+          <div
+            onClick={handleCardClick}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            style={{
+              transform: `translateX(${dragOffset}px)`,
+              transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            }}
+            className={`relative z-10 bg-white rounded-2xl border p-3 flex flex-col justify-between min-h-[146px] cursor-pointer hover:shadow-xs transition-all duration-200 active:scale-[0.99] ${
+              status === 'needs_review'
+                ? 'border-amber-300 bg-gradient-to-br from-white to-amber-50/40 ring-1 ring-amber-300'
+                : status === 'approved'
+                ? 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/30'
+                : status === 'needs_redo'
+                ? 'border-rose-300 bg-gradient-to-br from-white to-rose-50/30 ring-1 ring-rose-200'
+                : 'border-slate-200 hover:border-slate-300'
+            }`}
+          >
+            <div>
+              {/* Top row: Category pill (Emoji + Short Label) + Points + Edit */}
+              <div className="flex items-center justify-between gap-1 mb-1.5">
+                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border whitespace-nowrap flex items-center gap-1 ${getCategoryColor(chore.category)}`}>
+                  <span>{catShort.emoji}</span>
+                  <span>{catShort.label}</span>
+                </span>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-200">
+                    ⭐ {chore.defaultPoints}
+                  </span>
+                  {isMomMode && onEditChore && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditChore(chore);
+                      }}
+                      className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors shrink-0 active:scale-95 touch-target min-h-[30px] min-w-[30px] flex items-center justify-center -mr-1 cursor-pointer"
+                      title="Edit Chore"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Title */}
+              <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-snug line-clamp-2 mb-1">
+                {chore.title}
+              </h4>
+
+              {/* Time & Duration */}
+              <div className="flex items-center gap-1 text-[10px] text-slate-500 font-semibold mb-2">
+                <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                <span className="truncate">{formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)}</span>
+                {chore.estimatedMinutes && (
+                  <span className="text-slate-400 font-normal">({chore.estimatedMinutes}m)</span>
+                )}
+                {totalChecklistCount > 0 && (
+                  <span className="ml-auto text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md border border-indigo-100">
+                    {completedChecklistCount}/{totalChecklistCount} ✓
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Row: Assignee + Status / Action Button */}
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
+              {assignee ? (
+                <div className="flex items-center gap-1 min-w-0 flex-1" title={`${t.cardAssignedTo} ${assignee.name}`}>
+                  <Avatar
+                    photoUrl={assignee.avatarPhotoUrl}
+                    emoji={assignee.avatarEmoji}
+                    name={assignee.name}
+                    size="xs"
+                    showBorder={false}
+                  />
+                  <span className="text-[11px] font-bold text-slate-700 truncate max-w-[65px]">
+                    {assignee.name.split(' ')[0]}
+                  </span>
+                </div>
+              ) : <div className="flex-1" />}
+
+              {/* Action State */}
+              {status === 'approved' ? (
+                <div className="flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-xl border border-emerald-200">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  <span>Done</span>
+                </div>
+              ) : status === 'needs_review' ? (
+                isMomMode ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      soundFX.playStarChime(5);
+                      if (log) onQuickApprove(chore.id, log.id);
+                    }}
+                    className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black shadow-2xs active:scale-95 flex items-center gap-1 cursor-pointer min-h-[30px]"
+                    title="Pass 5⭐"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-200" />
+                    <span>Pass 5⭐</span>
+                  </button>
+                ) : (
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-1 rounded-xl border border-amber-200">
+                    Reviewing ✨
+                  </span>
+                )
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleChildSubmit();
+                  }}
+                  className={`px-2.5 py-1.5 ${theme.primaryBg} ${theme.primaryHover} ${theme.primaryText} rounded-xl text-[10px] font-black shadow-2xs active:scale-95 flex items-center gap-1 cursor-pointer min-h-[32px]`}
+                  title="Mark Done"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                  <span>Done</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // STANDARD COMPACT LIST VIEW MODE
+  return (
+    <>
+      {renderDetailModal()}
       <div 
-        id={`chore-card-grid-${chore.id}`}
+        id={`chore-card-${chore.id}`}
         className="relative rounded-2xl overflow-hidden shadow-2xs select-none touch-pan-y"
       >
         {/* Background Swipe Actions Layer */}
         <div 
-          className={`absolute inset-0 flex items-center justify-between px-3 font-black text-[11px] transition-colors duration-200 rounded-2xl ${
+          className={`absolute inset-0 flex items-center justify-between px-4 font-black text-xs transition-colors duration-200 rounded-2xl ${
             isSwipeRightActive
-              ? isThresholdMetRight ? 'bg-emerald-600 text-white' : 'bg-emerald-500/90 text-white'
-              : isSwipeLeftActive && isMomMode
-              ? isThresholdMetLeft ? 'bg-amber-600 text-white' : 'bg-amber-500/90 text-white'
+              ? isThresholdMetRight
+                ? 'bg-emerald-600 text-white'
+                : 'bg-emerald-500/90 text-white'
+              : isSwipeLeftActive
+              ? isThresholdMetLeft
+                ? 'bg-amber-600 text-white'
+                : 'bg-amber-500/90 text-white'
               : 'bg-slate-100 text-slate-400'
           }`}
         >
-          <div className={`flex items-center gap-1 transition-transform ${isSwipeRightActive ? 'opacity-100 scale-105' : 'opacity-0 scale-95'}`}>
-            <CheckCircle2 className="w-4 h-4 text-white" />
-            <span className="text-[10px] uppercase font-black tracking-tight">{isThresholdMetRight ? 'Done!' : 'Done'}</span>
+          {/* Left/Right Action Indicators revealed under the card */}
+          <div className={`flex items-center gap-1.5 transition-transform duration-150 ${isSwipeRightActive ? 'opacity-100 scale-105' : 'opacity-0 scale-95'}`}>
+            <div className="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center">
+              {isMomMode && status === 'needs_review' ? (
+                <Sparkles className="w-4 h-4 text-white" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 text-white" />
+              )}
+            </div>
+            <span className="text-xs uppercase tracking-tight font-black">
+              {isThresholdMetRight 
+                ? (isMomMode && status === 'needs_review' ? 'Release: 5⭐' : 'Release: Done!')
+                : (isMomMode && status === 'needs_review' ? 'Swipe: 5⭐' : 'Swipe: Done')}
+            </span>
           </div>
-          {isMomMode && (
-            <div className={`flex items-center gap-1 transition-transform ml-auto ${isSwipeLeftActive ? 'opacity-100 scale-105' : 'opacity-0 scale-95'}`}>
-              <span className="text-[10px] uppercase font-black tracking-tight">Grade</span>
+
+          <div className={`flex items-center gap-1.5 transition-transform duration-150 ml-auto ${isSwipeLeftActive && isMomMode ? 'opacity-100 scale-105' : 'opacity-0 scale-95'}`}>
+            <span className="text-xs uppercase tracking-tight font-black">
+              {isThresholdMetLeft ? 'Release: Grade' : 'Swipe: Inspect'}
+            </span>
+            <div className="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Foreground Card */}
+        {/* Foreground Swipeable Card Surface */}
         <div
+          onClick={handleCardClick}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -233,7 +698,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
             transform: `translateX(${dragOffset}px)`,
             transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
           }}
-          className={`relative z-10 bg-white rounded-2xl border p-3 flex flex-col justify-between min-h-[142px] transition-all duration-200 ${
+          className={`relative z-10 bg-white rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-xs ${
             status === 'needs_review'
               ? 'border-amber-300 bg-gradient-to-br from-white to-amber-50/40 ring-1 ring-amber-300'
               : status === 'approved'
@@ -243,441 +708,288 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
               : 'border-slate-200 hover:border-slate-300'
           }`}
         >
-          <div>
-            {/* Top row: Category pill (Emoji + Short Label) + Points + Edit */}
-            <div className="flex items-center justify-between gap-1 mb-1.5">
-              <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border whitespace-nowrap flex items-center gap-1 ${getCategoryColor(chore.category)}`}>
-                <span>{catShort.emoji}</span>
-                <span>{catShort.label}</span>
-              </span>
+          <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
+            <div>
+              {/* Top Meta Line: Category, Time, Points, Assignee & Edit */}
+              <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                  <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border whitespace-nowrap flex items-center gap-1 ${getCategoryColor(chore.category)}`}>
+                    <span>{catShort.emoji}</span>
+                    <span>{catShort.label}</span>
+                  </span>
 
-              <div className="flex items-center gap-1 shrink-0">
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-200">
-                  ⭐ {chore.defaultPoints}
-                </span>
-                {isMomMode && onEditChore && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditChore(chore);
-                    }}
-                    className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors shrink-0 active:scale-95 touch-target min-h-[30px] min-w-[30px] flex items-center justify-center -mr-1 cursor-pointer"
-                    title="Edit Chore"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                  <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-semibold whitespace-nowrap">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    {formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)}
+                    {chore.estimatedMinutes && (
+                      <span className="text-slate-400 font-normal">({chore.estimatedMinutes}m)</span>
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-200 shadow-2xs whitespace-nowrap">
+                    ⭐ {chore.defaultPoints} {t.pts}
+                  </span>
+
+                  {assignee && (
+                    <div 
+                      className="flex items-center gap-1 bg-slate-50 pl-1 pr-1.5 py-0.5 rounded-full border border-slate-200 shadow-2xs"
+                      title={`${t.cardAssignedTo} ${assignee.name}`}
+                    >
+                      <Avatar
+                        photoUrl={assignee.avatarPhotoUrl}
+                        emoji={assignee.avatarEmoji}
+                        name={assignee.name}
+                        size="xs"
+                        showBorder={false}
+                      />
+                      <span className="text-[11px] font-bold text-slate-700 max-w-[65px] truncate hidden xs:inline">
+                        {assignee.name.split(' ')[0]}
+                      </span>
+                    </div>
+                  )}
+
+                  {isMomMode && onEditChore && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditChore(chore);
+                      }}
+                      className="p-1 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors shrink-0 active:scale-95 min-h-[30px] min-w-[30px] flex items-center justify-center -mr-1 cursor-pointer"
+                      title="Edit Chore"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Title */}
-            <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-snug line-clamp-2 mb-1">
-              {chore.title}
-            </h4>
+              {/* Title */}
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug break-words mb-0.5">
+                {chore.title}
+              </h3>
+              {chore.description && (
+                <p className="text-[11px] text-slate-500 line-clamp-1 mb-1">
+                  {chore.description}
+                </p>
+              )}
 
-            {/* Time & Duration */}
-            <div className="flex items-center gap-1 text-[10px] text-slate-500 font-semibold mb-2">
-              <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-              <span className="truncate">{formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)}</span>
-              {chore.estimatedMinutes && (
-                <span className="text-slate-400 font-normal">({chore.estimatedMinutes}m)</span>
+              {/* Status Feedback Block (Approved or Needs Redo) */}
+              {status === 'approved' && log && (
+                <div className="my-1.5 p-2 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex text-amber-500">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star 
+                          key={i} 
+                          className={`w-3 h-3 ${i < (log.qualityScore || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} 
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[11px] font-black text-emerald-800">
+                      {log.qualityGrade || 'A+'} Grade
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-emerald-700 whitespace-nowrap">
+                    +{ (log.pointsAwarded || chore.defaultPoints) + (log.bonusPoints || 0) } {t.pts}
+                  </span>
+                </div>
+              )}
+
+              {status === 'needs_redo' && log && (
+                <div className="my-1.5 p-2 bg-rose-50 rounded-xl border border-rose-200 text-xs">
+                  <div className="flex items-center gap-1.5 text-rose-800 font-bold text-[11px]">
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                    <span>{t.momRequestedRedo}</span>
+                  </div>
+                  {log.feedbackNote && (
+                    <p className="mt-0.5 text-[11px] text-rose-700 bg-white/80 p-1.5 rounded-lg border border-rose-100 italic break-words">
+                      "{log.feedbackNote}"
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Quality Checklist Expandable (if opened) */}
+              {totalChecklistCount > 0 && isExpanded && (
+                <div 
+                  className="mt-2 space-y-1.5 pt-2 border-t border-slate-100 pb-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {chore.qualityChecklist.map((item, idx) => {
+                    const isChecked = !!checkedItems[idx];
+                    return (
+                      <div 
+                        key={idx}
+                        role="checkbox"
+                        aria-checked={isChecked}
+                        tabIndex={0}
+                        onClick={() => handleToggleChecklistItem(idx)}
+                        onKeyDown={(e) => {
+                          if (e.key === ' ' || e.key === 'Enter') {
+                            e.preventDefault();
+                            handleToggleChecklistItem(idx);
+                          }
+                        }}
+                        className={`flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl cursor-pointer transition-all active:scale-[0.98] min-h-[48px] touch-target select-none ${
+                          isChecked 
+                            ? 'bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs' 
+                            : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/80'
+                        }`}
+                      >
+                        <div className="shrink-0 flex items-center justify-center">
+                          {isChecked ? (
+                            <div className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                              <CheckSquare className="w-3.5 h-3.5 text-white" />
+                            </div>
+                          ) : (
+                            <div className="w-5 h-5 rounded-md border-2 border-slate-400 bg-white flex items-center justify-center" />
+                          )}
+                        </div>
+                        <span className={`text-xs sm:text-sm leading-snug break-words font-medium flex-1 ${isChecked ? 'line-through opacity-75' : ''}`}>
+                          {item}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
-          </div>
 
-          {/* Bottom Row: Assignee + Status / Action Button */}
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
-            {assignee ? (
-              <div className="flex items-center gap-1 min-w-0 flex-1" title={`${t.cardAssignedTo} ${assignee.name}`}>
-                <Avatar
-                  photoUrl={assignee.avatarPhotoUrl}
-                  emoji={assignee.avatarEmoji}
-                  name={assignee.name}
-                  size="xs"
-                  showBorder={false}
-                />
-                <span className="text-[11px] font-bold text-slate-700 truncate max-w-[65px]">
-                  {assignee.name.split(' ')[0]}
-                </span>
-              </div>
-            ) : <div className="flex-1" />}
-
-            {/* Action State */}
-            {status === 'approved' ? (
-              <div className="flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-xl border border-emerald-200">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                <span>Done</span>
-              </div>
-            ) : status === 'needs_review' ? (
-              isMomMode ? (
+            {/* Unified Compact Action Bar (Checklist Pill + Done/Review CTA on Single Row) */}
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 mt-1">
+              {/* Checklist Toggle Pill */}
+              {totalChecklistCount > 0 ? (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    soundFX.playStarChime(5);
-                    if (log) onQuickApprove(chore.id, log.id);
+                    soundFX.playPop();
+                    setIsExpanded(!isExpanded);
                   }}
-                  className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black shadow-2xs active:scale-95 flex items-center gap-1 cursor-pointer min-h-[30px]"
-                  title="Pass 5⭐"
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer min-h-[36px] active:scale-95 ${
+                    completedChecklistCount === totalChecklistCount
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
+                  }`}
                 >
-                  <Sparkles className="w-3 h-3 text-amber-200" />
-                  <span>Pass 5⭐</span>
+                  <CheckCircle2 className={`w-3 h-3 ${completedChecklistCount === totalChecklistCount ? 'text-emerald-600' : 'text-slate-400'}`} />
+                  <span>Checklist ({completedChecklistCount}/{totalChecklistCount})</span>
+                  {isExpanded ? <ChevronUp className="w-3 h-3 ml-0.5" /> : <ChevronDown className="w-3 h-3 ml-0.5" />}
                 </button>
               ) : (
-                <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-1 rounded-xl border border-amber-200">
-                  Reviewing ✨
-                </span>
-              )
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleChildSubmit();
-                }}
-                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[10px] font-black shadow-2xs active:scale-95 flex items-center gap-1 cursor-pointer min-h-[30px]"
-                title="Mark Done"
-              >
-                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                <span>Done</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // STANDARD COMPACT LIST VIEW MODE
-  return (
-    <div 
-      id={`chore-card-${chore.id}`}
-      className="relative rounded-2xl overflow-hidden shadow-2xs select-none touch-pan-y"
-    >
-      {/* Background Swipe Actions Layer */}
-      <div 
-        className={`absolute inset-0 flex items-center justify-between px-4 font-black text-xs transition-colors duration-200 rounded-2xl ${
-          isSwipeRightActive
-            ? isThresholdMetRight
-              ? 'bg-emerald-600 text-white'
-              : 'bg-emerald-500/90 text-white'
-            : isSwipeLeftActive
-            ? isThresholdMetLeft
-              ? 'bg-amber-600 text-white'
-              : 'bg-amber-500/90 text-white'
-            : 'bg-slate-100 text-slate-400'
-        }`}
-      >
-        {/* Left/Right Action Indicators revealed under the card */}
-        <div className={`flex items-center gap-1.5 transition-transform duration-150 ${isSwipeRightActive ? 'opacity-100 scale-105' : 'opacity-0 scale-95'}`}>
-          <div className="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center">
-            {isMomMode && status === 'needs_review' ? (
-              <Sparkles className="w-4 h-4 text-white" />
-            ) : (
-              <CheckCircle2 className="w-4 h-4 text-white" />
-            )}
-          </div>
-          <span className="text-xs uppercase tracking-tight font-black">
-            {isThresholdMetRight 
-              ? (isMomMode && status === 'needs_review' ? 'Release: 5⭐' : 'Release: Done!')
-              : (isMomMode && status === 'needs_review' ? 'Swipe: 5⭐' : 'Swipe: Done')}
-          </span>
-        </div>
-
-        <div className={`flex items-center gap-1.5 transition-transform duration-150 ml-auto ${isSwipeLeftActive && isMomMode ? 'opacity-100 scale-105' : 'opacity-0 scale-95'}`}>
-          <span className="text-xs uppercase tracking-tight font-black">
-            {isThresholdMetLeft ? 'Release: Grade' : 'Swipe: Inspect'}
-          </span>
-          <div className="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
-        </div>
-      </div>
-
-      {/* Foreground Swipeable Card Surface */}
-      <div
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          transform: `translateX(${dragOffset}px)`,
-          transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
-        }}
-        className={`relative z-10 bg-white rounded-2xl border transition-all duration-200 flex flex-col justify-between ${
-          status === 'needs_review'
-            ? 'border-amber-300 bg-gradient-to-br from-white to-amber-50/40 ring-1 ring-amber-300'
-            : status === 'approved'
-            ? 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/30'
-            : status === 'needs_redo'
-            ? 'border-rose-300 bg-gradient-to-br from-white to-rose-50/30 ring-1 ring-rose-200'
-            : 'border-slate-200 hover:border-slate-300'
-        }`}
-      >
-        <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
-          <div>
-            {/* Top Meta Line: Category, Time, Points, Assignee & Edit */}
-            <div className="flex items-center justify-between gap-1.5 mb-1.5">
-              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border whitespace-nowrap flex items-center gap-1 ${getCategoryColor(chore.category)}`}>
-                  <span>{catShort.emoji}</span>
-                  <span>{catShort.label}</span>
-                </span>
-
-                <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-semibold whitespace-nowrap">
-                  <Clock className="w-3 h-3 text-slate-400" />
-                  {formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)}
-                  {chore.estimatedMinutes && (
-                    <span className="text-slate-400 font-normal">({chore.estimatedMinutes}m)</span>
-                  )}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1 shrink-0">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-200 shadow-2xs whitespace-nowrap">
-                  ⭐ {chore.defaultPoints} {t.pts}
-                </span>
-
-                {assignee && (
-                  <div 
-                    className="flex items-center gap-1 bg-slate-50 pl-1 pr-1.5 py-0.5 rounded-full border border-slate-200 shadow-2xs"
-                    title={`${t.cardAssignedTo} ${assignee.name}`}
-                  >
-                    <Avatar
-                      photoUrl={assignee.avatarPhotoUrl}
-                      emoji={assignee.avatarEmoji}
-                      name={assignee.name}
-                      size="xs"
-                      showBorder={false}
-                    />
-                    <span className="text-[11px] font-bold text-slate-700 max-w-[65px] truncate hidden xs:inline">
-                      {assignee.name.split(' ')[0]}
-                    </span>
-                  </div>
-                )}
-
-                {isMomMode && onEditChore && (
-                  <button
-                    onClick={() => onEditChore(chore)}
-                    className="p-1 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors shrink-0 active:scale-95 min-h-[30px] min-w-[30px] flex items-center justify-center -mr-1 cursor-pointer"
-                    title="Edit Chore"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Title */}
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug break-words mb-0.5">
-              {chore.title}
-            </h3>
-            {chore.description && (
-              <p className="text-[11px] text-slate-500 line-clamp-1 mb-1">
-                {chore.description}
-              </p>
-            )}
-
-            {/* Status Feedback Block (Approved or Needs Redo) */}
-            {status === 'approved' && log && (
-              <div className="my-1.5 p-2 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="flex text-amber-500">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star 
-                        key={i} 
-                        className={`w-3 h-3 ${i < (log.qualityScore || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} 
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[11px] font-black text-emerald-800">
-                    {log.qualityGrade || 'A+'} Grade
-                  </span>
+                <div className="text-[10px] text-slate-400 font-medium hidden xs:block">
+                  {status !== 'approved' && 'Tap card for details →'}
                 </div>
-                <span className="text-[11px] font-bold text-emerald-700 whitespace-nowrap">
-                  +{ (log.pointsAwarded || chore.defaultPoints) + (log.bonusPoints || 0) } {t.pts}
-                </span>
-              </div>
-            )}
+              )}
 
-            {status === 'needs_redo' && log && (
-              <div className="my-1.5 p-2 bg-rose-50 rounded-xl border border-rose-200 text-xs">
-                <div className="flex items-center gap-1.5 text-rose-800 font-bold text-[11px]">
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                  <span>{t.momRequestedRedo}</span>
-                </div>
-                {log.feedbackNote && (
-                  <p className="mt-0.5 text-[11px] text-rose-700 bg-white/80 p-1.5 rounded-lg border border-rose-100 italic break-words">
-                    "{log.feedbackNote}"
-                  </p>
-                )}
-              </div>
-            )}
+              {/* Action State Buttons */}
+              <div className="flex items-center gap-1.5 ml-auto">
+                {/* PENDING / NEEDS REDO */}
+                {(status === 'pending' || status === 'needs_redo') && (
+                  <>
+                    {isMomMode && (
+                      <button
+                        id={`btn-instant-approve-${chore.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundFX.playPop();
+                          const tempLog = log || {
+                            id: `quick_log_${chore.id}`,
+                            choreId: chore.id,
+                            memberId: chore.assignedMemberId,
+                            date: new Date().toISOString().split('T')[0],
+                            status: 'pending'
+                          };
+                          onOpenInspect(chore, tempLog);
+                        }}
+                        className="p-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors shrink-0 active:scale-95 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+                        title={t.inspectAndGrade}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      </button>
+                    )}
 
-            {/* Quality Checklist Expandable (if opened) */}
-            {totalChecklistCount > 0 && isExpanded && (
-              <div className="mt-2 space-y-1.5 pt-2 border-t border-slate-100 pb-1">
-                {chore.qualityChecklist.map((item, idx) => {
-                  const isChecked = !!checkedItems[idx];
-                  return (
-                    <div 
-                      key={idx}
-                      role="checkbox"
-                      aria-checked={isChecked}
-                      tabIndex={0}
-                      onClick={() => handleToggleChecklistItem(idx)}
-                      onKeyDown={(e) => {
-                        if (e.key === ' ' || e.key === 'Enter') {
-                          e.preventDefault();
-                          handleToggleChecklistItem(idx);
-                        }
+                    <button
+                      id={`btn-complete-chore-${chore.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleChildSubmit();
                       }}
-                      className={`flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl cursor-pointer transition-all active:scale-[0.98] min-h-[48px] touch-target select-none ${
-                        isChecked 
-                          ? 'bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs' 
-                          : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/80'
-                      }`}
+                      className={`inline-flex items-center justify-center gap-1.5 py-1.5 px-3.5 rounded-xl text-xs font-black ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} shadow-2xs transition-all active:scale-95 min-h-[36px] cursor-pointer`}
                     >
-                      <div className="shrink-0 flex items-center justify-center">
-                        {isChecked ? (
-                          <div className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                            <CheckSquare className="w-3.5 h-3.5 text-white" />
-                          </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-md border-2 border-slate-400 bg-white flex items-center justify-center" />
-                        )}
-                      </div>
-                      <span className={`text-xs sm:text-sm leading-snug break-words font-medium flex-1 ${isChecked ? 'line-through opacity-75' : ''}`}>
-                        {item}
-                      </span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>{status === 'needs_redo' ? t.fixedSubmit : t.markDone}</span>
+                    </button>
+                  </>
+                )}
+
+                {/* NEEDS REVIEW */}
+                {status === 'needs_review' && log && (
+                  isMomMode ? (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        id={`btn-inspect-grade-${chore.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundFX.playPop();
+                          onOpenInspect(chore, log);
+                        }}
+                        className="inline-flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-xl text-xs font-black bg-amber-500 text-white hover:bg-amber-600 shadow-2xs transition-transform active:scale-95 min-h-[36px] cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3 shrink-0" />
+                        <span>Inspect</span>
+                      </button>
+
+                      <button
+                        id={`btn-quick-approve-${chore.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundFX.playStarChime(5);
+                          onQuickApprove(chore.id, log.id);
+                        }}
+                        className="inline-flex items-center justify-center gap-1 py-1.5 px-3 rounded-xl text-xs font-black bg-emerald-600 text-white hover:bg-emerald-700 shadow-2xs transition-transform active:scale-95 min-h-[36px] cursor-pointer"
+                        title={t.quickApproveTitle}
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-white shrink-0" />
+                        <span>Pass 5⭐</span>
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                  ) : (
+                    <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                      <span>Reviewing ✨</span>
+                    </span>
+                  )
+                )}
 
-          {/* Unified Compact Action Bar (Checklist Pill + Done/Review CTA on Single Row) */}
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 mt-1">
-            {/* Checklist Toggle Pill */}
-            {totalChecklistCount > 0 ? (
-              <button
-                onClick={() => {
-                  soundFX.playPop();
-                  setIsExpanded(!isExpanded);
-                }}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer min-h-[36px] active:scale-95 ${
-                  completedChecklistCount === totalChecklistCount
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
-                }`}
-              >
-                <CheckCircle2 className={`w-3 h-3 ${completedChecklistCount === totalChecklistCount ? 'text-emerald-600' : 'text-slate-400'}`} />
-                <span>Checklist ({completedChecklistCount}/{totalChecklistCount})</span>
-                {isExpanded ? <ChevronUp className="w-3 h-3 ml-0.5" /> : <ChevronDown className="w-3 h-3 ml-0.5" />}
-              </button>
-            ) : (
-              <div className="text-[10px] text-slate-400 font-medium hidden xs:block">
-                {status !== 'approved' && 'Swipe right to complete →'}
-              </div>
-            )}
-
-            {/* Action State Buttons */}
-            <div className="flex items-center gap-1.5 ml-auto">
-              {/* PENDING / NEEDS REDO */}
-              {(status === 'pending' || status === 'needs_redo') && (
-                <>
-                  {isMomMode && (
-                    <button
-                      id={`btn-instant-approve-${chore.id}`}
-                      onClick={() => {
-                        soundFX.playPop();
-                        const tempLog = log || {
-                          id: `quick_log_${chore.id}`,
-                          choreId: chore.id,
-                          memberId: chore.assignedMemberId,
-                          date: new Date().toISOString().split('T')[0],
-                          status: 'pending'
-                        };
-                        onOpenInspect(chore, tempLog);
-                      }}
-                      className="p-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors shrink-0 active:scale-95 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
-                      title={t.inspectAndGrade}
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    </button>
-                  )}
-
-                  <button
-                    id={`btn-complete-chore-${chore.id}`}
-                    onClick={handleChildSubmit}
-                    className={`inline-flex items-center justify-center gap-1.5 py-1.5 px-3.5 rounded-xl text-xs font-black ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} shadow-2xs transition-all active:scale-95 min-h-[36px] cursor-pointer`}
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>{status === 'needs_redo' ? t.fixedSubmit : t.markDone}</span>
-                  </button>
-                </>
-              )}
-
-              {/* NEEDS REVIEW */}
-              {status === 'needs_review' && log && (
-                isMomMode ? (
+                {/* APPROVED */}
+                {status === 'approved' && (
                   <div className="flex items-center gap-1.5">
-                    <button
-                      id={`btn-inspect-grade-${chore.id}`}
-                      onClick={() => {
-                        soundFX.playPop();
-                        onOpenInspect(chore, log);
-                      }}
-                      className="inline-flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-xl text-xs font-black bg-amber-500 text-white hover:bg-amber-600 shadow-2xs transition-transform active:scale-95 min-h-[36px] cursor-pointer"
-                    >
-                      <Sparkles className="w-3 h-3 shrink-0" />
-                      <span>Inspect</span>
-                    </button>
-
-                    <button
-                      id={`btn-quick-approve-${chore.id}`}
-                      onClick={() => {
-                        soundFX.playStarChime(5);
-                        onQuickApprove(chore.id, log.id);
-                      }}
-                      className="inline-flex items-center justify-center gap-1 py-1.5 px-3 rounded-xl text-xs font-black bg-emerald-600 text-white hover:bg-emerald-700 shadow-2xs transition-transform active:scale-95 min-h-[36px] cursor-pointer"
-                      title={t.quickApproveTitle}
-                    >
-                      <CheckCircle2 className="w-3 h-3 text-white shrink-0" />
-                      <span>Pass 5⭐</span>
-                    </button>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Approved</span>
+                    </span>
+                    {isMomMode && log && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundFX.playPop();
+                          onOpenInspect(chore, log);
+                        }}
+                        className="text-[11px] text-slate-500 hover:text-slate-800 underline font-medium p-1 min-h-[32px] flex items-center cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-                    <span>Reviewing ✨</span>
-                  </span>
-                )
-              )}
-
-              {/* APPROVED */}
-              {status === 'approved' && (
-                <div className="flex items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Approved</span>
-                  </span>
-                  {isMomMode && log && (
-                    <button
-                      onClick={() => {
-                        soundFX.playPop();
-                        onOpenInspect(chore, log);
-                      }}
-                      className="text-[11px] text-slate-500 hover:text-slate-800 underline font-medium p-1 min-h-[32px] flex items-center cursor-pointer"
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
