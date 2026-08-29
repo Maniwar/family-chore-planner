@@ -12,7 +12,8 @@ export type ThemePreset =
   | 'sunset' 
   | 'midnight' 
   | 'candy' 
-  | 'citrus';
+  | 'citrus'
+  | 'sapphire';
 
 export interface ThemeConfig {
   id: ThemePreset;
@@ -506,5 +507,53 @@ export const THEMES: Record<ThemePreset, ThemeConfig> = {
     heroBannerText: 'text-white',
     heroBannerBorder: 'border-lime-400/40',
     heroBannerGlow: 'shadow-slate-900/30',
+  },
+
+  // 10. Royal Sapphire & Starlight (Regal indigo, starlight sparkle, clean modern prestige)
+  sapphire: {
+    id: 'sapphire',
+    name: 'Royal Sapphire & Starlight',
+    emoji: '💎',
+    tagline: 'Regal starlight indigo & shimmering sapphire',
+    isDark: false,
+    appBgClass: 'bg-[#f4f7fc] text-slate-800',
+    appTextClass: 'text-slate-800',
+    ambientGlow: {
+      orb1: 'bg-indigo-300/25',
+      orb2: 'bg-blue-200/30',
+      orb3: 'bg-sky-200/25',
+    },
+    headerBg: 'bg-white/95 backdrop-blur-md',
+    headerBorder: 'border-indigo-100',
+    headerLogoBg: 'bg-gradient-to-br from-indigo-600 to-blue-700',
+    headerLogoText: 'text-white',
+    headerSubtitleText: 'text-indigo-700',
+    headerAccentGlow: 'from-indigo-500/10 via-blue-500/5 to-transparent',
+    navBg: 'bg-white/90 backdrop-blur-md',
+    navBorder: 'border-indigo-100',
+    navActiveBg: 'bg-indigo-600 text-white shadow-xs',
+    navActiveText: 'text-white font-bold',
+    navInactiveText: 'text-slate-600 hover:text-indigo-800',
+    navHoverBg: 'hover:bg-indigo-50',
+    navIndicator: 'bg-indigo-600',
+    primaryBg: 'bg-indigo-600',
+    primaryHover: 'hover:bg-indigo-700',
+    primaryText: 'text-white',
+    primaryGradient: 'bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500',
+    accentRing: 'ring-indigo-400',
+    badgeBg: 'bg-indigo-50',
+    badgeText: 'text-indigo-800',
+    badgeBorder: 'border-indigo-200',
+    cardBg: 'bg-white/90 backdrop-blur-xs',
+    cardBorder: 'border-indigo-100/80',
+    cardHoverBorder: 'hover:border-indigo-300',
+    cardHeaderBg: 'bg-indigo-50/40',
+    cardText: 'text-slate-900',
+    cardSubtext: 'text-slate-500',
+    cardMutedBg: 'bg-indigo-50/30',
+    heroBannerBg: 'bg-gradient-to-r from-indigo-700 via-blue-700 to-sky-600',
+    heroBannerText: 'text-white',
+    heroBannerBorder: 'border-indigo-400/30',
+    heroBannerGlow: 'shadow-indigo-600/20',
   },
 };

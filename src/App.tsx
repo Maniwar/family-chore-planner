@@ -306,7 +306,20 @@ export default function App() {
             syncParentPinFromCloud(targetHh.adminPin, targetHh.pinProtectionEnabled);
           }
 
-          if (targetHh.members && targetHh.members.length > 0) setMembers(targetHh.members);
+          if (targetHh.members && targetHh.members.length > 0) {
+            setMembers(prevMembers => {
+              return targetHh!.members!.map(tm => {
+                const localMatch = prevMembers.find(lm => lm.id === tm.id);
+                if (localMatch?.avatarPhotoUrl && (!tm.avatarPhotoUrl || tm.avatarPhotoUrl.trim() === '')) {
+                  return {
+                    ...tm,
+                    avatarPhotoUrl: localMatch.avatarPhotoUrl,
+                  };
+                }
+                return tm;
+              });
+            });
+          }
           if (targetHh.chores && targetHh.chores.length > 0) setChores(targetHh.chores);
           if (targetHh.logs) setLogs(targetHh.logs);
           if (targetHh.rewards && targetHh.rewards.length > 0) setRewards(targetHh.rewards);
@@ -410,7 +423,20 @@ export default function App() {
       if (cloudHh.adminPin || cloudHh.pinProtectionEnabled !== undefined) {
         syncParentPinFromCloud(cloudHh.adminPin, cloudHh.pinProtectionEnabled);
       }
-      if (cloudHh.members && cloudHh.members.length > 0) setMembers(cloudHh.members);
+      if (cloudHh.members && cloudHh.members.length > 0) {
+        setMembers(prevMembers => {
+          return cloudHh.members!.map(cm => {
+            const localMatch = prevMembers.find(lm => lm.id === cm.id);
+            if (localMatch?.avatarPhotoUrl && (!cm.avatarPhotoUrl || cm.avatarPhotoUrl.trim() === '')) {
+              return {
+                ...cm,
+                avatarPhotoUrl: localMatch.avatarPhotoUrl,
+              };
+            }
+            return cm;
+          });
+        });
+      }
       if (cloudHh.chores && cloudHh.chores.length > 0) setChores(cloudHh.chores);
       if (cloudHh.logs) setLogs(cloudHh.logs);
       if (cloudHh.rewards && cloudHh.rewards.length > 0) setRewards(cloudHh.rewards);

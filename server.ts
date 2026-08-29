@@ -390,7 +390,15 @@ app.post("/api/household/:id/sync", (req, res) => {
     if (adminPin !== undefined) existing.adminPin = adminPin;
     if (pinProtectionEnabled !== undefined) existing.pinProtectionEnabled = Boolean(pinProtectionEnabled);
     if (joinPassphrase !== undefined) existing.joinPassphrase = joinPassphrase;
-    if (Array.isArray(members)) existing.members = members;
+    if (Array.isArray(members)) {
+      existing.members = members.map((m: any) => {
+        const prevM = existing.members?.find((em: any) => em.id === m.id);
+        if (prevM?.avatarPhotoUrl && (!m.avatarPhotoUrl || m.avatarPhotoUrl.trim() === '')) {
+          return { ...m, avatarPhotoUrl: prevM.avatarPhotoUrl };
+        }
+        return m;
+      });
+    }
     if (Array.isArray(chores)) existing.chores = chores;
     if (Array.isArray(logs)) existing.logs = logs;
     if (Array.isArray(rewards)) existing.rewards = rewards;

@@ -260,10 +260,13 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {(Object.keys(THEMES) as ThemePreset[]).map((tKey) => {
                     const th = THEMES[tKey];
                     const isSelected = currentTheme === tKey;
+                    const labelName = th.name.split(' ')[0] === 'Cozy' || th.name.split(' ')[0] === 'Tropical' || th.name.split(' ')[0] === 'Enchanted' || th.name.split(' ')[0] === 'Sunset' || th.name.split(' ')[0] === 'Pastel' || th.name.split(' ')[0] === 'Nordic' || th.name.split(' ')[0] === 'Royal'
+                      ? th.name.split(' ')[1] || th.name.split(' ')[0]
+                      : th.name.split(' ')[0];
                     return (
                       <button
                         key={tKey}
@@ -271,14 +274,14 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                           soundFX.playPop();
                           onSelectTheme(tKey);
                         }}
-                        className={`p-2 rounded-xl border flex items-center gap-2 transition-all text-left cursor-pointer min-h-[44px] active:scale-95 ${
+                        className={`p-2 rounded-xl border flex items-center gap-1.5 transition-all text-left cursor-pointer min-h-[44px] active:scale-95 ${
                           isSelected
                             ? `${th.primaryBg} ${th.primaryText} border-transparent font-black shadow-xs`
                             : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-100/80'
                         }`}
                       >
                         <span className="text-base shrink-0">{th.emoji}</span>
-                        <span className="text-xs font-bold truncate">{th.name.split(' ')[0]}</span>
+                        <span className="text-xs font-bold truncate">{labelName}</span>
                         {isSelected && <span className="ml-auto text-xs font-black">✓</span>}
                       </button>
                     );

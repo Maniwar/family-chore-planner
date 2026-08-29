@@ -51,15 +51,20 @@ export function processImageFile(
         // Draw and compress image
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Try webp first for high compression, fallback to jpeg
+        // Prefer JPEG for photos for compact data URL size (under 25kb) with 100% universal support
         let dataUrl: string;
         try {
-          dataUrl = canvas.toDataURL('image/webp', quality);
-          if (!dataUrl.startsWith('data:image/webp')) {
+          if (file.type === 'image/png') {
+            dataUrl = canvas.toDataURL('image/png');
+            // If PNG is over 80KB, compress to JPEG
+            if (dataUrl.length > 80000) {
+              dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+          } else {
             dataUrl = canvas.toDataURL('image/jpeg', quality);
           }
         } catch {
-          dataUrl = canvas.toDataURL('image/jpeg', quality);
+          dataUrl = canvas.toDataURL();
         }
 
         resolve({

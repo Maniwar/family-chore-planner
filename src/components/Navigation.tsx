@@ -148,9 +148,9 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <>
       {/* Desktop Navigation Header Bar */}
-      <div className={`${theme.navBg} border-b ${theme.navBorder} no-print hidden md:block sticky top-[57px] sm:top-[65px] z-20 shadow-2xs transition-colors duration-200`}>
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <nav className="flex space-x-1 sm:space-x-2 py-1.5 sm:py-2" aria-label="Tabs">
+      <div className={`${theme.navBg} border-b ${theme.navBorder} no-print hidden md:block sticky top-[57px] sm:top-[65px] z-20 shadow-2xs transition-colors duration-200 w-full`}>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
+          <nav className="flex items-center space-x-1 sm:space-x-1.5 py-1.5 sm:py-2 overflow-x-auto scrollbar-none min-w-0" aria-label="Tabs">
             {desktopNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
@@ -159,7 +159,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   key={item.id}
                   id={`nav-tab-${item.id}`}
                   onClick={() => handleSelect(item.id)}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all whitespace-nowrap relative shrink-0 active:scale-95 cursor-pointer min-h-[44px] ${
+                  className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-2 text-xs lg:text-sm font-bold rounded-xl transition-all whitespace-nowrap relative shrink-0 active:scale-95 cursor-pointer min-h-[42px] ${
                     isActive
                       ? `${theme.navActiveBg} ${theme.navActiveText}`
                       : `${theme.navInactiveText} ${theme.navHoverBg}`

@@ -63,7 +63,9 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   const borderClass = showBorder ? 'border border-slate-200 shadow-2xs' : '';
 
-  if (photoUrl && !imageError) {
+  const hasValidPhoto = Boolean(photoUrl && typeof photoUrl === 'string' && photoUrl.trim().length > 0);
+
+  if (hasValidPhoto && !imageError) {
     return (
       <div
         className={`relative inline-flex shrink-0 items-center justify-center rounded-2xl overflow-hidden bg-slate-100 ${sizeConfig.container} ${borderClass} ${className}`}
@@ -74,7 +76,10 @@ export const Avatar: React.FC<AvatarProps> = ({
           alt={name}
           className="w-full h-full object-cover rounded-2xl"
           referrerPolicy="no-referrer"
-          onError={() => setImageError(true)}
+          onError={() => {
+            console.warn(`[Avatar] Image load issue for "${name}". Falling back to emoji/icon.`);
+            setImageError(true);
+          }}
         />
         {/* Subtle emoji badge overlay if emoji exists */}
         {emoji && (size === 'lg' || size === 'xl' || size === '2xl') && (

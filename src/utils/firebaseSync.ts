@@ -50,6 +50,28 @@ let isFirestoreQuotaExhausted = false;
 let quotaCooldownTimestamp = 0;
 const QUOTA_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 
+/**
+ * Recursively sanitize Firestore data to remove any `undefined` values that crash the SDK
+ */
+export function cleanFirestoreData<T>(obj: T): T {
+  if (obj === undefined || obj === null) {
+    return null as unknown as T;
+  }
+  if (typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => cleanFirestoreData(item)) as unknown as T;
+  }
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, any>)) {
+    if (value !== undefined) {
+      cleaned[key] = cleanFirestoreData(value);
+    }
+  }
+  return cleaned as T;
+}
+
 function shouldAttemptFirestoreWrite(): boolean {
   if (!isFirestoreQuotaExhausted) return true;
   if (Date.now() - quotaCooldownTimestamp > QUOTA_COOLDOWN_MS) {
@@ -148,7 +170,8 @@ export async function createNewHousehold(
   // 2. Try Firestore single document write (skipped if currently quota-exhausted)
   if (shouldAttemptFirestoreWrite()) {
     try {
-      await setDoc(doc(db, 'households', householdId), householdData, { merge: true });
+      const sanitized = cleanFirestoreData(householdData);
+      await setDoc(doc(db, 'households', householdId), sanitized, { merge: true });
     } catch (err: any) {
       handleFirestoreWriteError(err);
     }
@@ -342,7 +365,8 @@ export async function syncCompleteHouseholdToCloud(
   // 2. Firestore single document update (skipped if currently quota-exhausted)
   if (shouldAttemptFirestoreWrite()) {
     try {
-      await setDoc(doc(db, 'households', householdId), fullData, { merge: true });
+      const sanitized = cleanFirestoreData(fullData);
+      await setDoc(doc(db, 'households', householdId), sanitized, { merge: true });
     } catch (err: any) {
       handleFirestoreWriteError(err);
     }
