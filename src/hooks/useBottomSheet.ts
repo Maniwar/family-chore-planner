@@ -7,12 +7,13 @@ interface UseBottomSheetOptions {
   playSound?: boolean;
 }
 
-export function useBottomSheet({ onClose, threshold = 65, playSound = true }: UseBottomSheetOptions) {
+export function useBottomSheet({ onClose, threshold = 45, playSound = true }: UseBottomSheetOptions) {
   const [dragY, setDragY] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const startYRef = useRef<number>(0);
   const currentYRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
+  const isDraggingRef = useRef<boolean>(false);
 
   const handleDismiss = useCallback(() => {
     if (playSound) {
@@ -24,98 +25,112 @@ export function useBottomSheet({ onClose, threshold = 65, playSound = true }: Us
   // Helper to check if event was triggered on interactive child elements
   const isInteractiveElement = (target: EventTarget | null) => {
     if (!target || !(target instanceof HTMLElement)) return false;
-    return !!target.closest('button, a, input, select, textarea, [data-no-drag="true"], [role="button"]:not([aria-label*="Drag"])');
+    return !!target.closest('button, a, input, select, textarea, [data-no-drag="true"]');
   };
 
-  // Touch handlers
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if (isInteractiveElement(e.target)) {
+  // Window-level move & end handlers to ensure rock-solid tracking
+  const finishDrag = useCallback((clientY: number) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+
+    const deltaY = clientY - startYRef.current;
+    const deltaTime = Math.max(1, Date.now() - startTimeRef.current);
+    const velocity = deltaY / deltaTime; // px per ms
+
+    // Quick tap or click detection
+    if (Math.abs(deltaY) < 6 && deltaTime < 350) {
+      handleDismiss();
       return;
     }
-    const touch = e.touches[0];
-    startYRef.current = touch.clientY;
-    currentYRef.current = touch.clientY;
-    startTimeRef.current = Date.now();
-    setIsDragging(true);
-  }, []);
 
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const touch = e.touches[0];
-    currentYRef.current = touch.clientY;
-    const deltaY = touch.clientY - startYRef.current;
+    // Dragged past threshold (>45px) or swiped down quickly (>0.25 px/ms)
+    if (deltaY >= threshold || (deltaY > 15 && velocity > 0.25)) {
+      handleDismiss();
+    } else {
+      setDragY(0);
+    }
+  }, [threshold, handleDismiss]);
+
+  const updateDrag = useCallback((clientY: number) => {
+    if (!isDraggingRef.current) return;
+    currentYRef.current = clientY;
+    const deltaY = clientY - startYRef.current;
     
-    // Only allow downward drag with gentle upward resistance
+    // Allow downward drag with gentle upward resistance
     if (deltaY > 0) {
       setDragY(deltaY);
     } else {
       setDragY(deltaY * 0.15); // rubberband upward
     }
-  }, [isDragging]);
-
-  const onTouchEnd = useCallback(() => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    
-    const deltaY = currentYRef.current - startYRef.current;
-    const deltaTime = Math.max(1, Date.now() - startTimeRef.current);
-    const velocity = deltaY / deltaTime; // px per ms
-
-    // If dragged past threshold or swiped down quickly (> 0.45 px/ms)
-    if (deltaY >= threshold || (deltaY > 25 && velocity > 0.45)) {
-      handleDismiss();
-    } else {
-      setDragY(0);
-    }
-  }, [isDragging, threshold, handleDismiss]);
-
-  // Pointer / Mouse drag handlers for desktop / simulator
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    if (isInteractiveElement(e.target)) {
-      return;
-    }
-    startYRef.current = e.clientY;
-    currentYRef.current = e.clientY;
-    startTimeRef.current = Date.now();
-    setIsDragging(true);
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
   }, []);
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
+  // Global window listeners while dragging
+  useEffect(() => {
     if (!isDragging) return;
-    currentYRef.current = e.clientY;
-    const deltaY = e.clientY - startYRef.current;
-    
-    if (deltaY > 0) {
-      setDragY(deltaY);
-    } else {
-      setDragY(deltaY * 0.15);
-    }
-  }, [isDragging]);
 
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    try {
-      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
+    const handlePointerMove = (e: PointerEvent) => {
+      updateDrag(e.clientY);
+    };
 
-    const deltaY = currentYRef.current - startYRef.current;
-    const deltaTime = Math.max(1, Date.now() - startTimeRef.current);
-    const velocity = deltaY / deltaTime;
+    const handlePointerUp = (e: PointerEvent) => {
+      finishDrag(e.clientY);
+    };
 
-    if (deltaY >= threshold || (deltaY > 25 && velocity > 0.45)) {
-      handleDismiss();
-    } else {
-      setDragY(0);
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches[0]) {
+        updateDrag(e.touches[0].clientY);
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.changedTouches[0]) {
+        finishDrag(e.changedTouches[0].clientY);
+      } else {
+        finishDrag(currentYRef.current);
+      }
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('pointerup', handlePointerUp, { passive: true });
+    window.addEventListener('pointercancel', handlePointerUp, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [isDragging, updateDrag, finishDrag]);
+
+  // Touch & Pointer Start handlers
+  const startDrag = useCallback((clientY: number, target: EventTarget | null) => {
+    if (isInteractiveElement(target)) {
+      return;
     }
-  }, [isDragging, threshold, handleDismiss]);
+    startYRef.current = clientY;
+    currentYRef.current = clientY;
+    startTimeRef.current = Date.now();
+    isDraggingRef.current = true;
+    setIsDragging(true);
+  }, []);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches[0]) {
+      startDrag(e.touches[0].clientY, e.target);
+    }
+  }, [startDrag]);
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    // Only respond to main primary pointer / left button
+    if (e.button !== 0) return;
+    startDrag(e.clientY, e.target);
+  }, [startDrag]);
 
   // Handle escape key
   useEffect(() => {
@@ -129,10 +144,23 @@ export function useBottomSheet({ onClose, threshold = 65, playSound = true }: Us
   }, [handleDismiss]);
 
   const sheetStyle: React.CSSProperties = {
-    transform: dragY > 0 ? `translateY(${dragY}px)` : dragY < 0 ? `translateY(${dragY}px)` : 'translateY(0px)',
+    transform: dragY !== 0 ? `translateY(${dragY}px)` : 'translateY(0px)',
     transition: isDragging ? 'none' : 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
-    touchAction: 'none',
+    touchAction: 'pan-y',
   };
+
+  const handleBarClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleDismiss();
+  }, [handleDismiss]);
+
+  const handleBarKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleDismiss();
+    }
+  }, [handleDismiss]);
 
   return {
     dragY,
@@ -141,29 +169,12 @@ export function useBottomSheet({ onClose, threshold = 65, playSound = true }: Us
     handleDismiss,
     dragHandleProps: {
       onTouchStart,
-      onTouchMove,
-      onTouchEnd,
-      onTouchCancel: onTouchEnd,
       onPointerDown,
-      onPointerMove,
-      onPointerUp,
-      onPointerCancel: onPointerUp,
-      onClick: (e: React.MouseEvent) => {
-        // If it was just a tap / click (dragY is close to 0)
-        if (Math.abs(dragY) < 5) {
-          e.stopPropagation();
-          handleDismiss();
-        }
-      },
+      onClick: handleBarClick,
+      onKeyDown: handleBarKeyDown,
       role: 'button' as const,
-      'aria-label': 'Drag down or tap to close',
+      'aria-label': 'Drag down or tap to dismiss',
       tabIndex: 0,
-      onKeyDown: (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleDismiss();
-        }
-      }
     }
   };
 }

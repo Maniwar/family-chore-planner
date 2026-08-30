@@ -6,6 +6,8 @@ import { processImageFile } from '../utils/imageUpload';
 import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
 import { ThemePreset, THEMES } from '../utils/theme';
+import { useBottomSheet } from '../hooks/useBottomSheet';
+import { BottomSheetGrabber } from './BottomSheetGrabber';
 
 interface MemberModalProps {
   isOpen: boolean;
@@ -24,6 +26,11 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   currentTheme = 'rose',
   onSaveMember,
 }) => {
+  const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
+    onClose,
+    threshold: 45,
+  });
+
   if (!isOpen) return null;
 
   const theme = THEMES[currentTheme] || THEMES.rose;
@@ -126,40 +133,60 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={handleDismiss}
+    >
       <div 
         id="family-member-modal"
+        style={sheetStyle}
         className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 duration-200 max-h-[92vh] sm:max-h-[94vh] flex flex-col my-auto"
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* iOS Drag Handle for Mobile */}
-        <div className={`sm:hidden pt-2.5 pb-1 flex justify-center ${theme.primaryBg} shrink-0`}>
-          <div className="w-10 h-1 rounded-full bg-white/40" />
+        {/* Interactive Grabber Touch-Bar (Tap to dismiss or drag down) */}
+        <div className={`${theme.primaryBg} shrink-0`}>
+          <BottomSheetGrabber 
+            dragHandleProps={dragHandleProps} 
+            onClose={handleDismiss} 
+            variant="white"
+          />
         </div>
 
         {/* Header */}
-        <div className={`${theme.primaryBg} p-4 sm:p-5 text-white flex items-center justify-between shadow-xs shrink-0`}>
-          <div className="flex items-center space-x-3">
+        <div 
+          className={`${theme.primaryBg} px-4 py-3 sm:px-5 sm:py-3.5 text-white flex items-center justify-between shadow-xs shrink-0 cursor-grab active:cursor-grabbing select-none`}
+          onTouchStart={dragHandleProps.onTouchStart}
+          onPointerDown={dragHandleProps.onPointerDown}
+        >
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
             <Avatar
               photoUrl={avatarPhotoUrl}
               emoji={avatarEmoji}
               name={name || 'Member'}
               size="md"
-              className="ring-2 ring-white/30"
+              className="ring-2 ring-white/30 shrink-0"
             />
-            <div>
-              <h2 className="text-base sm:text-lg font-bold leading-tight">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-bold leading-tight truncate">
                 {memberToEdit ? 'Edit Family Member' : 'Add Family Member'}
               </h2>
-              <p className="text-xs text-white/80">
+              <p className="text-xs text-white/80 truncate">
                 Photo, avatar emoji, age & point goals
               </p>
             </div>
           </div>
 
           <button
-            onClick={onClose}
+            type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDismiss();
+            }}
             aria-label="Close modal"
-            className="p-2 rounded-2xl text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+            className="p-2 rounded-2xl text-white/80 hover:text-white hover:bg-white/20 active:bg-white/30 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer shrink-0 ml-2"
           >
             <X className="w-5 h-5" />
           </button>

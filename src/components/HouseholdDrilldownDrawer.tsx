@@ -98,11 +98,7 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
           <div 
             className="flex items-center gap-2.5 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
             onTouchStart={dragHandleProps.onTouchStart}
-            onTouchMove={dragHandleProps.onTouchMove}
-            onTouchEnd={dragHandleProps.onTouchEnd}
             onPointerDown={dragHandleProps.onPointerDown}
-            onPointerMove={dragHandleProps.onPointerMove}
-            onPointerUp={dragHandleProps.onPointerUp}
           >
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base font-black shadow-2xs shrink-0 ${
               drilldownType === 'overdue' ? 'bg-rose-100 text-rose-700' :

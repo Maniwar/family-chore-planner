@@ -314,11 +314,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
           <div 
             className="flex items-center space-x-2.5 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
             onTouchStart={dragHandleProps.onTouchStart}
-            onTouchMove={dragHandleProps.onTouchMove}
-            onTouchEnd={dragHandleProps.onTouchEnd}
             onPointerDown={dragHandleProps.onPointerDown}
-            onPointerMove={dragHandleProps.onPointerMove}
-            onPointerUp={dragHandleProps.onPointerUp}
           >
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-sm font-black shadow-2xs shrink-0">
               <Sparkles className="w-4 h-4 text-amber-300" />

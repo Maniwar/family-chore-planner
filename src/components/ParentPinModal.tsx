@@ -167,9 +167,13 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
   const isCloud = Boolean(getCurrentHouseholdId());
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+      onClick={onClose}
+    >
       <div
         ref={containerRef}
+        onClick={(e) => e.stopPropagation()}
         className={`bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto ${
           isShaking ? 'animate-bounce' : ''
         }`}

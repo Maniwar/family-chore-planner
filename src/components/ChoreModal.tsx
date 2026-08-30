@@ -425,13 +425,9 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
       className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
       onClick={handleDismiss}
     >
-      <motion.div 
+      <div 
         style={sheetStyle}
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 40, opacity: 0 }}
-        transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-        className="relative w-full max-w-xl bg-white rounded-t-[32px] sm:rounded-[28px] border-t sm:border border-slate-200/90 shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col z-10 safe-area-pb"
+        className="relative w-full max-w-xl bg-white rounded-t-[32px] sm:rounded-[28px] border-t sm:border border-slate-200/90 shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col z-10 animate-in slide-in-from-bottom-6 duration-200 safe-area-pb"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Interactive Grabber Touch Bar */}
@@ -442,11 +438,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
           <div 
             className="flex items-center space-x-3 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
             onTouchStart={dragHandleProps.onTouchStart}
-            onTouchMove={dragHandleProps.onTouchMove}
-            onTouchEnd={dragHandleProps.onTouchEnd}
             onPointerDown={dragHandleProps.onPointerDown}
-            onPointerMove={dragHandleProps.onPointerMove}
-            onPointerUp={dragHandleProps.onPointerUp}
           >
             <div className={`w-9 h-9 rounded-2xl ${theme.primaryBg} ${theme.primaryText} flex items-center justify-center text-sm font-black shadow-xs shrink-0`}>
               📝
@@ -1102,7 +1094,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
             </motion.button>
           </div>
         </form>
-      </motion.div>
+      </div>
     </div>
   );
 };

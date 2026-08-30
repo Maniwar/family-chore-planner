@@ -23,6 +23,8 @@ import { getParentPin } from '../utils/parentLock';
 import { HouseholdInfo } from '../types';
 import { ThemePreset, THEMES } from '../utils/theme';
 import { soundFX } from '../utils/audio';
+import { useBottomSheet } from '../hooks/useBottomSheet';
+import { BottomSheetGrabber } from './BottomSheetGrabber';
 
 interface HouseholdSyncModalProps {
   isOpen: boolean;
@@ -45,6 +47,11 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
   onHouseholdDisconnected,
   onShowToast,
 }) => {
+  const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
+    onClose,
+    threshold: 45,
+  });
+
   const theme = THEMES[currentTheme] || THEMES.rose;
   const [tab, setTab] = useState<'status' | 'create' | 'join'>('status');
   const [newFamilyName, setNewFamilyName] = useState(householdInfo.familyName || 'Our Family Home');
@@ -171,17 +178,34 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+    <div 
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+      onClick={handleDismiss}
+    >
       <div 
-        className={`rounded-3xl shadow-2xl border max-w-lg w-full overflow-hidden flex flex-col max-h-[88vh] ${
+        style={sheetStyle}
+        className={`rounded-t-3xl sm:rounded-3xl shadow-2xl border max-w-lg w-full overflow-hidden flex flex-col max-h-[88vh] ${
           theme.isDark 
             ? 'bg-slate-900 border-slate-800' 
             : 'bg-white border-slate-200'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Interactive Grabber Touch-Bar */}
+        <div className={`${theme.heroBannerBg} shrink-0`}>
+          <BottomSheetGrabber 
+            dragHandleProps={dragHandleProps} 
+            onClose={handleDismiss} 
+            variant="white"
+          />
+        </div>
+
         {/* Header - Apple HIG Clean Visual Structure with Active Theme Respect */}
-        <div className={`px-4 py-3 sm:px-5 sm:py-3.5 ${theme.heroBannerBg} text-white relative overflow-hidden border-b shrink-0 ${theme.heroBannerBorder || 'border-white/10'}`}>
+        <div 
+          className={`px-4 py-3 sm:px-5 sm:py-3.5 ${theme.heroBannerBg} text-white relative overflow-hidden border-b shrink-0 cursor-grab active:cursor-grabbing select-none ${theme.heroBannerBorder || 'border-white/10'}`}
+          onTouchStart={dragHandleProps.onTouchStart}
+          onPointerDown={dragHandleProps.onPointerDown}
+        >
           <div className="absolute -top-16 -right-16 w-36 h-36 bg-white/10 rounded-full blur-2xl pointer-events-none" />
           
           <div className="flex items-start justify-between gap-3 relative z-10">
@@ -193,14 +217,21 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
               <h2 className="text-base font-extrabold tracking-tight text-white leading-tight">
                 Family Cloud Sync
               </h2>
-              <p className="text-[11px] text-white/90 leading-tight max-w-md">
+              <p className="text-[11px] text-white/90 leading-tight max-w-md truncate">
                 Sync profiles, chores, photo proof & points live across all family devices.
               </p>
             </div>
 
             <button
-              onClick={onClose}
-              className="p-1 text-white/80 hover:text-white rounded-xl hover:bg-white/15 transition-colors cursor-pointer shrink-0 -mr-1 -mt-0.5 min-h-[32px] min-w-[32px] flex items-center justify-center"
+              type="button"
+              data-no-drag="true"
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDismiss();
+              }}
+              className="p-1 text-white/80 hover:text-white rounded-xl hover:bg-white/15 active:bg-white/25 transition-colors cursor-pointer shrink-0 -mr-1 -mt-0.5 min-h-[32px] min-w-[32px] flex items-center justify-center ml-2"
               aria-label="Close"
             >
               <X className="w-4 h-4" />

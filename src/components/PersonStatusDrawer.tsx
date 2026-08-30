@@ -78,11 +78,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
           <div 
             className="flex items-center gap-3 min-w-0 flex-1 select-none cursor-grab active:cursor-grabbing"
             onTouchStart={dragHandleProps.onTouchStart}
-            onTouchMove={dragHandleProps.onTouchMove}
-            onTouchEnd={dragHandleProps.onTouchEnd}
             onPointerDown={dragHandleProps.onPointerDown}
-            onPointerMove={dragHandleProps.onPointerMove}
-            onPointerUp={dragHandleProps.onPointerUp}
           >
             <Avatar
               photoUrl={member.avatarPhotoUrl}

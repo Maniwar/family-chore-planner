@@ -4,6 +4,8 @@ import { HouseholdInfo } from '../types';
 import { processImageFile } from '../utils/imageUpload';
 import { soundFX } from '../utils/audio';
 import { getParentPin, setParentPin, isPinProtectionEnabled, setPinProtectionEnabled } from '../utils/parentLock';
+import { useBottomSheet } from '../hooks/useBottomSheet';
+import { BottomSheetGrabber } from './BottomSheetGrabber';
 
 interface HouseSettingsModalProps {
   isOpen: boolean;
@@ -21,6 +23,11 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
   onSaveHouseholdInfo,
   onResetDemo,
 }) => {
+  const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
+    onClose,
+    threshold: 45,
+  });
+
   if (!isOpen) return null;
 
   const [familyName, setFamilyName] = useState(householdInfo.familyName || 'Our Family Home');
@@ -77,30 +84,51 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150"
+      onClick={handleDismiss}
+    >
       <div
         id="house-settings-modal"
-        className="bg-slate-50 dark:bg-slate-900 rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto flex flex-col max-h-[90vh]"
+        style={sheetStyle}
+        className="bg-slate-50 dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
       >
+        {/* Interactive Grabber Touch-Bar */}
+        <div className="bg-white dark:bg-slate-900 shrink-0">
+          <BottomSheetGrabber dragHandleProps={dragHandleProps} onClose={handleDismiss} />
+        </div>
+
         {/* Apple HIG Modal Header */}
-        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-5 py-4 flex items-center justify-between sticky top-0 z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center text-lg font-bold">
+        <div 
+          className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10 cursor-grab active:cursor-grabbing select-none"
+          onTouchStart={dragHandleProps.onTouchStart}
+          onPointerDown={dragHandleProps.onPointerDown}
+        >
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-9 h-9 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center text-lg font-bold shrink-0">
               🏡
             </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+            <div className="min-w-0">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
                 Household Settings
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 truncate">
                 Home profile, photo & Mom PIN security
               </p>
             </div>
           </div>
 
           <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+            type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDismiss();
+            }}
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer shrink-0 ml-2"
             aria-label="Close"
           >
             <X className="w-4 h-4" />

@@ -16,6 +16,8 @@ import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
 import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
 import { ThemePreset, THEMES } from '../utils/theme';
+import { useBottomSheet } from '../hooks/useBottomSheet';
+import { BottomSheetGrabber } from './BottomSheetGrabber';
 
 interface InspectionModalProps {
   isOpen: boolean;
@@ -44,6 +46,11 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
   currentTheme = 'rose',
   onSaveGrading,
 }) => {
+  const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
+    onClose,
+    threshold: 45,
+  });
+
   if (!isOpen || !chore) return null;
   const theme = THEMES[currentTheme] || THEMES.rose;
 
@@ -170,39 +177,57 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={handleDismiss}
+    >
       <div 
         id="mom-inspection-modal"
+        style={sheetStyle}
         className="bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 duration-200 max-h-[92vh] sm:max-h-[94vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* iOS Drag Handle for Mobile */}
-        <div className={`sm:hidden pt-2.5 pb-1 flex justify-center ${theme.primaryBg} shrink-0`}>
-          <div className="w-10 h-1 rounded-full bg-white/40" />
+        {/* Interactive Grabber Touch-Bar (Tap to dismiss or drag down) */}
+        <div className={`${theme.primaryBg} shrink-0`}>
+          <BottomSheetGrabber 
+            dragHandleProps={dragHandleProps} 
+            onClose={handleDismiss} 
+            variant="white"
+          />
         </div>
 
         {/* Header */}
-        <div className={`${theme.primaryBg} px-4 py-3.5 sm:p-5 ${theme.primaryText} flex items-center justify-between shrink-0`}>
-          <div className="flex items-center space-x-3">
+        <div 
+          className={`${theme.primaryBg} px-4 py-3 sm:px-5 sm:py-3.5 ${theme.primaryText} flex items-center justify-between shrink-0 cursor-grab active:cursor-grabbing select-none`}
+          onTouchStart={dragHandleProps.onTouchStart}
+          onPointerDown={dragHandleProps.onPointerDown}
+        >
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-lg sm:text-xl font-bold shrink-0 shadow-xs">
               🔍
             </div>
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider opacity-85">
+            <div className="min-w-0">
+              <span className="text-[11px] font-bold uppercase tracking-wider opacity-85 block truncate">
                 Quality Inspection & Grading
               </span>
-              <h2 className="text-base sm:text-lg font-bold leading-tight line-clamp-1">
+              <h2 className="text-base sm:text-lg font-bold leading-tight truncate">
                 {chore.title}
               </h2>
             </div>
           </div>
 
           <button
-            onClick={() => {
+            type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
               triggerHaptic(10);
-              onClose();
+              handleDismiss();
             }}
             aria-label="Close modal"
-            className="p-2 rounded-2xl text-white/80 hover:text-white hover:bg-white/20 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+            className="p-2 rounded-2xl text-white/80 hover:text-white hover:bg-white/20 active:bg-white/30 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer shrink-0 ml-2"
           >
             <X className="w-5 h-5" />
           </button>

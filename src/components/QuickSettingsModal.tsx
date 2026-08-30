@@ -119,11 +119,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
           <div 
             className="flex items-center space-x-2.5 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
             onTouchStart={dragHandleProps.onTouchStart}
-            onTouchMove={dragHandleProps.onTouchMove}
-            onTouchEnd={dragHandleProps.onTouchEnd}
             onPointerDown={dragHandleProps.onPointerDown}
-            onPointerMove={dragHandleProps.onPointerMove}
-            onPointerUp={dragHandleProps.onPointerUp}
           >
             <div className={`w-8 h-8 rounded-xl ${theme.primaryBg} ${theme.primaryText} flex items-center justify-center text-sm font-black shadow-2xs shrink-0`}>
               🏡
