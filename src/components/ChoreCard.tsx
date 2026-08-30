@@ -22,8 +22,9 @@ import {
 import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
 import { formatTimeDisplay } from '../utils/storage';
 import { soundFX } from '../utils/audio';
-import { SupportedLanguage, getTranslation, getCategoryTranslation, getCategoryShortDisplay } from '../utils/i18n';
+import { SupportedLanguage, getTranslation, getCategoryTranslation } from '../utils/i18n';
 import { Avatar } from './Avatar';
+import { CategoryBadge, StarPointsBadge, BadgeStyle } from './CategoryBadge';
 import { calculateDaysLate, getPenaltyTierInfo } from '../utils/penaltyEngine';
 import { ThemePreset, THEMES } from '../utils/theme';
 
@@ -34,6 +35,7 @@ interface ChoreCardProps {
   isMomMode: boolean;
   language?: SupportedLanguage;
   currentTheme?: ThemePreset;
+  badgeStyle?: BadgeStyle;
   viewMode?: 'list' | 'grid';
   onMarkComplete: (choreId: string, note?: string, checklist?: { [key: number]: boolean }) => void;
   onOpenInspect: (chore: Chore, log: ChoreAssignmentLog) => void;
@@ -49,6 +51,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
   isMomMode,
   language = 'en',
   currentTheme = 'rose',
+  badgeStyle = 'pastel',
   viewMode = 'list',
   onMarkComplete,
   onOpenInspect,
@@ -195,7 +198,6 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
 
   const completedChecklistCount = Object.values(checkedItems).filter(Boolean).length;
   const totalChecklistCount = chore.qualityChecklist.length;
-  const catShort = getCategoryShortDisplay(chore.category, language);
 
   const isSwipeRightActive = dragOffset > 20;
   const isSwipeLeftActive = dragOffset < -20;
@@ -263,14 +265,9 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
           <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
             <div className="space-y-1.5 min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black border flex items-center gap-1.5 ${getCategoryColor(chore.category)}`}>
-                  <span>{catShort.emoji}</span>
-                  <span>{getCategoryTranslation(chore.category, language)}</span>
-                </span>
+                <CategoryBadge category={chore.category} size="md" style={badgeStyle} />
 
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black bg-amber-100 text-amber-900 border border-amber-200 shadow-2xs">
-                  ⭐ {chore.defaultPoints} {t.pts}
-                </span>
+                <StarPointsBadge points={chore.defaultPoints} suffix={t.pts} size="md" style={badgeStyle} />
 
                 {status === 'approved' ? (
                   <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -534,16 +531,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
             }`}
           >
             <div>
-              {/* Top meta row: Category (Clean Emoji + Label) + Points */}
-              <div className="flex items-center justify-between gap-1 mb-1">
-                <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 min-w-0 truncate">
-                  <span>{catShort.emoji}</span>
-                  <span className="truncate">{catShort.label}</span>
-                </span>
+              {/* Top meta row: Category Badge + Star Points Badge */}
+              <div className="flex items-center justify-between gap-1 mb-1.5">
+                <CategoryBadge category={chore.category} size="sm" style={badgeStyle} />
 
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/60 shrink-0">
-                  ⭐ {chore.defaultPoints}
-                </span>
+                <StarPointsBadge points={chore.defaultPoints} size="sm" style={badgeStyle} />
               </div>
 
               {/* Title */}
@@ -715,10 +707,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
               {/* Top Meta Line: Category, Time, Points & Assignee */}
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
-                  <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 min-w-0">
-                    <span>{catShort.emoji}</span>
-                    <span className="truncate">{catShort.label}</span>
-                  </span>
+                  <CategoryBadge category={chore.category} size="md" style={badgeStyle} />
 
                   <span className="inline-flex items-center gap-1 text-xs text-slate-400 font-medium whitespace-nowrap">
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -730,9 +719,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200/80 shadow-2xs whitespace-nowrap">
-                    ⭐ {chore.defaultPoints} {t.pts}
-                  </span>
+                  <StarPointsBadge points={chore.defaultPoints} suffix={t.pts} size="md" style={badgeStyle} />
 
                   {assignee && (
                     <div 

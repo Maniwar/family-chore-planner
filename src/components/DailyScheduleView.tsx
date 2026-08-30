@@ -38,6 +38,7 @@ import {
 import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getTranslation, getCategoryTranslation } from '../utils/i18n';
 import { ThemePreset, THEMES } from '../utils/theme';
+import { BadgeStyle } from './CategoryBadge';
 
 const ALL_CATEGORIES: ChoreCategory[] = [
   'Kitchen',
@@ -62,6 +63,7 @@ interface DailyScheduleViewProps {
   isMomMode: boolean;
   language?: SupportedLanguage;
   currentTheme?: ThemePreset;
+  badgeStyle?: BadgeStyle;
   viewMode?: 'list' | 'grid';
   onViewModeChange?: (mode: 'list' | 'grid') => void;
   onMarkComplete: (choreId: string, note?: string, checklist?: { [key: number]: boolean }) => void;
@@ -86,6 +88,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   isMomMode,
   language = 'en',
   currentTheme = 'rose',
+  badgeStyle = 'pastel',
   viewMode: propViewMode,
   onViewModeChange,
   onMarkComplete,
@@ -1104,6 +1107,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               isMomMode={isMomMode}
               language={language}
               currentTheme={currentTheme}
+              badgeStyle={badgeStyle}
               viewMode={effectiveViewMode}
               onMarkComplete={onMarkComplete}
               onOpenInspect={onOpenInspect}

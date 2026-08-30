@@ -53,6 +53,7 @@ import { GoogleCalendarView } from './components/GoogleCalendarView';
 import { ParentPinModal } from './components/ParentPinModal';
 import { HouseholdSyncModal } from './components/HouseholdSyncModal';
 import { QuickSettingsModal } from './components/QuickSettingsModal';
+import { BadgeStyle } from './components/CategoryBadge';
 import { soundFX } from './utils/audio';
 import { SupportedLanguage, getTranslation } from './utils/i18n';
 import { ThemePreset, THEMES } from './utils/theme';
@@ -141,6 +142,21 @@ export default function App() {
     setCurrentTheme(thm);
     try {
       localStorage.setItem('family_chore_theme', thm);
+    } catch {}
+  };
+
+  const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(() => {
+    try {
+      return (localStorage.getItem('family_chore_badge_style') as BadgeStyle) || 'original';
+    } catch {
+      return 'original';
+    }
+  });
+
+  const handleSelectBadgeStyle = (style: BadgeStyle) => {
+    setBadgeStyle(style);
+    try {
+      localStorage.setItem('family_chore_badge_style', style);
     } catch {}
   };
 
@@ -1598,6 +1614,7 @@ export default function App() {
             isMomMode={isMomMode}
             language={language}
             currentTheme={currentTheme}
+            badgeStyle={badgeStyle}
             viewMode={dailyViewMode}
             onViewModeChange={(mode) => {
               setDailyViewMode(mode);
@@ -1659,6 +1676,7 @@ export default function App() {
             members={members}
             language={language}
             currentTheme={currentTheme}
+            badgeStyle={badgeStyle}
             onOpenInspect={(chore, log) => handleOpenInspect(chore, log)}
             onQuickApprove={handleQuickApprove}
             onBatchApproveAll={handleBatchApproveAll}
@@ -1845,6 +1863,8 @@ export default function App() {
         onSelectLanguage={handleSelectLanguage}
         currentTheme={currentTheme}
         onSelectTheme={handleSelectTheme}
+        badgeStyle={badgeStyle}
+        onSelectBadgeStyle={handleSelectBadgeStyle}
         isSoundEnabled={isSoundEnabled}
         onToggleSound={handleToggleSound}
         householdInfo={householdInfo}

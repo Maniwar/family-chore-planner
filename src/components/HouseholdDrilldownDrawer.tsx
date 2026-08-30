@@ -93,16 +93,18 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
 
         {/* Modal Header */}
         <div 
-          className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 touch-none select-none cursor-grab active:cursor-grabbing"
-          onTouchStart={dragHandleProps.onTouchStart}
-          onTouchMove={dragHandleProps.onTouchMove}
-          onTouchEnd={dragHandleProps.onTouchEnd}
-          onPointerDown={dragHandleProps.onPointerDown}
-          onPointerMove={dragHandleProps.onPointerMove}
-          onPointerUp={dragHandleProps.onPointerUp}
+          className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0"
         >
-          <div className="flex items-center gap-2.5">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base font-black shadow-2xs ${
+          <div 
+            className="flex items-center gap-2.5 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
+            onTouchStart={dragHandleProps.onTouchStart}
+            onTouchMove={dragHandleProps.onTouchMove}
+            onTouchEnd={dragHandleProps.onTouchEnd}
+            onPointerDown={dragHandleProps.onPointerDown}
+            onPointerMove={dragHandleProps.onPointerMove}
+            onPointerUp={dragHandleProps.onPointerUp}
+          >
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base font-black shadow-2xs shrink-0 ${
               drilldownType === 'overdue' ? 'bg-rose-100 text-rose-700' :
               drilldownType === 'review' ? 'bg-amber-100 text-amber-700' :
               drilldownType === 'redo' ? 'bg-purple-100 text-purple-700' :
@@ -113,14 +115,14 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
               {drilldownType === 'redo' && '🔄'}
               {drilldownType === 'overview' && '📊'}
             </div>
-            <div>
-              <h3 className="text-base font-extrabold text-slate-900 leading-tight">
+            <div className="min-w-0 truncate">
+              <h3 className="text-base font-extrabold text-slate-900 leading-tight truncate">
                 {drilldownType === 'overdue' && `Overdue Chores (${totalOverdue})`}
                 {drilldownType === 'review' && `Awaiting Inspection (${awaitingInspectionCount})`}
                 {drilldownType === 'redo' && `Redo Queue (${totalRedo})`}
                 {drilldownType === 'overview' && `Weekly Performance (${onTrackPercent}%)`}
               </h3>
-              <p className="text-[11px] text-slate-500 font-medium">
+              <p className="text-[11px] text-slate-500 font-medium truncate">
                 {drilldownType === 'overdue' && 'Live household lateness tracking · Sorted by days late'}
                 {drilldownType === 'review' && 'Chores completed by helpers awaiting parent sign-off'}
                 {drilldownType === 'redo' && 'Chores needing quality corrections before star award'}
@@ -130,8 +132,16 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
           </div>
 
           <button
-            onClick={handleDismiss}
-            className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all active:scale-90 cursor-pointer min-h-[36px] min-w-[36px]"
+            type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              soundFX.playPop();
+              handleDismiss();
+            }}
+            className="w-9 h-9 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer min-h-[38px] min-w-[38px] shrink-0 z-20"
             title="Close"
             aria-label="Close"
           >

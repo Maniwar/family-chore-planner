@@ -22,6 +22,7 @@ import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getCategoryShortDisplay } from '../utils/i18n';
 import { Avatar } from './Avatar';
 import { ThemePreset, THEMES } from '../utils/theme';
+import { CategoryBadge, StarPointsBadge, BadgeStyle } from './CategoryBadge';
 
 interface InspectionQueueViewProps {
   chores: Chore[];
@@ -29,6 +30,7 @@ interface InspectionQueueViewProps {
   members: HouseholdMember[];
   language?: SupportedLanguage;
   currentTheme?: ThemePreset;
+  badgeStyle?: BadgeStyle;
   onOpenInspect: (chore: Chore, log: ChoreAssignmentLog) => void;
   onQuickApprove: (choreId: string, logId: string) => void;
   onBatchApproveAll: (items: { chore: Chore; log: ChoreAssignmentLog }[]) => void;
@@ -42,6 +44,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
   members,
   language = 'en',
   currentTheme = 'rose',
+  badgeStyle = 'pastel',
   onOpenInspect,
   onQuickApprove,
   onBatchApproveAll,
@@ -470,14 +473,8 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
 
                           {/* Category & Points */}
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border flex items-center gap-1 whitespace-nowrap ${getCategoryColor(chore.category)}`}>
-                              <span>{catShort.emoji}</span>
-                              <span>{catShort.label}</span>
-                            </span>
-
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 whitespace-nowrap shadow-2xs">
-                              ⭐ {chore.defaultPoints} pts base
-                            </span>
+                            <CategoryBadge category={chore.category} size="sm" style={badgeStyle} />
+                            <StarPointsBadge points={chore.defaultPoints} suffix="pts" size="sm" style={badgeStyle} />
                           </div>
                         </div>
 
@@ -634,9 +631,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                           <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
                             {chore.title}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black border ${getCategoryColor(chore.category)}`}>
-                            {catShort.emoji} {catShort.label}
-                          </span>
+                          <CategoryBadge category={chore.category} size="xs" style={badgeStyle} />
                         </div>
 
                         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">

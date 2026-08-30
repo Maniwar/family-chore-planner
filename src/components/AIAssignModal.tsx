@@ -310,35 +310,40 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
         <BottomSheetGrabber dragHandleProps={dragHandleProps} onClose={handleDismiss} />
 
         {/* Navigation Bar Header */}
-        <div 
-          className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 backdrop-blur-sm touch-none select-none cursor-grab active:cursor-grabbing shrink-0"
-          onTouchStart={dragHandleProps.onTouchStart}
-          onTouchMove={dragHandleProps.onTouchMove}
-          onTouchEnd={dragHandleProps.onTouchEnd}
-          onPointerDown={dragHandleProps.onPointerDown}
-          onPointerMove={dragHandleProps.onPointerMove}
-          onPointerUp={dragHandleProps.onPointerUp}
-        >
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-sm font-black shadow-2xs">
+        <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 backdrop-blur-sm shrink-0">
+          <div 
+            className="flex items-center space-x-2.5 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
+            onTouchStart={dragHandleProps.onTouchStart}
+            onTouchMove={dragHandleProps.onTouchMove}
+            onTouchEnd={dragHandleProps.onTouchEnd}
+            onPointerDown={dragHandleProps.onPointerDown}
+            onPointerMove={dragHandleProps.onPointerMove}
+            onPointerUp={dragHandleProps.onPointerUp}
+          >
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-sm font-black shadow-2xs shrink-0">
               <Sparkles className="w-4 h-4 text-amber-300" />
             </div>
-            <div>
-              <h2 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight">
+            <div className="min-w-0 truncate">
+              <h2 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight truncate">
                 AI Smart Assistant
               </h2>
-              <p className="text-[11px] text-slate-500 font-medium">
+              <p className="text-[11px] text-slate-500 font-medium truncate">
                 Gemini 3.7 Flash · Age & Workload Intelligence
               </p>
             </div>
           </div>
           
           <button
-            onClick={() => {
+            type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
               soundFX.playPop();
               handleDismiss();
             }}
-            className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all active:scale-90 cursor-pointer min-h-[36px] min-w-[36px]"
+            className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer min-h-[36px] min-w-[36px] shrink-0 z-20"
             title="Close Assistant"
             aria-label="Close Assistant"
           >

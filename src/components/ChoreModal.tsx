@@ -438,20 +438,20 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
         <BottomSheetGrabber dragHandleProps={dragHandleProps} onClose={handleDismiss} />
 
         {/* Navigation Bar Header */}
-        <div 
-          className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 backdrop-blur-md touch-none select-none cursor-grab active:cursor-grabbing shrink-0"
-          onTouchStart={dragHandleProps.onTouchStart}
-          onTouchMove={dragHandleProps.onTouchMove}
-          onTouchEnd={dragHandleProps.onTouchEnd}
-          onPointerDown={dragHandleProps.onPointerDown}
-          onPointerMove={dragHandleProps.onPointerMove}
-          onPointerUp={dragHandleProps.onPointerUp}
-        >
-          <div className="flex items-center space-x-3">
+        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 backdrop-blur-md shrink-0">
+          <div 
+            className="flex items-center space-x-3 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
+            onTouchStart={dragHandleProps.onTouchStart}
+            onTouchMove={dragHandleProps.onTouchMove}
+            onTouchEnd={dragHandleProps.onTouchEnd}
+            onPointerDown={dragHandleProps.onPointerDown}
+            onPointerMove={dragHandleProps.onPointerMove}
+            onPointerUp={dragHandleProps.onPointerUp}
+          >
             <div className={`w-9 h-9 rounded-2xl ${theme.primaryBg} ${theme.primaryText} flex items-center justify-center text-sm font-black shadow-xs shrink-0`}>
               📝
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 truncate">
               <h2 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight truncate">
                 {choreToEdit ? 'Edit Chore Template' : 'New Chore Template'}
               </h2>
@@ -461,18 +461,22 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
             </div>
           </div>
           
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => {
+          <button
+            type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
               soundFX.playPop();
               handleDismiss();
             }}
-            className="w-9 h-9 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer min-h-[44px] min-w-[44px] shrink-0"
+            className="w-9 h-9 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer min-h-[38px] min-w-[38px] shrink-0 z-20"
             title="Close"
             aria-label="Close"
           >
             <X className="w-4 h-4 stroke-[2.5]" />
-          </motion.button>
+          </button>
         </div>
 
         {/* Form Body */}

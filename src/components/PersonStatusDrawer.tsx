@@ -73,15 +73,17 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
 
         {/* Sheet Header (Also responsive to drag down) */}
         <div 
-          className={`px-4 sm:px-5 py-3.5 border-b ${theme.headerBorder || 'border-slate-100'} flex items-center justify-between bg-slate-50/80 touch-none select-none cursor-grab active:cursor-grabbing`}
-          onTouchStart={dragHandleProps.onTouchStart}
-          onTouchMove={dragHandleProps.onTouchMove}
-          onTouchEnd={dragHandleProps.onTouchEnd}
-          onPointerDown={dragHandleProps.onPointerDown}
-          onPointerMove={dragHandleProps.onPointerMove}
-          onPointerUp={dragHandleProps.onPointerUp}
+          className={`px-4 sm:px-5 py-3.5 border-b ${theme.headerBorder || 'border-slate-100'} flex items-center justify-between bg-slate-50/80`}
         >
-          <div className="flex items-center gap-3 min-w-0">
+          <div 
+            className="flex items-center gap-3 min-w-0 flex-1 select-none cursor-grab active:cursor-grabbing"
+            onTouchStart={dragHandleProps.onTouchStart}
+            onTouchMove={dragHandleProps.onTouchMove}
+            onTouchEnd={dragHandleProps.onTouchEnd}
+            onPointerDown={dragHandleProps.onPointerDown}
+            onPointerMove={dragHandleProps.onPointerMove}
+            onPointerUp={dragHandleProps.onPointerUp}
+          >
             <Avatar
               photoUrl={member.avatarPhotoUrl}
               emoji={member.avatarEmoji}
@@ -102,8 +104,15 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
           </div>
 
           <button
-            onClick={handleDismiss}
-            className="p-2 rounded-full bg-slate-200/80 text-slate-600 hover:bg-slate-300 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-90 shrink-0 ml-2"
+            type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDismiss();
+            }}
+            className="p-2 rounded-full bg-slate-200/80 text-slate-600 hover:bg-slate-300 transition-all cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center active:scale-90 hover:scale-105 shrink-0 ml-2 z-20"
             title="Close modal"
             aria-label="Close modal"
           >

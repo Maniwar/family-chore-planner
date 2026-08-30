@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { SupportedLanguage, SUPPORTED_LANGUAGES } from '../utils/i18n';
 import { ThemePreset, THEMES } from '../utils/theme';
+import { BadgeStyle, BADGE_STYLES, CategoryBadge, StarPointsBadge } from './CategoryBadge';
 import { HouseholdInfo } from '../types';
 import { soundFX } from '../utils/audio';
 import { useBottomSheet } from '../hooks/useBottomSheet';
@@ -34,6 +35,8 @@ interface QuickSettingsModalProps {
   onSelectLanguage: (lang: SupportedLanguage) => void;
   currentTheme: ThemePreset;
   onSelectTheme: (theme: ThemePreset) => void;
+  badgeStyle?: BadgeStyle;
+  onSelectBadgeStyle?: (style: BadgeStyle) => void;
   isSoundEnabled: boolean;
   onToggleSound: () => void;
   householdInfo: HouseholdInfo;
@@ -56,6 +59,8 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
   onSelectLanguage,
   currentTheme,
   onSelectTheme,
+  badgeStyle = 'pastel',
+  onSelectBadgeStyle,
   isSoundEnabled,
   onToggleSound,
   householdInfo,
@@ -75,9 +80,16 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
     threshold: 60,
   });
 
+  const [badgeFilter, setBadgeFilter] = React.useState<'all' | 'emoji' | 'vector' | 'thematic'>('all');
+
   if (!isOpen) return null;
 
   const theme = THEMES[currentTheme] || THEMES.rose;
+
+  const filteredBadgeStyles = BADGE_STYLES.filter((b) => {
+    if (badgeFilter === 'all') return true;
+    return b.category === badgeFilter;
+  });
 
   return (
     <div 
@@ -98,39 +110,46 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
         {/* Interactive Grabber Touch Bar */}
         <BottomSheetGrabber dragHandleProps={dragHandleProps} onClose={handleDismiss} />
 
-        {/* Navigation Bar Header with Drag Handle Support */}
+        {/* Navigation Bar Header */}
         <div 
-          className={`px-5 py-3 border-b flex items-center justify-between backdrop-blur-sm touch-none select-none cursor-grab active:cursor-grabbing ${
+          className={`px-5 py-3 border-b flex items-center justify-between backdrop-blur-sm ${
             theme.isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-slate-50/70 border-slate-100'
           }`}
-          onTouchStart={dragHandleProps.onTouchStart}
-          onTouchMove={dragHandleProps.onTouchMove}
-          onTouchEnd={dragHandleProps.onTouchEnd}
-          onPointerDown={dragHandleProps.onPointerDown}
-          onPointerMove={dragHandleProps.onPointerMove}
-          onPointerUp={dragHandleProps.onPointerUp}
         >
-          <div className="flex items-center space-x-2.5">
-            <div className={`w-8 h-8 rounded-xl ${theme.primaryBg} ${theme.primaryText} flex items-center justify-center text-sm font-black shadow-2xs`}>
+          <div 
+            className="flex items-center space-x-2.5 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
+            onTouchStart={dragHandleProps.onTouchStart}
+            onTouchMove={dragHandleProps.onTouchMove}
+            onTouchEnd={dragHandleProps.onTouchEnd}
+            onPointerDown={dragHandleProps.onPointerDown}
+            onPointerMove={dragHandleProps.onPointerMove}
+            onPointerUp={dragHandleProps.onPointerUp}
+          >
+            <div className={`w-8 h-8 rounded-xl ${theme.primaryBg} ${theme.primaryText} flex items-center justify-center text-sm font-black shadow-2xs shrink-0`}>
               🏡
             </div>
-            <div>
-              <h2 className={`text-base font-extrabold tracking-tight leading-tight ${theme.isDark ? 'text-white' : 'text-slate-900'}`}>
+            <div className="min-w-0 truncate">
+              <h2 className={`text-base font-extrabold tracking-tight leading-tight truncate ${theme.isDark ? 'text-white' : 'text-slate-900'}`}>
                 Household & Cloud Hub
               </h2>
-              <p className={`text-[11px] font-medium ${theme.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[11px] font-medium truncate ${theme.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 {householdInfo.familyName || 'Family Home'} · Family Setup & Settings
               </p>
             </div>
           </div>
           
           <button
-            onClick={() => {
+            type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
               soundFX.playPop();
               handleDismiss();
             }}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 cursor-pointer min-h-[36px] min-w-[36px] ${
-              theme.isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-200/70 hover:bg-slate-200 text-slate-600'
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer shrink-0 z-20 ${
+              theme.isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-200/80 hover:bg-slate-300/80 text-slate-700'
             }`}
             title="Close Settings"
             aria-label="Close Settings"
@@ -482,6 +501,85 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                         <span className="text-base shrink-0">{th.emoji}</span>
                         <span className="text-xs font-bold truncate">{labelName}</span>
                         {isSelected && <span className="ml-auto text-xs font-black">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Icon & Badge Aesthetic Selector with Live Previews */}
+              <div className="pt-3 border-t border-slate-200/60">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                    <span>Icon & Badge Style</span>
+                  </span>
+                  <span className="text-[11px] font-bold text-pink-600 dark:text-pink-400">
+                    {BADGE_STYLES.find((b) => b.id === badgeStyle)?.name || 'Original'}
+                  </span>
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex items-center gap-1 mb-2.5 overflow-x-auto pb-1 no-scrollbar">
+                  {[
+                    { id: 'all', label: 'All Sets (12)' },
+                    { id: 'emoji', label: '🏡 Emoji (5)' },
+                    { id: 'vector', label: '🌸 Vector (2)' },
+                    { id: 'thematic', label: '🎨 Thematic (5)' },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setBadgeFilter(f.id as any)}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                        badgeFilter === f.id
+                          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-0.5">
+                  {filteredBadgeStyles.map((opt) => {
+                    const isSelected = badgeStyle === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => {
+                          soundFX.playPop();
+                          if (onSelectBadgeStyle) onSelectBadgeStyle(opt.id);
+                        }}
+                        className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer min-h-[66px] flex flex-col justify-between gap-1.5 active:scale-98 ${
+                          isSelected
+                            ? 'bg-white dark:bg-slate-800 border-pink-500 ring-2 ring-pink-500/20 shadow-xs'
+                            : 'bg-white/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                            <span>{opt.emoji}</span>
+                            <span>{opt.name}</span>
+                          </span>
+                          {isSelected && (
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-pink-500 text-white shrink-0">
+                              Active ✓
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Live Visual Badge & Star Preview */}
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <CategoryBadge category="Kitchen" size="sm" style={opt.id} />
+                            <StarPointsBadge points={15} size="sm" style={opt.id} />
+                          </div>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[100px]">
+                            {opt.tagline.split('&')[0]}
+                          </span>
+                        </div>
                       </button>
                     );
                   })}

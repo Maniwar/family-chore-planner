@@ -21,8 +21,17 @@ export function useBottomSheet({ onClose, threshold = 65, playSound = true }: Us
     onClose();
   }, [onClose, playSound]);
 
+  // Helper to check if event was triggered on interactive child elements
+  const isInteractiveElement = (target: EventTarget | null) => {
+    if (!target || !(target instanceof HTMLElement)) return false;
+    return !!target.closest('button, a, input, select, textarea, [data-no-drag="true"], [role="button"]:not([aria-label*="Drag"])');
+  };
+
   // Touch handlers
   const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isInteractiveElement(e.target)) {
+      return;
+    }
     const touch = e.touches[0];
     startYRef.current = touch.clientY;
     currentYRef.current = touch.clientY;
@@ -62,11 +71,18 @@ export function useBottomSheet({ onClose, threshold = 65, playSound = true }: Us
 
   // Pointer / Mouse drag handlers for desktop / simulator
   const onPointerDown = useCallback((e: React.PointerEvent) => {
+    if (isInteractiveElement(e.target)) {
+      return;
+    }
     startYRef.current = e.clientY;
     currentYRef.current = e.clientY;
     startTimeRef.current = Date.now();
     setIsDragging(true);
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
