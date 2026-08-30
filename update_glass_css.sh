@@ -1,0 +1,1 @@
+sed -i 's/\.apple-glass-button {/.apple-glass-button {\n  background: rgba(255, 255, 255, 0.65);\n  backdrop-filter: blur(24px) saturate(190%);\n  border: 1px solid rgba(255, 255, 255, 0.8);\n  box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 1.0), 0 2px 10px -2px rgba(15, 23, 42, 0.08);\n/g' src/index.css

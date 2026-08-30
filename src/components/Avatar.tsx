@@ -68,7 +68,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   if (hasValidPhoto && !imageError) {
     return (
       <div
-        className={`relative inline-flex shrink-0 items-center justify-center rounded-full overflow-hidden bg-slate-100 ${sizeConfig.container} ${borderClass} ${className}`}
+        className={`relative inline-flex shrink-0 items-center justify-center rounded-full overflow-hidden ${sizeConfig.container} ${borderClass} ${className}`}
         title={name}
       >
         <img

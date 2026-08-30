@@ -8,7 +8,7 @@ import { Lock, Unlock, KeyRound, X, Check, AlertCircle, ShieldAlert, ArrowLeft, 
 import { verifyParentPin, setParentPin, setParentSessionUnlocked, getParentPin, isPinProtectionEnabled } from '../utils/parentLock';
 import { getCurrentHouseholdId } from '../utils/firebaseSync';
 import { soundFX } from '../utils/audio';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 
 interface ParentPinModalProps {
   isOpen: boolean;
@@ -168,27 +168,27 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+      className={`fixed inset-0 z-50 overflow-y-auto ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-900/70 backdrop-blur-xs'} flex items-center justify-center p-3 sm:p-4`}
       onClick={onClose}
     >
       <div
         ref={containerRef}
         onClick={(e) => e.stopPropagation()}
-        className={`bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto ${
+        className={`rounded-3xl max-w-sm w-full shadow-2xl border overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-white border-slate-200'} ${
           isShaking ? 'animate-bounce' : ''
         }`}
       >
         {/* Top Header */}
-        <div className={`${theme.primaryBg} p-4 sm:p-5 ${theme.primaryText} flex items-center justify-between`}>
+        <div className={`${isGlassTheme(currentTheme) ? 'bg-transparent text-slate-900 dark:text-white border-b border-white/20' : theme.primaryBg + ' ' + theme.primaryText} p-4 sm:p-5 flex items-center justify-between`}>
           <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-lg shadow-xs">
-              <Lock className="w-5 h-5 text-white" />
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shadow-xs ${isGlassTheme(currentTheme) ? 'bg-slate-900/10 text-slate-700' : 'bg-white/20 text-white backdrop-blur-xs'}`}>
+              <Lock className={`w-5 h-5 ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white dark:text-white' : 'text-white'}`} />
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold leading-tight">
                 {isChangingPin ? 'Change Parent PIN' : actionTitle}
               </h2>
-              <p className="text-[11px] opacity-85">
+              <p className={`text-[11px] ${isGlassTheme(currentTheme) ? 'text-slate-700' : 'opacity-85'}`}>
                 {isChangingPin ? (isCloud ? 'Cloud-synced across all family devices ☁️' : 'Set a custom 4-digit code') : 'Parent & Admin Security'}
               </p>
             </div>
@@ -196,7 +196,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+            className={`p-1.5 rounded-xl transition-colors ${isGlassTheme(currentTheme) ? 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white dark:text-white hover:bg-slate-900/10' : 'text-white/80 hover:text-white hover:bg-white/20'}`}
           >
             <X className="w-5 h-5" />
           </button>
@@ -207,7 +207,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
           <div className="p-5 sm:p-6 space-y-5 text-center">
             
             <div>
-              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              <p className="text-xs text-slate-700 leading-relaxed font-medium">
                 {actionDescription}
               </p>
             </div>
@@ -222,7 +222,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
                     className={`w-4 h-4 rounded-full transition-all duration-150 ${
                       filled
                         ? `${theme.primaryBg} scale-110 shadow-xs`
-                        : 'bg-slate-200 border border-slate-300'
+                        : (isGlassTheme(currentTheme) ? 'bg-white/40 border border-white/60' : 'bg-slate-200 border border-slate-300')
                     }`}
                   />
                 );
@@ -236,8 +236,8 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
                 <span>{errorMsg}</span>
               </div>
             ) : (
-              <p className="text-[11px] text-slate-400">
-                Default PIN: <strong className="text-slate-600">1234</strong>
+              <p className={`text-[11px] ${isGlassTheme(currentTheme) ? 'text-slate-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                Default PIN: <strong className={`${isGlassTheme(currentTheme) ? 'text-slate-700' : 'text-slate-700 dark:text-slate-300'}`}>1234</strong>
               </p>
             )}
 
@@ -248,7 +248,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
                   key={digit}
                   type="button"
                   onClick={() => handleDigitPress(digit)}
-                  className="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-900 font-bold text-lg transition-transform active:scale-95 shadow-2xs cursor-pointer select-none"
+                  className={`h-12 rounded-2xl font-bold text-lg transition-transform active:scale-95 shadow-2xs cursor-pointer select-none ${isGlassTheme(currentTheme) ? 'bg-white/20 hover:bg-white/30 text-slate-900 dark:text-white' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white'}`}
                 >
                   {digit}
                 </button>
@@ -257,7 +257,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
               <button
                 type="button"
                 onClick={handleClear}
-                className="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-500 font-semibold text-xs transition-colors cursor-pointer select-none"
+                className={`h-12 rounded-2xl font-semibold text-xs transition-colors cursor-pointer select-none flex items-center justify-center ${isGlassTheme(currentTheme) ? 'bg-white/10 hover:bg-white/20 text-slate-700' : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400'}`}
               >
                 Clear
               </button>
@@ -265,7 +265,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleDigitPress('0')}
-                className="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-900 font-bold text-lg transition-transform active:scale-95 shadow-2xs cursor-pointer select-none"
+                className={`h-12 rounded-2xl font-bold text-lg transition-transform active:scale-95 shadow-2xs cursor-pointer select-none ${isGlassTheme(currentTheme) ? 'bg-white/20 hover:bg-white/30 text-slate-900 dark:text-white' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white'}`}
               >
                 0
               </button>
@@ -273,7 +273,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
               <button
                 type="button"
                 onClick={handleBackspace}
-                className="h-12 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 font-semibold text-xs flex items-center justify-center transition-colors cursor-pointer select-none"
+                className={`h-12 rounded-2xl font-semibold text-xs flex items-center justify-center transition-colors cursor-pointer select-none ${isGlassTheme(currentTheme) ? 'bg-white/10 hover:bg-white/20 text-slate-700' : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400'}`}
                 title="Backspace"
               >
                 ⌫
@@ -311,7 +311,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsChangingPin(false)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white dark:text-white"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Back to PIN prompt</span>
@@ -319,7 +319,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
 
                 {changeStep === 'verify_old' && (
                   <form onSubmit={handleVerifyCurrentForChange} className="space-y-3">
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-slate-700">
                       Step 1: Enter your current 4-digit Parent PIN to verify:
                     </p>
                     <input
@@ -347,7 +347,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
 
                 {changeStep === 'enter_new' && (
                   <form onSubmit={handleSetNewPin} className="space-y-3">
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-slate-700">
                       Step 2: Enter your <strong>new 4-digit Parent PIN</strong>:
                     </p>
                     <input
@@ -375,7 +375,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
 
                 {changeStep === 'confirm_new' && (
                   <form onSubmit={handleConfirmNewPin} className="space-y-3">
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-slate-700">
                       Step 3: <strong>Confirm your new 4-digit PIN</strong>:
                     </p>
                     <input

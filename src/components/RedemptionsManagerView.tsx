@@ -26,7 +26,7 @@ import { RewardClaim, HouseholdMember, RewardItem } from '../types';
 import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
 import { formatDisplayDate, formatTimeDisplay } from '../utils/storage';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 
 interface RedemptionsManagerViewProps {
   claims: RewardClaim[];
@@ -257,7 +257,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
     <div className="space-y-4 sm:space-y-5 max-w-5xl mx-auto pb-16 sm:pb-8">
       
       {/* 1. APPLE INSET HERO BANNER (Information Architecture) */}
-      <div className="bg-gradient-to-br from-emerald-500/10 via-amber-500/5 to-slate-100 dark:from-emerald-950/30 dark:to-slate-900 rounded-3xl border border-emerald-200/70 dark:border-slate-800 p-4 sm:p-6 shadow-2xs">
+      <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/40' : 'bg-gradient-to-br from-emerald-500/10 via-amber-500/5 to-slate-100 dark:from-emerald-950/30 dark:to-slate-900 border-emerald-200/70 dark:border-slate-800'} rounded-3xl border p-4 sm:p-6 shadow-2xs`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           
           <div className="space-y-1">
@@ -266,7 +266,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
                 🎁
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                <h1 className={`text-xl sm:text-2xl font-black tracking-tight ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'}`}>
                   Redemptions Tracker
                 </h1>
                 <div className="flex items-center gap-2 mt-0.5">
@@ -277,7 +277,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
                   }`}>
                     {pendingCount > 0 ? `${pendingCount} Waiting for Mom's Review` : 'All Rewards Fulfilled ✨'}
                   </span>
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                  <span className={`text-xs font-bold ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'}`}>
                     • {claims.length} total history
                   </span>
                 </div>
@@ -389,7 +389,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
                   }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 min-h-[38px] ${
                     isSelected
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                      ? (isGlassTheme(currentTheme) ? 'bg-white/40 text-slate-900 shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs')
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -492,14 +492,14 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
 
       {/* 3. REDEMPTION CLAIMS FEED */}
       {filteredClaims.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center shadow-xs">
+        <div className={`rounded-3xl border p-8 sm:p-12 text-center shadow-xs ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/40' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
           <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 mx-auto flex items-center justify-center text-3xl mb-3 shadow-2xs">
             🎁
           </div>
-          <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">
+          <h3 className={`text-base sm:text-lg font-black ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'} mb-1`}>
             No Redemptions Found
           </h3>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+          <p className={`text-xs sm:text-sm ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} max-w-md mx-auto leading-relaxed`}>
             {activeTab === 'pending'
               ? 'Great news! There are no reward redemption requests waiting for approval right now.'
               : 'No redemption history matches the selected tab and filter criteria.'}
@@ -579,7 +579,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
                     transform: `translateX(${currentOffset}px)`,
                     transition: isSwipingThis ? 'none' : 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.15)',
                   }}
-                  className={`relative z-10 bg-white dark:bg-slate-900 rounded-3xl border p-4 sm:p-5 shadow-sm transition-shadow hover:shadow-md flex flex-col justify-between ${
+                  className={`relative z-10 ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/40' : 'bg-white dark:bg-slate-900'} rounded-3xl border p-4 sm:p-5 shadow-sm transition-shadow hover:shadow-md flex flex-col justify-between ${
                     claim.status === 'pending'
                       ? 'border-amber-300 dark:border-amber-800'
                       : claim.status === 'approved'
@@ -598,10 +598,10 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
                           size="sm"
                         />
                         <div className="min-w-0">
-                          <span className="text-xs font-black text-slate-900 dark:text-white block truncate">
+                          <span className={`text-xs font-black ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'} block truncate`}>
                             {claim.memberName}
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block">
+                          <span className={`text-[10px] ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} font-medium block`}>
                             Requested {formatDisplayDate(claim.claimedAt.split('T')[0])} {formatTimeDisplay(claim.claimedAt.split('T')[1]?.substring(0, 5))}
                           </span>
                         </div>
@@ -622,7 +622,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
 
                     {/* Reward Title */}
                     <div className="my-1.5">
-                      <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug">
+                      <h3 className={`text-sm sm:text-base font-extrabold ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'} leading-snug`}>
                         {claim.rewardTitle}
                       </h3>
                     </div>
@@ -657,7 +657,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
                   <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 mt-3">
                     
                     {/* Mobile Gestures Guidance */}
-                    <div className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 hidden sm:flex items-center gap-1.5">
+                    <div className={`text-[11px] font-semibold ${isGlassTheme(currentTheme) ? 'text-slate-700' : 'text-slate-400 dark:text-slate-500'} hidden sm:flex items-center gap-1.5`}>
                       <span>👉 Swipe to approve</span>
                       <span>•</span>
                       <span>👈 Swipe to refund</span>
@@ -683,7 +683,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
                               triggerHaptic(20);
                               onApproveClaim(claim.id);
                             }}
-                            className="flex-1 sm:flex-initial min-h-[40px] px-4 py-2 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+                            className={`flex-1 sm:flex-initial min-h-[40px] px-4 py-2 rounded-xl text-xs font-black shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                           >
                             <Check className="w-4 h-4" />
                             <span>Approve Request</span>
@@ -732,7 +732,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
                       {/* REJECTED / REFUNDED ACTIONS */}
                       {claim.status === 'rejected' && (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-1">
+                          <span className={`text-xs font-bold ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-1`}>
                             <span>Points Refunded</span>
                           </span>
 
@@ -773,19 +773,19 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
             
             {/* iOS Drag Handle */}
             <div className="sm:hidden pt-1 pb-0.5 flex justify-center">
-              <div className="w-10 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+              <div className={`w-12 h-1.5 rounded-full transition-colors ${isGlassTheme(currentTheme) ? 'bg-white/40' : 'bg-slate-300 dark:bg-slate-600'}`} />
             </div>
 
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
               <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                <h3 className={`text-base font-black ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'}`}>
                   {noteActionType === 'approve'
                     ? 'Approve Reward Claim'
                     : noteActionType === 'deliver'
                     ? 'Confirm Reward Delivery'
                     : 'Refund Points & Decline'}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <p className={`text-xs ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} font-medium`}>
                   {noteModalClaim.rewardTitle} • {noteModalClaim.memberName}
                 </p>
               </div>
@@ -825,7 +825,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
                 }
                 value={parentNoteInput}
                 onChange={(e) => setParentNoteInput(e.target.value)}
-                className="w-full text-xs sm:text-sm p-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500/20"
+                className={`w-full text-xs sm:text-sm p-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'} font-medium focus:ring-2 focus:ring-emerald-500/20`}
               />
             </div>
 

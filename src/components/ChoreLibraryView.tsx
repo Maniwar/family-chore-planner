@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Chore, ChoreCategory, HouseholdMember } from '../types';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { soundFX } from '../utils/audio';
 import { formatChoreScheduleDisplay } from '../utils/storage';
 
@@ -147,7 +147,7 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
       <motion.div 
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 p-3.5 sm:p-5 shadow-xs"
+        className={`${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20 text-slate-900' : 'bg-white border-slate-200/80'} rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 shadow-xs`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           
@@ -158,14 +158,14 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                <h1 className={`text-lg sm:text-xl font-black tracking-tight ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900'}`}>
                   Chore Library
                 </h1>
                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                   {chores.length} templates
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className={`text-xs font-medium ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500'}`}>
                 Master household routines · {activeCount} active · {pausedCount} paused · {members.length} helpers
               </p>
             </div>
@@ -173,14 +173,16 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
 
           {/* Action Button Strip */}
           <div className="flex items-center gap-2 pt-1 sm:pt-0">
-            {/* AI Smart Assigner */}
+            {/* AI Chore Assigner */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 soundFX.playPop();
                 onOpenAIAssign('assigner');
               }}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black bg-purple-50 text-purple-700 border border-purple-200/90 hover:bg-purple-100 transition-all cursor-pointer shadow-2xs min-h-[44px]"
+              className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black ${
+                isGlassTheme(currentTheme) ? 'apple-glass-button text-purple-900 border-white/20' : 'bg-purple-50 text-purple-700 border border-purple-200/90 hover:bg-purple-100'
+              } transition-all cursor-pointer shadow-2xs min-h-[44px]`}
             >
               <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
               <span>AI Assigner</span>
@@ -193,7 +195,9 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                 soundFX.playPop();
                 onOpenAIAssign('creator');
               }}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200/90 hover:bg-indigo-100 transition-all cursor-pointer shadow-2xs min-h-[44px]"
+              className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black ${
+                isGlassTheme(currentTheme) ? 'apple-glass-button text-indigo-900 border-white/20' : 'bg-indigo-50 text-indigo-700 border border-indigo-200/90 hover:bg-indigo-100'
+              } transition-all cursor-pointer shadow-2xs min-h-[44px]`}
             >
               <Wand2 className="w-4 h-4 text-indigo-600 shrink-0" />
               <span>AI Creator</span>
@@ -206,7 +210,9 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                 soundFX.playPop();
                 onOpenCreateChore();
               }}
-              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black ${theme.primaryBg} ${theme.primaryHover} ${theme.primaryText} shadow-xs transition-all cursor-pointer min-h-[44px] shrink-0`}
+              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black ${
+                isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : `${theme.primaryBg} ${theme.primaryHover} ${theme.primaryText}`
+              } shadow-xs transition-all cursor-pointer min-h-[44px] shrink-0`}
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span className="hidden xs:inline">Add Chore</span>
@@ -218,7 +224,7 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
       </motion.div>
 
       {/* iOS-Style Search & Filtering Inset Group */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-xs space-y-3">
+      <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200/80'} p-3 sm:p-4 shadow-xs space-y-3`}>
         
         {/* Row 1: iOS UISearchBar & Helper Filter */}
         <div className="flex flex-col sm:flex-row gap-2">
@@ -231,7 +237,11 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search routines, room, or inspection steps..."
-              className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 bg-slate-50/80 focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400 transition-all min-h-[44px]"
+              className={`w-full pl-10 pr-9 py-2 text-xs sm:text-sm font-semibold rounded-xl border ${
+                isGlassTheme(currentTheme) 
+                  ? 'apple-glass-input border-white/20 text-slate-900 placeholder:text-slate-500' 
+                  : 'border-slate-200 bg-slate-50/80 focus:bg-white focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400'
+              } transition-all min-h-[44px]`}
             />
             {searchQuery && (
               <button
@@ -253,7 +263,11 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                   soundFX.playPop();
                   setSelectedMemberFilter(e.target.value);
                 }}
-                className="w-full text-xs font-bold py-2.5 pl-3 pr-8 rounded-xl border border-slate-200 bg-slate-50/80 focus:bg-white focus:ring-2 focus:ring-rose-500/20 min-h-[44px] appearance-none cursor-pointer text-slate-700"
+                className={`w-full text-xs font-bold py-2.5 pl-3 pr-8 rounded-xl border ${
+                  isGlassTheme(currentTheme)
+                    ? 'apple-glass-input border-white/20 text-slate-900'
+                    : 'border-slate-200 bg-slate-50/80 focus:bg-white focus:ring-2 focus:ring-rose-500/20 text-slate-700'
+                } min-h-[44px] appearance-none cursor-pointer`}
               >
                 <option value="all">👥 All Helpers ({chores.length})</option>
                 <option value="unassigned">🤝 Unassigned Chores</option>
@@ -275,7 +289,7 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
         <div className="flex items-center justify-between gap-2 pt-0.5">
           
           {/* iOS Segmented Control */}
-          <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+          <div className={`inline-flex ${isGlassTheme(currentTheme) ? 'bg-black/5 dark:bg-white/10' : 'bg-slate-100'} p-1 rounded-xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200/80'}`}>
             <button
               onClick={() => {
                 soundFX.playPop();
@@ -283,7 +297,9 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
               }}
               className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer min-h-[32px] ${
                 statusFilter === 'all'
-                  ? 'bg-white text-slate-900 shadow-2xs'
+                  ? isGlassTheme(currentTheme)
+                    ? 'apple-glass-pill text-slate-900 shadow-xs'
+                    : 'bg-white text-slate-900 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -297,7 +313,9 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
               }}
               className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer min-h-[32px] flex items-center gap-1.5 ${
                 statusFilter === 'active'
-                  ? 'bg-white text-emerald-800 shadow-2xs'
+                  ? isGlassTheme(currentTheme)
+                    ? 'apple-glass-pill text-emerald-900 shadow-xs'
+                    : 'bg-white text-emerald-800 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -312,7 +330,9 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
               }}
               className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer min-h-[32px] flex items-center gap-1.5 ${
                 statusFilter === 'paused'
-                  ? 'bg-white text-slate-800 shadow-2xs'
+                  ? isGlassTheme(currentTheme)
+                    ? 'apple-glass-pill text-slate-900 shadow-xs'
+                    : 'bg-white text-slate-800 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -342,12 +362,16 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
             }}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all min-h-[36px] cursor-pointer flex items-center gap-1 ${
               selectedCategory === 'all'
-                ? `${theme.primaryBg} ${theme.primaryText} shadow-2xs`
+                ? isGlassTheme(currentTheme)
+                  ? 'apple-glass-button-primary shadow-2xs'
+                  : `${theme.primaryBg} ${theme.primaryText} shadow-2xs`
+                : isGlassTheme(currentTheme)
+                ? 'apple-glass-pill text-slate-800'
                 : 'bg-slate-100 hover:bg-slate-200/80 text-slate-600'
             }`}
           >
             <span>All Rooms</span>
-            <span className="text-[10px] opacity-75 bg-black/10 px-1.5 py-0.2 rounded-full font-black">
+            <span className="text-[10px] opacity-85 bg-black/10 px-1.5 py-0.2 rounded-full font-black">
               {chores.length}
             </span>
           </button>
@@ -367,13 +391,17 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all min-h-[36px] cursor-pointer flex items-center gap-1.5 shrink-0 ${
                   isSelected
-                    ? `${theme.primaryBg} ${theme.primaryText} shadow-2xs`
+                    ? isGlassTheme(currentTheme)
+                      ? 'apple-glass-button-primary shadow-2xs'
+                      : `${theme.primaryBg} ${theme.primaryText} shadow-2xs`
+                    : isGlassTheme(currentTheme)
+                    ? 'apple-glass-pill text-slate-800'
                     : 'bg-slate-100 hover:bg-slate-200/80 text-slate-600'
                 }`}
               >
                 <span>{emoji}</span>
                 <span>{cat}</span>
-                <span className="text-[10px] opacity-75 bg-black/10 px-1.5 py-0.2 rounded-full font-black">
+                <span className="text-[10px] opacity-85 bg-black/10 px-1.5 py-0.2 rounded-full font-black">
                   {count}
                 </span>
               </button>
@@ -385,12 +413,12 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
 
       {/* Results Header when filtered */}
       {hasActiveFilters && (
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 px-1">
+        <div className={`flex items-center justify-between text-xs font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl border shadow-xs ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/40 text-slate-700' : 'bg-white/80 dark:bg-slate-900/80 border-slate-200/90 dark:border-slate-800 text-slate-600 dark:text-slate-400'}`}>
           <span>Showing {filteredChores.length} of {chores.length} chore templates</span>
           {filteredChores.length !== chores.length && (
             <button
               onClick={handleResetFilters}
-              className="text-rose-600 hover:underline cursor-pointer font-bold"
+              className="text-rose-600 dark:text-rose-400 hover:underline cursor-pointer font-black"
             >
               Show all ({chores.length})
             </button>
@@ -465,8 +493,12 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
                   key={chore.id}
-                  className={`bg-white rounded-2xl border transition-all shadow-xs flex flex-col justify-between overflow-hidden group ${
-                    chore.isActive
+                  className={`${
+                    isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'
+                  } rounded-2xl border transition-all shadow-xs flex flex-col justify-between overflow-hidden group ${
+                    isGlassTheme(currentTheme)
+                      ? chore.isActive ? 'border-white/20' : 'border-white/40 opacity-70'
+                      : chore.isActive
                       ? 'border-slate-200/90 hover:border-slate-300'
                       : 'border-slate-200/60 opacity-65 bg-slate-50/50'
                   }`}
@@ -599,7 +631,7 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
 
                     {/* Quality Inspection Checklist Accordion */}
                     {chore.qualityChecklist && chore.qualityChecklist.length > 0 && (
-                      <div className="pt-2 border-t border-slate-100">
+                      <div className="pt-2 border-t border-slate-100 dark:border-white/10">
                         <button
                           onClick={() => toggleChecklist(chore.id)}
                           className="w-full flex items-center justify-between text-[11px] font-bold text-slate-600 hover:text-slate-900 transition-colors py-1 cursor-pointer min-h-[36px]"
@@ -623,7 +655,9 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                               exit={{ opacity: 0, height: 0 }}
                               className="overflow-hidden"
                             >
-                              <div className="mt-1.5 p-2.5 bg-slate-50/90 rounded-xl space-y-1.5 text-xs text-slate-700 border border-slate-200/60">
+                              <div className={`mt-1.5 p-2.5 ${
+                                isGlassTheme(currentTheme) ? 'bg-white/40 border-white/20' : 'bg-slate-50/90 border-slate-200/60'
+                              } rounded-xl space-y-1.5 text-xs text-slate-700 border`}>
                                 {chore.qualityChecklist.map((step, idx) => (
                                   <div key={idx} className="flex items-start gap-2">
                                     <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[9px] flex items-center justify-center shrink-0 mt-0.5">
@@ -641,8 +675,10 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                   </div>
 
                   {/* Bottom Action Strip */}
-                  <div className="px-3.5 py-2 bg-slate-50/90 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-semibold text-slate-400 truncate">
+                  <div className={`px-3.5 py-2 ${
+                    isGlassTheme(currentTheme) ? 'bg-white/30 border-white/20' : 'bg-slate-50/90 border-slate-100'
+                  } border-t flex items-center justify-between gap-2`}>
+                    <span className="text-[10px] font-semibold text-slate-500 truncate">
                       {chore.timeOfDay ? `Scheduled: ${chore.timeOfDay}` : 'Routine Template'}
                     </span>
 
@@ -653,7 +689,9 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                           soundFX.playPop();
                           onEditChore(chore);
                         }}
-                        className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 transition-all cursor-pointer min-h-[40px] flex items-center gap-1.5"
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold ${
+                          isGlassTheme(currentTheme) ? 'apple-glass-button text-slate-900 min-h-[36px]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 min-h-[40px]'
+                        } transition-all cursor-pointer flex items-center gap-1.5`}
                         title="Edit Chore"
                         aria-label="Edit Chore"
                       >
@@ -669,7 +707,9 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                             onDeleteChore(chore.id);
                           }
                         }}
-                        className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
+                        className={`p-2 rounded-xl ${
+                          isGlassTheme(currentTheme) ? 'text-rose-600 hover:bg-rose-500/10 min-h-[36px] min-w-[36px]' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 min-h-[40px] min-w-[40px]'
+                        } transition-all cursor-pointer flex items-center justify-center`}
                         title="Delete Chore"
                         aria-label="Delete Chore"
                       >

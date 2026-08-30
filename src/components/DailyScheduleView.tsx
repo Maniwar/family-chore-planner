@@ -37,7 +37,7 @@ import {
 } from '../utils/storage';
 import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getTranslation, getCategoryTranslation } from '../utils/i18n';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { BadgeStyle } from './CategoryBadge';
 
 const ALL_CATEGORIES: ChoreCategory[] = [
@@ -344,23 +344,27 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       onTouchEnd={handleTouchEnd}
     >
       {/* Mobile iOS Ultra-Compact Header & Unified Filter Architecture */}
-      <div className="sm:hidden space-y-2">
+      <div className={`sm:hidden ${isGlassTheme(currentTheme) ? 'apple-glass-dock' : 'bg-white border border-slate-200'} rounded-3xl p-3 space-y-2.5 shadow-sm transition-all`}>
         {/* Row 1: Apple HIG Date Header with Navigation & View Controls */}
-        <div className="flex items-center justify-between gap-2 pt-1 px-0.5">
+        <div className="flex items-center justify-between gap-2 px-0.5">
           {/* Date Segment with Touch Targets */}
           <div className="flex items-center gap-1 min-w-0">
             <button
               onClick={handlePrevDay}
               aria-label="Previous day"
-              className="p-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
+              className={`p-1.5 rounded-xl transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer active:scale-95 shrink-0 ${
+                isGlassTheme(currentTheme)
+                  ? 'hover:bg-white/60 text-slate-800'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             
             <div className="min-w-0">
-              <h1 className="text-sm font-extrabold tracking-tight text-slate-900 leading-tight whitespace-nowrap flex items-center gap-1.5">
+              <h1 className="text-sm font-black tracking-tight text-slate-950 leading-tight whitespace-nowrap flex items-center gap-1.5">
                 <span>{isToday ? 'Today' : formatDisplayDate(currentDateStr).split(',')[0]}</span>
-                <span className="text-xs font-medium text-slate-500">
+                <span className="text-xs font-semibold text-slate-600">
                   {formatDisplayDate(currentDateStr).split(',').slice(1).join(',')}
                 </span>
               </h1>
@@ -369,7 +373,11 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             <button
               onClick={handleNextDay}
               aria-label="Next day"
-              className="p-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
+              className={`p-1.5 rounded-xl transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer active:scale-95 shrink-0 ${
+                isGlassTheme(currentTheme)
+                  ? 'hover:bg-white/60 text-slate-800'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -380,18 +388,22 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             {!isToday && (
               <button
                 onClick={handleJumpToday}
-                className={`text-[11px] font-bold ${theme.badgeText} ${theme.badgeBg} border ${theme.badgeBorder} px-2.5 py-1 rounded-full active:scale-95 cursor-pointer min-h-[30px]`}
+                className={`text-[11px] font-extrabold ${theme.badgeText} ${theme.badgeBg} border ${theme.badgeBorder} px-2.5 py-1 rounded-full active:scale-95 cursor-pointer min-h-[30px] shadow-2xs`}
               >
                 Today
               </button>
             )}
 
             {/* Layout Toggle (List vs Grid) */}
-            <div className="flex items-center bg-slate-100/90 p-0.5 rounded-xl border border-slate-200">
+            <div className={`flex items-center p-0.5 rounded-xl border ${
+              isGlassTheme(currentTheme) ? 'bg-white/30 border-white/20' : 'bg-slate-100/90 border-slate-200'
+            }`}>
               <button
                 onClick={() => handleToggleViewMode('list')}
                 className={`p-1 rounded-lg transition-all min-h-[28px] min-w-[28px] flex items-center justify-center cursor-pointer ${
-                  effectiveViewMode === 'list' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-400 hover:text-slate-700'
+                  effectiveViewMode === 'list' 
+                    ? 'bg-white text-slate-950 shadow-xs font-black' 
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
                 title="List View"
               >
@@ -400,7 +412,9 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               <button
                 onClick={() => handleToggleViewMode('grid')}
                 className={`p-1 rounded-lg transition-all min-h-[28px] min-w-[28px] flex items-center justify-center cursor-pointer ${
-                  effectiveViewMode === 'grid' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-400 hover:text-slate-700'
+                  effectiveViewMode === 'grid' 
+                    ? 'bg-white text-slate-950 shadow-xs font-black' 
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
                 title="Grid View"
               >
@@ -410,9 +424,9 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           </div>
         </div>
 
-        {/* Row 2: 7-Day Week Ribbon */}
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-1 shadow-2xs">
-          <div className="flex items-center justify-between gap-1 overflow-x-auto scrollbar-none">
+        {/* Row 2: 7-Day Week Ribbon (Grid of 7 equal columns) */}
+        <div className={`${isGlassTheme(currentTheme) ? 'bg-white/40 border border-white/20' : 'bg-slate-50 border border-slate-200'} rounded-2xl p-1 shadow-2xs`}>
+          <div className="grid grid-cols-7 gap-1">
             {weekDaysRibbon.map((item) => (
               <button
                 key={item.dateStr}
@@ -420,18 +434,18 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   soundFX.playPop();
                   onDateChange(item.dateStr);
                 }}
-                className={`flex-1 min-w-[38px] py-1.5 px-0.5 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer min-h-[42px] touch-target ${
+                className={`w-full py-1.5 px-0.5 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer min-h-[42px] touch-target ${
                   item.isSelected
-                    ? `${theme.primaryBg} ${theme.primaryText} shadow-xs font-bold scale-[1.02]`
+                    ? `${theme.primaryBg} ${theme.primaryText} shadow-xs font-black scale-[1.02]`
                     : item.isDateToday
-                    ? `${theme.badgeBg} ${theme.badgeText} border ${theme.badgeBorder}`
-                    : 'bg-transparent text-slate-700 hover:bg-slate-100'
+                    ? `${theme.badgeBg} ${theme.badgeText} border ${theme.badgeBorder} font-bold`
+                    : 'bg-transparent text-slate-800 hover:bg-white/80'
                 }`}
               >
-                <span className="text-[9px] uppercase font-bold tracking-wider opacity-85">
+                <span className="text-[10px] uppercase font-black tracking-wider opacity-85 leading-none">
                   {item.dayName.slice(0, 3)}
                 </span>
-                <span className="text-xs font-extrabold mt-0.5 leading-none">
+                <span className="text-xs font-black mt-1 leading-none">
                   {item.dayNum}
                 </span>
                 {item.choreCount > 0 && (
@@ -443,13 +457,15 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         </div>
 
         {/* Row 3: Daily Summary Metric Bar */}
-        <div className="flex items-center justify-between gap-2 px-0.5">
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100/90 px-2.5 py-1 rounded-full border border-slate-200/80 text-[11px]">
-              <span className="text-emerald-600">✓</span>
+        <div className="flex items-center justify-between gap-1.5 px-0.5 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            <span className={`inline-flex items-center gap-1 font-bold text-slate-900 ${
+              isGlassTheme(currentTheme) ? 'bg-white/40 border-white/20' : 'bg-slate-100/90 border-slate-200/80'
+            } px-2.5 py-1 rounded-full border text-[11px] shadow-2xs shrink-0`}>
+              <span className="text-emerald-600 font-black">✓</span>
               <span>{approvedCount}/{totalChores} done</span>
             </span>
-            <span className="inline-flex items-center gap-1 font-bold text-amber-900 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/80 text-[11px]">
+            <span className="inline-flex items-center gap-1 font-black text-amber-950 bg-amber-50/90 px-2.5 py-1 rounded-full border border-amber-200/80 text-[11px] shadow-2xs shrink-0">
               <span>⭐</span>
               <span>+{pointsEarnedToday} pts</span>
             </span>
@@ -459,21 +475,25 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           {onNavigateView && (
             <button
               onClick={() => onNavigateView('weekly')}
-              className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-full active:scale-95 cursor-pointer"
+              className={`text-[11px] font-black text-indigo-900 ${
+                isGlassTheme(currentTheme) ? 'bg-indigo-50/90 border-indigo-200/90' : 'bg-indigo-50 border-indigo-200/80'
+              } border px-2.5 py-1 rounded-full active:scale-95 cursor-pointer shadow-2xs shrink-0 ml-auto`}
             >
               Weekly Matrix 📅
             </button>
           )}
         </div>
 
-        {/* Row 4: Horizontal Helper & Time Filter Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 -mx-0.5 px-0.5">
+        {/* Row 4: Horizontal Helper & Time Filter Bar with Smooth Scroll & Full Bleed */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mx-2 px-2 touch-pan-x">
           {/* Quick Search & Filter Trigger */}
           <button
             onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer min-h-[32px] shrink-0 active:scale-95 ${
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer min-h-[32px] shrink-0 active:scale-95 shadow-2xs ${
               activeFilterCount > 0 || showMobileFilters
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs font-bold'
+                ? (isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-indigo-600 text-white border-indigo-600 shadow-xs')
+                : isGlassTheme(currentTheme)
+                ? 'bg-white/40 border-white/20 text-slate-800 hover:bg-white'
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
             }`}
             title="Search and Filters"
@@ -488,9 +508,11 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               soundFX.playPop();
               if (onSelectMember) onSelectMember('all');
             }}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border ${
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border shadow-2xs ${
               selectedMemberId === 'all'
-                ? `${theme.primaryBg} ${theme.primaryText} border-transparent shadow-2xs font-bold`
+                ? `${theme.primaryBg} ${theme.primaryText} border-transparent font-black`
+                : isGlassTheme(currentTheme)
+                ? 'bg-white/40 text-slate-800 hover:bg-white border-white/20'
                 : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
             }`}
           >
@@ -508,16 +530,18 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   soundFX.playPop();
                   if (onSelectMember) onSelectMember(m.id);
                 }}
-                className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border ${
+                className={`px-2.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border shadow-2xs ${
                   isSelected
-                    ? `${theme.primaryBg} ${theme.primaryText} border-transparent shadow-2xs font-bold`
+                    ? `${theme.primaryBg} ${theme.primaryText} border-transparent font-black`
+                    : isGlassTheme(currentTheme)
+                    ? 'bg-white/40 hover:bg-white text-slate-800 border-white/20'
                     : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
                 }`}
               >
                 <Avatar photoUrl={m.avatarPhotoUrl} emoji={m.avatarEmoji} name={m.name} size="xs" showBorder={false} />
                 <span>{m.name.split(' ')[0]}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                  isSelected ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-600'
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  isSelected ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-700'
                 }`}>
                   {count}
                 </span>
@@ -546,6 +570,8 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border ${
                   isSelected
                     ? 'bg-amber-500 text-white border-amber-500 shadow-2xs font-bold'
+                    : isGlassTheme(currentTheme)
+                    ? 'bg-white/30 hover:bg-white/40 text-slate-600 border-white/20 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)]'
                     : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
                 }`}
               >
@@ -563,7 +589,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
 
         {/* Expandable Search & Filters Drawer for Mobile */}
         {showMobileFilters && (
-          <div className="p-3 bg-white rounded-2xl border border-slate-200 space-y-2.5 shadow-xs animate-in slide-in-from-top-2 duration-150">
+          <div className={`p-3 rounded-2xl border space-y-2.5 shadow-xs animate-in slide-in-from-top-2 duration-150 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white border-slate-200'}`}>
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -648,16 +674,16 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       </div>
 
       {/* Desktop Top Banner / Date Control Bar */}
-      <div className={`hidden sm:block ${theme.cardBg} rounded-2xl border ${theme.cardBorder} p-4 sm:p-6 shadow-xs transition-colors duration-200`}>
+      <div className={`hidden sm:block ${isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.cardBorder} p-4 sm:p-6 shadow-xs transition-colors duration-200`}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
           
           {/* Date Selector (Desktop) */}
           <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-start">
-            <div className="flex items-center bg-slate-100/90 p-1 rounded-xl border border-slate-200 shadow-2xs">
+            <div className={`flex items-center ${isGlassTheme(currentTheme) ? 'apple-glass-pill' : 'bg-slate-100/90 border-slate-200'} p-1 rounded-xl border shadow-2xs`}>
               <button
                 id="daily-prev-day-btn"
                 onClick={handlePrevDay}
-                className="p-2 hover:bg-white rounded-lg text-slate-700 transition-colors cursor-pointer active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className={`p-2 ${isGlassTheme(currentTheme) ? 'hover:bg-white/40' : 'hover:bg-white'} rounded-lg text-slate-700 transition-colors cursor-pointer active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center`}
                 title="Previous Day"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -667,7 +693,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 <Calendar className={`w-3.5 h-3.5 ${theme.badgeText}`} />
                 <span>{formatDisplayDate(currentDateStr)}</span>
                 {isToday && (
-                  <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${theme.badgeBg} ${theme.badgeText} border ${theme.badgeBorder}`}>
+                  <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isGlassTheme(currentTheme) ? 'apple-glass-pill text-sky-950' : `${theme.badgeBg} ${theme.badgeText} border ${theme.badgeBorder}`}`}>
                     Today
                   </span>
                 )}
@@ -676,7 +702,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               <button
                 id="daily-next-day-btn"
                 onClick={handleNextDay}
-                className="p-2 hover:bg-white rounded-lg text-slate-700 transition-colors cursor-pointer active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className={`p-2 ${isGlassTheme(currentTheme) ? 'hover:bg-white/40' : 'hover:bg-white'} rounded-lg text-slate-700 transition-colors cursor-pointer active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center`}
                 title="Next Day"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -687,7 +713,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               <button
                 id="daily-jump-today-btn"
                 onClick={handleJumpToday}
-                className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-colors border border-slate-200 cursor-pointer active:scale-95 min-h-[44px]"
+                className={`text-xs font-bold ${isGlassTheme(currentTheme) ? 'apple-glass-button text-slate-800' : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border-slate-200'} px-3 py-2 rounded-xl transition-colors border cursor-pointer active:scale-95 min-h-[44px]`}
               >
                 {t.jumpToToday}
               </button>
@@ -697,7 +723,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               <div className="flex items-center gap-1.5 ml-1">
                 <button
                   onClick={() => onNavigateView('weekly')}
-                  className="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-2 rounded-xl transition-colors cursor-pointer active:scale-95 flex items-center gap-1 min-h-[44px]"
+                  className={`text-xs font-bold ${isGlassTheme(currentTheme) ? 'apple-glass-button text-indigo-950 bg-indigo-50/70 border-indigo-200/80' : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200'} border px-3 py-2 rounded-xl transition-colors cursor-pointer active:scale-95 flex items-center gap-1 min-h-[44px]`}
                   title="Switch to 7-Day Weekly Chore Matrix"
                 >
                   <span>📅</span>
@@ -705,7 +731,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 </button>
                 <button
                   onClick={() => onNavigateView('reports')}
-                  className="text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-2 rounded-xl transition-colors cursor-pointer active:scale-95 flex items-center gap-1 min-h-[44px]"
+                  className={`text-xs font-bold ${isGlassTheme(currentTheme) ? 'apple-glass-button text-rose-950 bg-rose-50/70 border-rose-200/80' : 'text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-200'} border px-3 py-2 rounded-xl transition-colors cursor-pointer active:scale-95 flex items-center gap-1 min-h-[44px]`}
                   title="Print Fridge Chore Schedules & Punchcards"
                 >
                   <span>🖨️</span>
@@ -713,7 +739,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 </button>
                 <button
                   onClick={() => onNavigateView('calendar')}
-                  className="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-2 rounded-xl transition-colors cursor-pointer active:scale-95 flex items-center gap-1 min-h-[44px]"
+                  className={`text-xs font-bold ${isGlassTheme(currentTheme) ? 'apple-glass-button text-slate-800' : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'} border px-3 py-2 rounded-xl transition-colors cursor-pointer active:scale-95 flex items-center gap-1 min-h-[44px]`}
                   title="Switch to Monthly Calendar"
                 >
                   <span>🗓️</span>
@@ -725,22 +751,22 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
 
           {/* Quick Stats Metric Pills */}
           <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center justify-between sm:justify-start gap-2">
+            <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-pill' : 'bg-slate-50 border border-slate-200'} rounded-xl px-3 py-1.5 flex items-center justify-between sm:justify-start gap-2 border shadow-2xs`}>
               <div className="text-left sm:text-right">
                 <p className="text-[10px] uppercase font-extrabold text-slate-400">Total Done</p>
                 <p className="text-sm font-extrabold text-slate-900">{approvedCount} / {totalChores}</p>
               </div>
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shadow-2xs">
                 {completionPercentage}%
               </div>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center justify-between sm:justify-start gap-2">
+            <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-pill' : 'bg-slate-50 border border-slate-200'} rounded-xl px-3 py-1.5 flex items-center justify-between sm:justify-start gap-2 border shadow-2xs`}>
               <div className="text-left sm:text-right">
                 <p className="text-[10px] uppercase font-extrabold text-slate-400">Points Awarded</p>
                 <p className="text-sm font-extrabold text-amber-900">+{pointsEarnedToday} {t.pts}</p>
               </div>
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs shadow-2xs">
                 ⭐
               </div>
             </div>
@@ -748,14 +774,14 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         </div>
 
         {/* Completion Progress Bar */}
-        <div className="mt-3.5 pt-3 border-t border-slate-100">
+        <div className="mt-3.5 pt-3 border-t border-slate-100/80">
           <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="font-semibold text-slate-600 truncate mr-2">
+            <span className="font-semibold text-slate-700 truncate mr-2">
               {selectedMemberObj ? `${selectedMemberObj.name}'s Progress` : 'Family Daily Progress'} ({approvedCount} approved, {reviewCount} waiting review)
             </span>
-            <span className="font-bold text-slate-900 shrink-0">{completionPercentage}%</span>
+            <span className="font-extrabold text-slate-900 shrink-0">{completionPercentage}%</span>
           </div>
-          <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex">
+          <div className={`w-full ${isGlassTheme(currentTheme) ? 'bg-black/10 border border-white/40' : 'bg-slate-100'} rounded-full h-2.5 overflow-hidden flex`}>
             <div 
               className="bg-emerald-500 h-full transition-all duration-500" 
               style={{ width: `${(approvedCount / (totalChores || 1)) * 100}%` }}
@@ -771,7 +797,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
 
         {/* Mom Inspection Action Banner */}
         {isMomMode && pendingInspectionItems.length > 0 && (
-          <div className="mt-3.5 p-3 sm:p-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="mt-3.5 p-3 sm:p-3.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs border border-white/40">
             <div className="flex items-center space-x-2.5">
               <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-base shrink-0">
                 ✨
@@ -803,7 +829,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
 
       {/* Desktop Contextual Helper Filter Chips */}
       {onSelectMember && (
-        <div className={`hidden sm:block ${theme.cardBg} rounded-2xl border ${theme.cardBorder} p-3 sm:p-4 shadow-xs space-y-2`}>
+        <div className={`hidden sm:block ${isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.cardBorder} p-3 sm:p-4 shadow-xs space-y-2`}>
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-indigo-500" />
@@ -830,16 +856,20 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 soundFX.playPop();
                 onSelectMember('all');
               }}
-              className={`px-3 py-2 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 ${
+              className={`px-3 py-2 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 border ${
                 selectedMemberId === 'all'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  ? isGlassTheme(currentTheme)
+                    ? (isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-sky-500 text-white border-white/20 shadow-md font-black')
+                    : 'bg-slate-900 text-white shadow-xs border-transparent'
+                  : isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill text-slate-800'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent'
               }`}
             >
               <Home className="w-3.5 h-3.5" />
               <span>{t.wholeFamily}</span>
               <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
-                selectedMemberId === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                selectedMemberId === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-700'
               }`}>
                 {chores.filter(c => isChoreScheduledForDate(c, currentDateStr)).length}
               </span>
@@ -857,10 +887,14 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                     soundFX.playPop();
                     onSelectMember(m.id);
                   }}
-                  className={`px-3 py-2 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 cursor-pointer active:scale-95 ${
+                  className={`px-3 py-2 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 cursor-pointer active:scale-95 border ${
                     isSelected
-                      ? `${theme.primaryBg} text-white shadow-xs`
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? isGlassTheme(currentTheme)
+                        ? (isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-sky-500 text-white border-white/20 shadow-md font-black')
+                        : `${theme.primaryBg} text-white shadow-xs border-transparent`
+                      : isGlassTheme(currentTheme)
+                      ? 'apple-glass-pill text-slate-800'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-transparent'
                   }`}
                 >
                   <Avatar
@@ -872,7 +906,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   />
                   <span className="truncate max-w-[100px]">{m.name}</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
-                    isSelected ? 'bg-black/20 text-white' : 'bg-slate-200 text-slate-700'
+                    isSelected ? 'bg-black/20 text-white' : 'bg-slate-200/80 text-slate-700'
                   }`}>
                     {memberChoreCount}
                   </span>
@@ -884,7 +918,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       )}
 
       {/* Desktop Filter and Search Bar */}
-      <div className={`hidden sm:block ${theme.cardBg} rounded-2xl border ${theme.cardBorder} p-3 sm:p-4 space-y-3 shadow-xs transition-colors duration-200`}>
+      <div className={`hidden sm:block ${isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.cardBorder} p-3 sm:p-4 space-y-3 shadow-xs transition-colors duration-200`}>
         <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 items-stretch sm:items-center justify-between">
           {/* Search box */}
           <div className="relative flex-1 min-w-0">
@@ -894,7 +928,11 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               placeholder={t.searchChoresPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 ${theme.accentRing} bg-slate-50/50`}
+              className={`w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border ${
+                isGlassTheme(currentTheme)
+                  ? 'apple-glass-input bg-white/70 border-white/20 text-slate-900 placeholder:text-slate-500'
+                  : `border-slate-200 focus:outline-hidden focus:ring-2 ${theme.accentRing} bg-slate-50/50`
+              }`}
             />
           </div>
 
@@ -907,7 +945,11 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 soundFX.playPop();
                 setSelectedTimeFilter(e.target.value);
               }}
-              className="bg-slate-50 border border-slate-200 text-slate-700 py-2 px-2.5 rounded-xl text-xs font-semibold focus:ring-rose-500 focus:border-rose-500 cursor-pointer"
+              className={`${
+                isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill bg-white/75 border-white/20 text-slate-900 shadow-2xs font-bold'
+                  : 'bg-slate-50 border border-slate-200 text-slate-700'
+              } py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border`}
             >
               <option value="all">⏰ {t.filterAllTimes}</option>
               <option value="morning">{t.todMorning}</option>
@@ -923,7 +965,11 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 soundFX.playPop();
                 setSelectedCategoryFilter(e.target.value);
               }}
-              className="bg-slate-50 border border-slate-200 text-slate-700 py-2 px-2.5 rounded-xl text-xs font-semibold focus:ring-rose-500 focus:border-rose-500 cursor-pointer"
+              className={`${
+                isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill bg-white/75 border-white/20 text-slate-900 shadow-2xs font-bold'
+                  : 'bg-slate-50 border border-slate-200 text-slate-700'
+              } py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border`}
             >
               <option value="all">🏠 {t.filterAllCategories}</option>
               {categories.map((cat) => (
@@ -938,7 +984,11 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 soundFX.playPop();
                 setSelectedStatusFilter(e.target.value);
               }}
-              className="bg-slate-50 border border-slate-200 text-slate-700 py-2 px-2.5 rounded-xl text-xs font-semibold focus:ring-rose-500 focus:border-rose-500 cursor-pointer"
+              className={`${
+                isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill bg-white/75 border-white/20 text-slate-900 shadow-2xs font-bold'
+                  : 'bg-slate-50 border border-slate-200 text-slate-700'
+              } py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border`}
             >
               <option value="all">📌 {t.filterAllStatuses}</option>
               <option value="pending">Pending</option>
@@ -955,7 +1005,9 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               }}
               className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 border cursor-pointer active:scale-95 ${
                 showWorkloadChart
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                  ? (isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-indigo-600 text-white border-indigo-600 shadow-xs')
+                  : isGlassTheme(currentTheme)
+                  ? 'apple-glass-button text-slate-800'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
               }`}
               title="Toggle Weekly Workload Balance Chart"
@@ -971,7 +1023,11 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   soundFX.playPop();
                   onOpenAIAssign();
                 }}
-                className="px-3 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
+                className={`px-3 py-2 rounded-xl text-xs font-bold ${
+                  isGlassTheme(currentTheme)
+                    ? 'apple-glass-button-primary'
+                    : (isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-indigo-600 hover:bg-indigo-700 text-white')
+                } shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95`}
                 title="AI Auto-Assign Chores"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -986,7 +1042,11 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   soundFX.playPop();
                   onOpenGoogleCalendar();
                 }}
-                className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors flex items-center gap-1 shrink-0 cursor-pointer active:scale-95"
+                className={`px-3 py-2 rounded-xl text-xs font-bold ${
+                  isGlassTheme(currentTheme)
+                    ? 'apple-glass-button text-slate-800'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                } border transition-colors flex items-center gap-1 shrink-0 cursor-pointer active:scale-95`}
                 title="Google Calendar Sync"
               >
                 <span>📅</span>
@@ -1011,24 +1071,37 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         />
       )}
 
-      {/* Chore Section Header with Contextual Action (Mobile & Desktop) */}
-      <div className="flex items-center justify-between gap-2 px-1 pt-1">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-black text-slate-800 tracking-tight">
-            {selectedMemberObj ? `${selectedMemberObj.name}'s Chores` : 'Scheduled Chores'}
-          </h2>
-          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700">
-            {filtered.length}
-          </span>
+      {/* Scheduled Chores Prominent Glass Section Header Bar (Mobile & Desktop) */}
+      <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-dock p-3 sm:p-4 rounded-2xl border border-white/20' : 'bg-white/40 p-3 sm:p-4 rounded-2xl border border-slate-200/80'} flex flex-wrap items-center justify-between gap-3 shadow-2xs transition-all`}>
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <div className={`w-8 h-8 rounded-xl ${isGlassTheme(currentTheme) ? 'bg-white/40 text-sky-600 shadow-2xs border border-white/20' : 'bg-slate-100 text-slate-700'} flex items-center justify-center font-bold text-sm shrink-0`}>
+            📋
+          </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight truncate">
+              {selectedMemberObj ? `${selectedMemberObj.name}'s Chores` : <><span className="hidden sm:inline">Scheduled Chores</span><span className="sm:hidden">Chores</span></>}
+            </h2>
+            <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full shrink-0 ${
+              isGlassTheme(currentTheme)
+                ? 'apple-glass-pill bg-white/90 text-sky-950 border border-white/20 shadow-2xs'
+                : 'bg-slate-200/80 text-slate-700'
+            }`}>
+              {filtered.length}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
           {/* Desktop/Tablet Layout Toggle */}
-          <div className="hidden sm:flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shadow-2xs">
+          <div className={`hidden sm:flex items-center ${isGlassTheme(currentTheme) ? 'apple-glass-pill' : 'bg-slate-100 border-slate-200'} p-0.5 rounded-xl border shadow-2xs`}>
             <button
               onClick={() => handleToggleViewMode('list')}
               className={`p-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1 cursor-pointer ${
-                effectiveViewMode === 'list' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                effectiveViewMode === 'list' 
+                  ? isGlassTheme(currentTheme)
+                    ? 'apple-glass-pill bg-white/95 text-slate-950 font-black shadow-xs border-white/20'
+                    : 'bg-white text-slate-900 shadow-2xs' 
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
               title="List View"
             >
@@ -1038,7 +1111,11 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             <button
               onClick={() => handleToggleViewMode('grid')}
               className={`p-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1 cursor-pointer ${
-                effectiveViewMode === 'grid' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                effectiveViewMode === 'grid' 
+                  ? isGlassTheme(currentTheme)
+                    ? 'apple-glass-pill bg-white/95 text-slate-950 font-black shadow-xs border-white/20'
+                    : 'bg-white text-slate-900 shadow-2xs' 
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
               title="Compact Tiles View"
             >
@@ -1055,7 +1132,9 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 soundFX.playPop();
                 onOpenNewChore();
               }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} shadow-xs transition-all active:scale-95 cursor-pointer min-h-[34px]`}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black ${
+                isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : `${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover}`
+              } shadow-xs transition-all active:scale-95 cursor-pointer min-h-[36px]`}
               title="Create New Chore"
             >
               <Plus className="w-4 h-4" />
@@ -1067,14 +1146,14 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
 
       {/* Chore Cards Grid */}
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 sm:p-12 text-center">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-slate-100 mx-auto flex items-center justify-center text-3xl mb-3">
+        <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-dashed border-slate-300'} p-8 sm:p-12 text-center`}>
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-slate-100/80 mx-auto flex items-center justify-center text-3xl mb-3">
             🎉
           </div>
           <h3 className="text-base font-bold text-slate-900 mb-1">
             {t.noChoresFound}
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+          <p className="text-xs text-slate-600 max-w-sm mx-auto mb-4">
             {scheduledChores.length === 0 
               ? t.allChoresDoneSubtitle 
               : t.addCustomChore}
@@ -1093,28 +1172,106 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           )}
         </div>
       ) : (
-        <div className={
-          effectiveViewMode === 'grid' 
-            ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3" 
-            : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
-        }>
-          {sortedFiltered.map(({ chore, log, assignee }) => (
-            <ChoreCard
-              key={`${chore.id}_${currentDateStr}`}
-              chore={chore}
-              log={log}
-              assignee={assignee}
-              isMomMode={isMomMode}
-              language={language}
-              currentTheme={currentTheme}
-              badgeStyle={badgeStyle}
-              viewMode={effectiveViewMode}
-              onMarkComplete={onMarkComplete}
-              onOpenInspect={onOpenInspect}
-              onQuickApprove={onQuickApprove}
-              onEditChore={onEditChore}
-            />
-          ))}
+        <div className="space-y-6">
+          {(() => {
+            const timeGroups = [
+              { id: 'morning', label: 'Morning Routines', emoji: '🌅', timeRange: '8:00 AM' },
+              { id: 'afternoon', label: 'Afternoon Chores', emoji: '☀️', timeRange: '12:00 PM' },
+              { id: 'evening', label: 'Evening Tasks', emoji: '🌆', timeRange: '5:00 PM' },
+              { id: 'bedtime', label: 'Bedtime & Night', emoji: '🌙', timeRange: '8:00 PM' },
+              { id: 'anytime', label: 'Anytime Today', emoji: '⭐', timeRange: 'Flexible' },
+            ];
+
+            // If a specific time of day is selected (and not 'all'), show just that group
+            const visibleGroups = selectedTimeFilter === 'all'
+              ? timeGroups
+              : timeGroups.filter(g => g.id === selectedTimeFilter);
+
+            // Collect chores into their respective time groups
+            const groupedChores = visibleGroups.map(group => {
+              const items = sortedFiltered.filter(item => {
+                const tod = item.chore.timeOfDay || 'anytime';
+                return tod === group.id;
+              });
+              return { ...group, items };
+            }).filter(g => g.items.length > 0);
+
+            // Fallback if no specific groups matched (or any leftover items)
+            const matchedChoreIds = new Set(groupedChores.flatMap(g => g.items.map(i => i.chore.id)));
+            const unassignedItems = sortedFiltered.filter(i => !matchedChoreIds.has(i.chore.id));
+            if (unassignedItems.length > 0) {
+              groupedChores.push({
+                id: 'other',
+                label: 'Other Household Routines',
+                emoji: '📋',
+                timeRange: 'Daily',
+                items: unassignedItems,
+              });
+            }
+
+            return groupedChores.map((group) => {
+              const totalGroupPoints = group.items.reduce((sum, item) => sum + (item.chore.defaultPoints || 0), 0);
+              const completedCount = group.items.filter(item => item.log?.status === 'approved').length;
+
+              return (
+                <div key={group.id} className="space-y-3">
+                  {/* Apple VisionOS Frosted Glass Section Header Band */}
+                  <div className={`flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl ${
+                    isGlassTheme(currentTheme) 
+                      ? 'apple-glass-pill border-white/20 shadow-xs' 
+                      : 'bg-slate-100/90 text-slate-900 border border-slate-200/80 shadow-2xs'
+                  }`}>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="text-base sm:text-lg shrink-0">{group.emoji}</span>
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
+                        <span className="text-xs sm:text-sm font-black text-slate-900 tracking-tight truncate">
+                          {group.label}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-500 bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded-full shrink-0">
+                          {group.timeRange}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 ml-auto">
+                      <span className="text-[11px] font-extrabold text-slate-600 hidden sm:inline">
+                        {completedCount}/{group.items.length} done
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-black text-amber-900 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-200/80 shadow-2xs">
+                        <span>⭐</span>
+                        <span>+{totalGroupPoints} pts</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Chore Cards Grid */}
+                  <div className={
+                    effectiveViewMode === 'grid' 
+                      ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3" 
+                      : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
+                  }>
+                    {group.items.map(({ chore, log, assignee }) => (
+                      <ChoreCard
+                        key={`${chore.id}_${currentDateStr}`}
+                        chore={chore}
+                        log={log}
+                        assignee={assignee}
+                        isMomMode={isMomMode}
+                        language={language}
+                        currentTheme={currentTheme}
+                        badgeStyle={badgeStyle}
+                        viewMode={effectiveViewMode}
+                        onMarkComplete={onMarkComplete}
+                        onOpenInspect={onOpenInspect}
+                        onQuickApprove={onQuickApprove}
+                        onEditChore={onEditChore}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       )}
     </div>

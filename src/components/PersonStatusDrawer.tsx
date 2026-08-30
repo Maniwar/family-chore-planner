@@ -62,7 +62,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
     >
       <div
         style={sheetStyle}
-        className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-200/90 max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-200 safe-area-pb"
+        className={`w-full max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-200 safe-area-pb ${isGlassTheme(currentTheme) ? "apple-glass-panel border-white/30" : "bg-white border-slate-200/90"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Interactive Grabber Touch-Bar (Click, Drag, or Tap to Dismiss) */}
@@ -182,7 +182,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                 return (
                   <div
                     key={idx}
-                    className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:border-slate-300 transition-all space-y-3"
+                    className={`rounded-2xl border p-4 shadow-2xs transition-all space-y-3 ${isGlassTheme(currentTheme) ? "apple-glass-card border-white/20 hover:border-white/40" : "bg-white border-slate-200/90 hover:border-slate-300"}`}
                   >
                     {/* Top Meta Header: Status Badge + Due Date on Left, Points on Right */}
                     <div className="flex items-center justify-between gap-2">

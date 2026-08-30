@@ -24,7 +24,7 @@ import { HouseholdMember, Chore, HouseholdInfo } from '../types';
 import { getMemberEffectiveAge } from '../utils/age';
 import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 
 interface FamilyMembersViewProps {
   members: HouseholdMember[];
@@ -85,7 +85,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
               soundFX.playPop();
               onOpenNewMember();
             }}
-            className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} shadow-2xs transition-all active:scale-95 cursor-pointer min-h-[44px] shrink-0 self-start sm:self-auto`}
+            className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-95 cursor-pointer min-h-[44px] shrink-0 self-start sm:self-auto ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : `${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover}`}`}
           >
             <Plus className="w-4 h-4 text-emerald-400" />
             <span>Add Member</span>
@@ -94,7 +94,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
       </div>
 
       {/* Household Hub Hero Card (Apple Inset Style with Zero Text Overlaps) */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden transition-all">
+      <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-3xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200/90'} shadow-xs overflow-hidden transition-all`}>
         {/* Cover Photo / Graphic Section */}
         {householdInfo.housePhotoUrl ? (
           <div className="relative h-44 sm:h-56 w-full bg-slate-900 overflow-hidden">
@@ -231,7 +231,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
           return (
             <div
               key={member.id}
-              className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between relative overflow-hidden"
+              className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200/90'} p-4 sm:p-5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between relative overflow-hidden`}
             >
               <div>
                 {/* Header: Photo / Avatar, Name, Role, Age & Mom Controls */}
@@ -342,8 +342,8 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         weeklyProgress >= 100
-                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
-                          : 'bg-gradient-to-r from-amber-400 to-rose-500'
+                          ? (isGlassTheme(currentTheme) ? 'bg-emerald-500/20' : 'bg-gradient-to-r from-emerald-500 to-teal-500')
+                          : (isGlassTheme(currentTheme) ? 'bg-rose-500/20' : 'bg-gradient-to-r from-amber-400 to-rose-500')
                       }`}
                       style={{ width: `${weeklyProgress}%` }}
                     />
@@ -436,7 +436,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                   </div>
                   <button
                     onClick={() => handleGiveBonus(member.id)}
-                    className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 min-h-[38px]"
+                    className={`w-full py-2 rounded-xl active:scale-95 font-bold text-xs shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 min-h-[38px] ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
                   >
                     <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
                     <span>Send +{bonusAmount} Points</span>

@@ -21,7 +21,7 @@ import { formatDisplayDate, formatTimeDisplay } from '../utils/storage';
 import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getCategoryShortDisplay } from '../utils/i18n';
 import { Avatar } from './Avatar';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { CategoryBadge, StarPointsBadge, BadgeStyle } from './CategoryBadge';
 
 interface InspectionQueueViewProps {
@@ -202,7 +202,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
     <div className="space-y-4 sm:space-y-5 max-w-4xl mx-auto pb-10">
       
       {/* 1. APPLE INSET HERO & HEADER (Information Architecture) */}
-      <div className="bg-gradient-to-br from-amber-500/10 via-rose-500/5 to-slate-100 dark:from-amber-950/30 dark:to-slate-900 rounded-3xl border border-amber-200/70 dark:border-slate-800 p-4 sm:p-6 shadow-2xs">
+      <div className={`rounded-3xl p-4 sm:p-6 shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-gradient-to-br from-amber-500/10 via-rose-500/5 to-slate-100 dark:from-amber-950/30 dark:to-slate-900 border border-amber-200/70 dark:border-slate-800'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -222,7 +222,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                     {pendingItems.length > 0 ? `${pendingItems.length} Waiting for Review` : 'All Clean & Verified ✨'}
                   </span>
                   {pendingItems.length > 0 && (
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                    <span className={`text-xs font-bold ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'}`}>
                       • {totalPendingPoints} pts pending
                     </span>
                   )}
@@ -232,7 +232,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
           </div>
 
           {/* Top iOS Segmented Controller (Queue / History) */}
-          <div className="flex items-center bg-slate-200/90 dark:bg-slate-800 p-1 rounded-2xl shrink-0 self-start sm:self-auto border border-slate-300/60 dark:border-slate-700 shadow-2xs">
+          <div className={`flex items-center p-1 rounded-2xl shrink-0 self-start sm:self-auto border shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-pill border-white/20' : 'bg-slate-200/90 dark:bg-slate-800 border-slate-300/60 dark:border-slate-700'}`}>
             <button
               onClick={() => {
                 soundFX.playPop();
@@ -240,7 +240,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
               }}
               className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
                 activeTab === 'queue'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                  ? (isGlassTheme(currentTheme) ? 'bg-white/40 text-slate-900 shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs')
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -264,7 +264,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
               }}
               className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
                 activeTab === 'history'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                  ? (isGlassTheme(currentTheme) ? 'bg-white/40 text-slate-900 shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs')
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -285,7 +285,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
         <div className="space-y-3.5">
           
           {/* Helper Filter Carousel & Quick Batch Action Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
+          <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white dark:bg-slate-900'} p-2.5 sm:p-3 rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200/90 dark:border-slate-800'} shadow-2xs`}>
             
             {/* Helper Horizontal Pills Carousel */}
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 -mx-0.5 px-0.5">
@@ -301,7 +301,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all min-h-[40px] flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 active:scale-95 ${
                   selectedMemberFilter === 'all'
                     ? `${theme.primaryBg} ${theme.primaryText} shadow-2xs font-extrabold`
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/80'
+                    : (isGlassTheme(currentTheme) ? 'bg-white/20 text-slate-800 hover:bg-white/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/80')
                 }`}
               >
                 <span>All Helpers</span>
@@ -327,7 +327,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 min-h-[40px] cursor-pointer whitespace-nowrap shrink-0 active:scale-95 ${
                       isSelected
                         ? `${theme.primaryBg} ${theme.primaryText} shadow-2xs font-extrabold`
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/80'
+                        : (isGlassTheme(currentTheme) ? 'bg-white/20 text-slate-800 hover:bg-white/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/80')
                     }`}
                   >
                     <Avatar
@@ -354,7 +354,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
             {filteredPending.length > 0 && (
               <button
                 onClick={handleBatchApprove}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-2xs transition-all cursor-pointer min-h-[40px] shrink-0 self-stretch sm:self-auto"
+                className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black shadow-2xs transition-all cursor-pointer min-h-[40px] shrink-0 self-stretch sm:self-auto active:scale-95 ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                 title="Quick approve all waiting chores with 5-star quality"
               >
                 <ThumbsUp className="w-3.5 h-3.5 text-white" />
@@ -365,14 +365,14 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
 
           {/* Empty State */}
           {filteredPending.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center shadow-xs">
+            <div className={`rounded-3xl border p-8 sm:p-12 text-center shadow-xs ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
               <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 mx-auto flex items-center justify-center text-3xl mb-3 shadow-2xs animate-bounce">
                 ✨
               </div>
               <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">
                 All Caught Up, Mom!
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+              <p className={`text-xs sm:text-sm ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} max-w-md mx-auto leading-relaxed`}>
                 There are no completed chores waiting for inspection in this filter. Check back once helpers finish and submit their tasks!
               </p>
             </div>
@@ -403,13 +403,13 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                       className={`absolute inset-0 flex items-center justify-between px-5 font-black text-xs transition-colors duration-200 rounded-3xl ${
                         isSwipeRight
                           ? isThresholdMetRight 
-                            ? 'bg-emerald-600 text-white' 
-                            : 'bg-emerald-500 text-white'
+                            ? 'bg-emerald-600 text-white z-0' 
+                            : 'bg-emerald-500 text-white z-0'
                           : isSwipeLeft
                           ? isThresholdMetLeft 
-                            ? 'bg-amber-600 text-white' 
-                            : 'bg-amber-500 text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                            ? 'bg-amber-600 text-white z-0' 
+                            : 'bg-amber-500 text-white z-0'
+                          : 'bg-transparent pointer-events-none opacity-0'
                       }`}
                     >
                       {/* Left side: Swipe Right to Pass 5-star */}
@@ -446,7 +446,11 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                         transform: `translateX(${currentOffset}px)`,
                         transition: isSwipingThis ? 'none' : 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.15)',
                       }}
-                      className="relative z-10 bg-white dark:bg-slate-900 rounded-3xl border border-amber-300/80 dark:border-amber-900/60 p-4 sm:p-5 shadow-sm transition-shadow hover:shadow-md flex flex-col justify-between"
+                      className={`relative z-10 ${
+                        isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg
+                      } rounded-3xl border ${
+                        isGlassTheme(currentTheme) ? 'border-white/20' : 'border-amber-300/80 dark:border-amber-900/60'
+                      } p-4 sm:p-5 shadow-sm transition-shadow hover:shadow-md flex flex-col justify-between`}
                     >
                       <div>
                         {/* Top Meta Strip: Helper, Date, Category & Base Points */}
@@ -464,7 +468,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                               <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white block leading-tight truncate">
                                 {member.name}
                               </span>
-                              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                              <span className={`text-[11px] ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} font-medium flex items-center gap-1`}>
                                 <Clock className="w-3 h-3 text-slate-400" />
                                 <span>{formatDisplayDate(log.date)}</span>
                               </span>
@@ -484,7 +488,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                             {chore.title}
                           </h3>
                           {chore.description && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                            <p className={`text-xs ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} mt-0.5 leading-relaxed`}>
                               {chore.description}
                             </p>
                           )}
@@ -507,7 +511,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
 
                         {/* Quality Checklist Summary & Accordion */}
                         {checklistTotal > 0 && (
-                          <div className="mb-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-3 text-xs">
+                          <div className={`mb-3 rounded-2xl border p-3 text-xs ${isGlassTheme(currentTheme) ? 'bg-white/20 border-white/40' : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/80'}`}>
                             <button
                               onClick={() => toggleChecklistExpanded(log.id)}
                               className="w-full flex items-center justify-between font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer min-h-[32px]"
@@ -564,7 +568,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                               soundFX.playPop();
                               onOpenInspect(chore, log);
                             }}
-                            className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-black bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                            className={`flex-1 sm:flex-initial min-h-[44px] px-4 py-2.5 rounded-2xl text-xs font-black active:scale-95 shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-amber-500 hover:bg-amber-600 text-white'}`}
                           >
                             <Sparkles className="w-4 h-4 text-white" />
                             <span>Inspect & Grade</span>
@@ -575,7 +579,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                               soundFX.playStarChime(5);
                               onQuickApprove(chore.id, log.id);
                             }}
-                            className="flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 rounded-2xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                            className={`flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 rounded-2xl text-xs font-black active:scale-95 shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                             title="Instant 5-star approval"
                           >
                             <CheckCircle2 className="w-4 h-4 text-white" />
@@ -594,15 +598,15 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
 
       {/* 3. HISTORY TAB CONTENT (Apple Inset Table View) */}
       {activeTab === 'history' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-          <div className="px-5 py-4 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className={`rounded-3xl border shadow-xs overflow-hidden ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
+          <div className={`px-5 py-4 flex items-center justify-between border-b ${isGlassTheme(currentTheme) ? 'bg-white/10 border-white/30' : 'bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-800'}`}>
             <div className="flex items-center gap-2">
               <History className="w-4 h-4 text-slate-500" />
               <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                 Recent Quality Inspections & Grades
               </span>
             </div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">
+            <span className={`text-xs ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} font-bold`}>
               {recentApprovedLogs.length} Reviewed
             </span>
           </div>
@@ -634,7 +638,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                           <CategoryBadge category={chore.category} size="xs" style={badgeStyle} />
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        <div className={`flex items-center gap-2 text-xs ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} font-medium`}>
                           <span>{member.name}</span>
                           <span>•</span>
                           <span>{formatDisplayDate(log.date)}</span>

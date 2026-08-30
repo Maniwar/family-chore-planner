@@ -13,7 +13,9 @@ export type ThemePreset =
   | 'midnight' 
   | 'candy' 
   | 'citrus'
-  | 'sapphire';
+  | 'sapphire'
+  | 'frosted_glass'
+  | 'crystal_ice';
 
 export interface ThemeConfig {
   id: ThemePreset;
@@ -556,4 +558,109 @@ export const THEMES: Record<ThemePreset, ThemeConfig> = {
     heroBannerBorder: 'border-indigo-400/30',
     heroBannerGlow: 'shadow-indigo-600/20',
   },
+
+  // 11. Frosted Glass UI & Pure Refraction (Crystal frosted glass, ambient prism refraction, modern Apple-style glassmorphism)
+  frosted_glass: {
+    id: 'frosted_glass',
+    name: 'Frosted Glass UI',
+    emoji: '🫧',
+    tagline: 'Luminous frosted glass, specular highlights & crystal depth',
+    isDark: false,
+    appBgClass: 'bg-gradient-to-br from-indigo-50 via-pink-50 to-sky-100 text-slate-900',
+    appTextClass: 'text-slate-900',
+    ambientGlow: {
+      orb1: 'bg-gradient-to-tr from-blue-600 to-indigo-500 opacity-60',
+      orb2: 'bg-gradient-to-tr from-purple-600 to-pink-500 opacity-55',
+      orb3: 'bg-gradient-to-tr from-cyan-400 to-sky-500 opacity-60',
+    },
+    headerBg: 'apple-glass-header',
+    headerBorder: 'border-white/80',
+    headerLogoBg: 'bg-gradient-to-br from-sky-500 to-blue-600 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_4px_16px_rgba(14,165,233,0.25)]',
+    headerLogoText: 'text-white font-black',
+    headerSubtitleText: 'text-slate-700 font-bold',
+    headerAccentGlow: 'from-sky-400/20 via-indigo-400/10 to-transparent',
+    navBg: 'apple-glass-tabbar',
+    navBorder: 'border-white/80',
+    navActiveBg: 'bg-white/90 text-sky-950 shadow-sm border border-white/90 font-black',
+    navActiveText: 'text-sky-950 font-black',
+    navInactiveText: 'text-slate-600 hover:text-slate-950',
+    navHoverBg: 'hover:bg-white/40',
+    navIndicator: 'bg-sky-500',
+    primaryBg: 'bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 shadow-md text-white font-bold',
+    primaryHover: 'hover:from-sky-600 hover:to-blue-700',
+    primaryText: 'text-white font-extrabold',
+    primaryGradient: 'bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500',
+    accentRing: 'ring-sky-400/60',
+    badgeBg: 'bg-white/85 backdrop-blur-md border-white/90 text-sky-950 shadow-2xs',
+    badgeText: 'text-sky-950 font-black',
+    badgeBorder: 'border-white/80',
+    cardBg: 'apple-glass-card',
+    cardBorder: 'border-white/80',
+    cardHoverBorder: 'hover:border-white hover:shadow-md',
+    cardHeaderBg: 'bg-white/40 backdrop-blur-xs',
+    cardText: 'text-slate-950 font-black',
+    cardSubtext: 'text-slate-600 font-medium',
+    cardMutedBg: 'bg-white/35',
+    heroBannerBg: 'bg-gradient-to-r from-sky-600/90 via-blue-600/90 to-indigo-600/90 backdrop-blur-xl shadow-lg border border-white/60',
+    heroBannerText: 'text-white',
+    heroBannerBorder: 'border-white/60',
+    heroBannerGlow: 'shadow-sky-500/25',
+  },
+
+  // 12. Glacial Ice & Polar Frost (Crisp subzero frost, icy aqua crystal, ultra glass specular gleam)
+  crystal_ice: {
+    id: 'crystal_ice',
+    name: 'Glacial Ice & Polar Frost',
+    emoji: '❄️',
+    tagline: 'Crisp frozen glacial ice, subzero frost & prismatic reflections',
+    isDark: false,
+    appBgClass: 'bg-gradient-to-br from-sky-100 via-cyan-50 to-blue-100 text-slate-950',
+    appTextClass: 'text-slate-950',
+    ambientGlow: {
+      orb1: 'bg-gradient-to-tr from-cyan-500 to-blue-600 opacity-60',
+      orb2: 'bg-gradient-to-tr from-teal-400 to-emerald-500 opacity-55',
+      orb3: 'bg-gradient-to-tr from-sky-500 to-indigo-600 opacity-60',
+    },
+    headerBg: 'apple-glass-header',
+    headerBorder: 'border-white/90',
+    headerLogoBg: 'bg-gradient-to-br from-cyan-500 to-teal-600 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.9),0_4px_16px_rgba(6,182,212,0.3)]',
+    headerLogoText: 'text-white font-black',
+    headerSubtitleText: 'text-cyan-950 font-bold',
+    headerAccentGlow: 'from-cyan-400/25 via-teal-400/15 to-transparent',
+    navBg: 'apple-glass-tabbar',
+    navBorder: 'border-white/90',
+    navActiveBg: 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-sm font-black',
+    navActiveText: 'text-white font-black',
+    navInactiveText: 'text-slate-700 hover:text-cyan-950',
+    navHoverBg: 'hover:bg-cyan-50/50',
+    navIndicator: 'bg-cyan-400',
+    primaryBg: 'bg-gradient-to-r from-cyan-500 via-teal-600 to-sky-600 shadow-md text-white font-bold',
+    primaryHover: 'hover:from-cyan-600 hover:to-teal-700',
+    primaryText: 'text-white font-extrabold',
+    primaryGradient: 'bg-gradient-to-r from-cyan-500 via-teal-500 to-sky-500',
+    accentRing: 'ring-cyan-400/70',
+    badgeBg: 'bg-sky-50/90 backdrop-blur-md border-cyan-200/90 text-cyan-950 shadow-2xs',
+    badgeText: 'text-cyan-950 font-black',
+    badgeBorder: 'border-cyan-200/80',
+    cardBg: 'apple-glass-card',
+    cardBorder: 'border-white/90',
+    cardHoverBorder: 'hover:border-cyan-300 hover:shadow-md',
+    cardHeaderBg: 'bg-cyan-50/40 backdrop-blur-xs',
+    cardText: 'text-slate-950 font-black',
+    cardSubtext: 'text-slate-600 font-medium',
+    cardMutedBg: 'bg-cyan-50/30',
+    heroBannerBg: 'bg-gradient-to-r from-cyan-600/90 via-teal-600/90 to-sky-600/90 backdrop-blur-xl shadow-lg border border-white/60',
+    heroBannerText: 'text-white',
+    heroBannerBorder: 'border-white/60',
+    heroBannerGlow: 'shadow-cyan-500/25',
+  },
+};
+
+/**
+ * Helper to determine if the active theme requires real glass & ice shader / transparency effects
+ */
+export const isGlassTheme = (themePreset?: string | ThemePreset | ThemeConfig | any): boolean => {
+  if (!themePreset) return false;
+  const id = typeof themePreset === 'string' ? themePreset : themePreset.id;
+  return id === 'frosted_glass' || id === 'crystal_ice';
 };

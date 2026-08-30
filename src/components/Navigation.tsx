@@ -15,7 +15,7 @@ import {
 import { ViewMode } from '../types';
 import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getTranslation } from '../utils/i18n';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 
 interface NavigationProps {
   currentView: ViewMode;
@@ -28,6 +28,7 @@ interface NavigationProps {
   isMomMode?: boolean;
   language?: SupportedLanguage;
   currentTheme?: ThemePreset;
+  dimmed?: boolean;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -41,6 +42,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   isMomMode = true,
   language = 'en',
   currentTheme = 'rose',
+  dimmed = false,
 }) => {
   const t = getTranslation(language);
   const theme = THEMES[currentTheme] || THEMES.rose;
@@ -148,7 +150,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <>
       {/* Desktop Navigation Header Bar */}
-      <div className={`${theme.navBg} border-b ${theme.navBorder} no-print hidden md:block sticky top-[57px] sm:top-[65px] z-20 shadow-2xs transition-colors duration-200 w-full`}>
+      <div className={`${theme.navBg} border-b ${theme.navBorder} no-print hidden md:block sticky top-[57px] sm:top-[65px] z-20 shadow-2xs transition-all duration-300 w-full ${dimmed ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
           <nav className="flex items-center space-x-1 sm:space-x-1.5 py-1.5 sm:py-2 overflow-x-auto scrollbar-none min-w-0" aria-label="Tabs">
             {desktopNavItems.map((item) => {
@@ -161,7 +163,11 @@ export const Navigation: React.FC<NavigationProps> = ({
                   onClick={() => handleSelect(item.id)}
                   className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-2 text-xs lg:text-sm font-bold rounded-xl transition-all whitespace-nowrap relative shrink-0 active:scale-95 cursor-pointer min-h-[42px] ${
                     isActive
-                      ? `${theme.navActiveBg} ${theme.navActiveText}`
+                      ? isGlassTheme(currentTheme)
+                        ? 'apple-glass-pill bg-white/95 text-slate-950 font-black shadow-md border-white/20'
+                        : `${theme.navActiveBg} ${theme.navActiveText}`
+                      : isGlassTheme(currentTheme)
+                      ? 'text-slate-700 hover:text-slate-950 hover:bg-white/40 border border-transparent'
                       : `${theme.navInactiveText} ${theme.navHoverBg}`
                   }`}
                 >
@@ -174,7 +180,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     </span>
                   )}
 
-                  {isActive && (
+                  {isActive && !isGlassTheme(currentTheme) && (
                     <div className={`absolute bottom-0 left-2 right-2 h-0.5 ${theme.navIndicator} rounded-full`} />
                   )}
                 </button>
@@ -188,7 +194,9 @@ export const Navigation: React.FC<NavigationProps> = ({
       <nav 
         id="ios-bottom-tab-bar"
         aria-label="Bottom Navigation Bar"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-lg px-2 pt-1 safe-area-pb select-none"
+        className={`md:hidden fixed bottom-0 left-0 right-0 z-30 ${
+          isGlassTheme(currentTheme) ? 'apple-glass-header backdrop-blur-2xl bg-white/80' : theme.navBg
+        } border-t ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.navBorder} shadow-lg px-2 pt-1 safe-area-pb select-none transition-all duration-200 ${dimmed ? 'opacity-30 pointer-events-none' : 'opacity-100 translate-y-0'}`}
       >
         <div className="flex items-center justify-around h-12">
           {iosMobileTabs.map((item) => {

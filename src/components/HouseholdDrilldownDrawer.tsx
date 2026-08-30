@@ -18,6 +18,7 @@ import { PersonStatusSummary } from '../utils/penaltyEngine';
 import { soundFX } from '../utils/audio';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
+import { ThemePreset, isGlassTheme } from '../utils/theme';
 
 interface HouseholdDrilldownDrawerProps {
   drilldownType: 'overdue' | 'review' | 'redo' | 'overview';
@@ -37,6 +38,7 @@ interface HouseholdDrilldownDrawerProps {
   setExtendTarget: (target: any) => void;
   setSelectedPersonSheet: (summary: PersonStatusSummary | null) => void;
   isMomMode: boolean;
+  currentTheme?: string | ThemePreset;
   onNavigateToInspection?: () => void;
   logs: ChoreAssignmentLog[];
   chores: Chore[];
@@ -66,6 +68,7 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
   setExtendTarget,
   setSelectedPersonSheet,
   isMomMode,
+  currentTheme,
   onNavigateToInspection,
   logs,
   chores,
@@ -80,12 +83,12 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
 
   return (
     <div 
-      className="fixed inset-0 z-[60] bg-slate-950/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+      className={`fixed inset-0 z-[60] ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-950/60 backdrop-blur-md'} flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200`}
       onClick={handleDismiss}
     >
       <div
         style={sheetStyle}
-        className="bg-white w-full max-w-xl rounded-t-[32px] sm:rounded-[28px] border-t sm:border border-slate-200/90 max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 duration-300 safe-area-pb"
+        className={`${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-white border-slate-200/90'} w-full max-w-xl rounded-t-[32px] sm:rounded-[28px] border-t sm:border max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 duration-300 safe-area-pb`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Interactive Grabber Touch Bar */}
@@ -93,7 +96,7 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
 
         {/* Modal Header */}
         <div 
-          className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0"
+          className={`px-5 py-3.5 border-b flex items-center justify-between shrink-0 ${isGlassTheme(currentTheme) ? 'border-white/40 bg-white/40 dark:bg-black/20 backdrop-blur-md' : 'border-slate-100 bg-slate-50/70'}`}
         >
           <div 
             className="flex items-center gap-2.5 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
@@ -242,7 +245,7 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
                               });
                             }
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black shadow-2xs cursor-pointer min-h-[38px] active:scale-95 transition-all"
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black shadow-2xs cursor-pointer min-h-[38px] active:scale-95 transition-all ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white'}`}
                         >
                           <Sparkles className="w-3.5 h-3.5" />
                           <span>Waive All ({filtered.length})</span>

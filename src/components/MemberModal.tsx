@@ -5,7 +5,7 @@ import { calculateAge, estimateBirthDateFromAge } from '../utils/age';
 import { processImageFile } from '../utils/imageUpload';
 import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
 
@@ -134,17 +134,17 @@ export const MemberModal: React.FC<MemberModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+      className={`fixed inset-0 z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4 ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-900/60 backdrop-blur-sm'}`}
       onClick={handleDismiss}
     >
       <div 
         id="family-member-modal"
         style={sheetStyle}
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 duration-200 max-h-[92vh] sm:max-h-[94vh] flex flex-col my-auto"
+        className={`rounded-t-3xl sm:rounded-3xl max-w-md w-full shadow-2xl border overflow-hidden animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 duration-200 max-h-[92vh] sm:max-h-[94vh] flex flex-col my-auto ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-white border-slate-200'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Interactive Grabber Touch-Bar (Tap to dismiss or drag down) */}
-        <div className={`${theme.primaryBg} shrink-0`}>
+        <div className={`${isGlassTheme(currentTheme) ? 'bg-transparent border-b border-white/20' : theme.primaryBg} shrink-0`}>
           <BottomSheetGrabber 
             dragHandleProps={dragHandleProps} 
             onClose={handleDismiss} 
@@ -154,7 +154,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
 
         {/* Header */}
         <div 
-          className={`${theme.primaryBg} px-4 py-3 sm:px-5 sm:py-3.5 text-white flex items-center justify-between shadow-xs shrink-0 cursor-grab active:cursor-grabbing select-none`}
+          className={`${isGlassTheme(currentTheme) ? 'bg-transparent text-slate-900 border-b border-white/20' : theme.primaryBg + ' text-white'} px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between shadow-xs shrink-0 cursor-grab active:cursor-grabbing select-none`}
           onTouchStart={dragHandleProps.onTouchStart}
           onPointerDown={dragHandleProps.onPointerDown}
         >
@@ -164,13 +164,13 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               emoji={avatarEmoji}
               name={name || 'Member'}
               size="md"
-              className="ring-2 ring-white/30 shrink-0"
+              className={`ring-2 ${isGlassTheme(currentTheme) ? 'ring-slate-900/10' : 'ring-white/30'} shrink-0`}
             />
             <div className="min-w-0">
               <h2 className="text-base sm:text-lg font-bold leading-tight truncate">
                 {memberToEdit ? 'Edit Family Member' : 'Add Family Member'}
               </h2>
-              <p className="text-xs text-white/80 truncate">
+              <p className={`text-xs ${isGlassTheme(currentTheme) ? 'text-slate-600' : 'text-white/80'} truncate`}>
                 Photo, avatar emoji, age & point goals
               </p>
             </div>
@@ -186,7 +186,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               handleDismiss();
             }}
             aria-label="Close modal"
-            className="p-2 rounded-2xl text-white/80 hover:text-white hover:bg-white/20 active:bg-white/30 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer shrink-0 ml-2"
+            className={`p-2 rounded-2xl transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer shrink-0 ml-2 ${isGlassTheme(currentTheme) ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-900/10 active:bg-slate-900/20' : 'text-white/80 hover:text-white hover:bg-white/20 active:bg-white/30'} transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer shrink-0 ml-2`}
           >
             <X className="w-5 h-5" />
           </button>
@@ -195,8 +195,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           
           {/* Profile Picture Upload Section */}
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+          <div className={`p-3.5 rounded-2xl border space-y-3 shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-slate-50 border-slate-200'}`}>
+            <label className={`block text-xs font-bold uppercase tracking-wider ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-700'}`}>
               Profile Picture / Photo
             </label>
             
@@ -255,7 +255,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
 
           {/* Avatar Emoji Selector (Used as fallback or companion) */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+            <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600'}`}>
               Choose Avatar Emoji
             </label>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -270,7 +270,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                   className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-base sm:text-lg flex items-center justify-center transition-all cursor-pointer ${
                     avatarEmoji === emoji
                       ? `${theme.badgeBg} border-2 ${theme.badgeBorder} scale-105 shadow-xs`
-                      : 'bg-slate-100 hover:bg-slate-200 border border-slate-200'
+                      : isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md hover:bg-white/20 border-white/20 text-slate-900' : 'bg-slate-100 hover:bg-slate-200 border border-slate-200'
                   }`}
                 >
                   {emoji}
@@ -281,7 +281,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
 
           {/* Member Name */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+            <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600'}`}>
               Name *
             </label>
             <input
@@ -290,20 +290,20 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               placeholder="e.g. Lucas"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 ${theme.accentRing} font-medium`}
+              className={`w-full text-sm p-3 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 placeholder:text-slate-500 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
             />
           </div>
 
           {/* Role, Birth Date & Age */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600'}`}>
                 Family Role
               </label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as MemberRole)}
-                className={`w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white font-medium focus:ring-2 ${theme.accentRing}`}
+                className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
               >
                 <option value="child">Child</option>
                 <option value="teen">Teen / Young Adult</option>
@@ -313,19 +313,19 @@ export const MemberModal: React.FC<MemberModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600'}`}>
                 Birth Date
               </label>
               <input
                 type="date"
                 value={birthDate}
                 onChange={(e) => handleBirthDateChange(e.target.value)}
-                className={`w-full text-xs p-2.5 rounded-xl border border-slate-300 font-medium focus:ring-2 ${theme.accentRing}`}
+                className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600'}`}>
                 Age {age !== undefined && <span className="text-emerald-700 font-bold">({age}y)</span>}
               </label>
               <input
@@ -335,17 +335,17 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                 placeholder="e.g. 7"
                 value={age ?? ''}
                 onChange={(e) => handleAgeChange(e.target.value ? Number(e.target.value) : undefined)}
-                className={`w-full text-xs p-2.5 rounded-xl border border-slate-300 font-medium focus:ring-2 ${theme.accentRing}`}
+                className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
               />
             </div>
           </div>
-          <p className="text-[11px] text-slate-500 italic">
+          <p className={`text-[11px] italic ${isGlassTheme(currentTheme) ? 'text-slate-700' : 'text-slate-500 dark:text-slate-400'}`}>
             🌱 Ages calculate dynamically from birth dates as calendar years progress.
           </p>
 
           {/* Weekly Target Points */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+            <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600'}`}>
               Weekly Target Points Goal
             </label>
             <input
@@ -354,7 +354,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               max="500"
               value={targetWeeklyPoints}
               onChange={(e) => setTargetWeeklyPoints(Number(e.target.value))}
-              className={`w-full text-xs p-2.5 rounded-xl border border-slate-300 font-bold text-amber-900 focus:ring-2 ${theme.accentRing}`}
+              className={`w-full text-xs p-2.5 rounded-xl border font-bold focus:ring-2 ${theme.accentRing} ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : 'border-slate-300 text-amber-900 bg-white placeholder:text-slate-400'}`}
             />
             <p className="text-[11px] text-slate-400 mt-1">
               Target for earning full weekly allowance or goal rewards.

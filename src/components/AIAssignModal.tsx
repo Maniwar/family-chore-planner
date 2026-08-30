@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { HouseholdMember, Chore, AIAssignmentResult, AIAssignmentSuggestion, ChoreCategory } from '../types';
 import { getMemberEffectiveAge } from '../utils/age';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { soundFX } from '../utils/audio';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
@@ -298,19 +298,19 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+      className={`fixed inset-0 z-50 overflow-y-auto ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-950/60 backdrop-blur-md'} flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200`}
       onClick={handleDismiss}
     >
       <div 
         style={sheetStyle}
-        className="relative w-full max-w-2xl bg-white rounded-t-[32px] sm:rounded-[28px] border-t sm:border border-slate-200/90 shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col z-10 animate-in slide-in-from-bottom-6 duration-300 safe-area-pb"
+        className={`relative w-full max-w-2xl rounded-t-[32px] sm:rounded-[28px] border-t sm:border shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[90vh] flex flex-col z-10 animate-in slide-in-from-bottom-6 duration-300 safe-area-pb ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-white dark:bg-slate-800 dark:bg-slate-900 border-slate-200 dark:border-slate-700/90 dark:border-slate-800'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Interactive Grabber Touch Bar */}
         <BottomSheetGrabber dragHandleProps={dragHandleProps} onClose={handleDismiss} />
 
         {/* Navigation Bar Header */}
-        <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 backdrop-blur-sm shrink-0">
+        <div className={`px-5 py-3 border-b flex items-center justify-between shrink-0 ${isGlassTheme(currentTheme) ? 'bg-transparent border-white/20' : 'bg-slate-50 dark:bg-slate-900/70 border-slate-100 dark:border-slate-700 backdrop-blur-sm'}`}>
           <div 
             className="flex items-center space-x-2.5 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
             onTouchStart={dragHandleProps.onTouchStart}
@@ -320,10 +320,10 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
               <Sparkles className="w-4 h-4 text-amber-300" />
             </div>
             <div className="min-w-0 truncate">
-              <h2 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight truncate">
+              <h2 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight truncate">
                 AI Smart Assistant
               </h2>
-              <p className="text-[11px] text-slate-500 font-medium truncate">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium truncate">
                 Gemini 3.7 Flash · Age & Workload Intelligence
               </p>
             </div>
@@ -339,7 +339,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
               soundFX.playPop();
               handleDismiss();
             }}
-            className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer min-h-[36px] min-w-[36px] shrink-0 z-20"
+            className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer min-h-[36px] min-w-[36px] shrink-0 z-20"
             title="Close Assistant"
             aria-label="Close Assistant"
           >
@@ -348,14 +348,14 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
         </div>
 
         {/* Apple HIG Segmented Control */}
-        <div className="px-4 pt-3 pb-2 bg-white shrink-0">
-          <div className="bg-slate-100/90 p-1 rounded-xl flex items-center gap-1 border border-slate-200/70 shadow-2xs">
+        <div className={`px-4 pt-3 pb-2 shrink-0 ${isGlassTheme(currentTheme) ? 'bg-transparent' : 'bg-white dark:bg-slate-800'}`}>
+          <div className="bg-slate-100/90 p-1 rounded-xl flex items-center gap-1 border border-slate-200 dark:border-slate-700/70 shadow-2xs">
             <button
               onClick={() => { soundFX.playPop(); setActiveTab('assigner'); }}
               className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all min-h-[36px] cursor-pointer ${
                 activeTab === 'assigner'
-                  ? 'bg-white text-slate-900 shadow-2xs font-black'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs font-black'
+                  : 'text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:text-white'
               }`}
             >
               <Brain className="w-3.5 h-3.5 text-purple-600" />
@@ -366,8 +366,8 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
               onClick={() => { soundFX.playPop(); setActiveTab('creator'); }}
               className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all min-h-[36px] cursor-pointer ${
                 activeTab === 'creator'
-                  ? 'bg-white text-slate-900 shadow-2xs font-black'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs font-black'
+                  : 'text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:text-white'
               }`}
             >
               <Wand2 className="w-3.5 h-3.5 text-indigo-600" />
@@ -378,8 +378,8 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
               onClick={() => { soundFX.playPop(); setActiveTab('coach'); }}
               className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all min-h-[36px] cursor-pointer ${
                 activeTab === 'coach'
-                  ? 'bg-white text-slate-900 shadow-2xs font-black'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs font-black'
+                  : 'text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:text-white'
               }`}
             >
               <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
@@ -395,9 +395,9 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
           {activeTab === 'assigner' && (
             <div className="space-y-4">
               {/* Configuration Inset Card */}
-              <div className="bg-slate-50/90 rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 space-y-3.5 shadow-2xs">
+              <div className="bg-slate-50 dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-3.5 sm:p-4 space-y-3.5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     Assignment Rules & Balance Strategy
                   </span>
                   <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
@@ -413,7 +413,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                     <select
                       value={focusGoal}
                       onChange={(e) => setFocusGoal(e.target.value as any)}
-                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-purple-500 min-h-[44px]"
+                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-500 min-h-[44px]"
                     >
                       <option value="balanced_developmental">🌱 Balanced & Age-Appropriate</option>
                       <option value="skill_building">🚀 Skill Building & Growth</option>
@@ -428,7 +428,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                     <select
                       value={targetScope}
                       onChange={(e) => setTargetScope(e.target.value as any)}
-                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-purple-500 min-h-[44px]"
+                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-500 min-h-[44px]"
                     >
                       <option value="all">📋 Re-evaluate All Chores</option>
                       <option value="unassigned_only">🤝 Unassigned Chores Only</option>
@@ -436,7 +436,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
                     <input
                       type="checkbox"
@@ -450,7 +450,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                   <button
                     onClick={handleGenerateAssignments}
                     disabled={isLoading}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 min-h-[42px]"
+                    className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 min-h-[42px] ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
                   >
                     {isLoading ? (
                       <>
@@ -493,7 +493,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
 
                   {/* Header for Suggestions */}
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                       Recommended Chore Assignments ({aiResult.suggestions.length})
                     </span>
                     <div className="flex items-center gap-2">
@@ -506,7 +506,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                       <span className="text-slate-300">·</span>
                       <button
                         onClick={() => toggleSelectAll(false)}
-                        className="text-[11px] font-bold text-slate-500 hover:underline cursor-pointer"
+                        className="text-[11px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:underline cursor-pointer"
                       >
                         Deselect All
                       </button>
@@ -531,7 +531,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                           className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
                             isSelected
                               ? 'bg-purple-50/40 border-purple-300 shadow-2xs'
-                              : 'bg-white border-slate-200 opacity-60'
+                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-60'
                           }`}
                         >
                           <input
@@ -542,7 +542,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 mb-0.5">
-                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
                                 {suggestion.choreTitle}
                               </h4>
                               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
@@ -554,7 +554,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                               Assign to: <span className="font-extrabold">{member?.avatarEmoji} {suggestion.assignedMemberName}</span>
                             </p>
 
-                            <p className="text-[11px] text-slate-500 leading-tight">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 dark:text-slate-500 leading-tight">
                               {suggestion.reason}
                             </p>
                           </div>
@@ -567,7 +567,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                   <div className="pt-2">
                     <button
                       onClick={handleApply}
-                      className="w-full py-3 rounded-2xl text-xs sm:text-sm font-black bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md active:scale-98 transition-transform cursor-pointer flex items-center justify-center gap-2 min-h-[46px]"
+                      className={`w-full py-3 rounded-2xl text-xs sm:text-sm font-black shadow-md active:scale-98 transition-transform cursor-pointer flex items-center justify-center gap-2 min-h-[46px] ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>Apply Selected AI Assignments</span>
@@ -581,9 +581,9 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
           {/* TAB 2: AI CHORE CREATOR */}
           {activeTab === 'creator' && (
             <div className="space-y-4">
-              <div className="bg-slate-50/90 rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 space-y-3.5 shadow-2xs">
+              <div className="bg-slate-50 dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-3.5 sm:p-4 space-y-3.5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     Chore Generator Preferences
                   </span>
                   <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
@@ -600,7 +600,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                     value={creatorPrompt}
                     onChange={(e) => setCreatorPrompt(e.target.value)}
                     placeholder="e.g. Morning school prep, bathroom sanitizing, puppy care, car wash"
-                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 min-h-[44px]"
+                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 min-h-[44px]"
                   />
                 </div>
 
@@ -612,7 +612,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                     <select
                       value={creatorRoom}
                       onChange={(e) => setCreatorRoom(e.target.value)}
-                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 min-h-[44px]"
+                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 min-h-[44px]"
                     >
                       {roomsList.map(r => (
                         <option key={r} value={r}>{r}</option>
@@ -627,7 +627,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                     <select
                       value={creatorTargetMemberId}
                       onChange={(e) => setCreatorTargetMemberId(e.target.value)}
-                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 min-h-[44px]"
+                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 min-h-[44px]"
                     >
                       <option value="all">👨‍👩‍👧‍👦 General Family</option>
                       {members.map(m => (
@@ -642,7 +642,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                 <button
                   onClick={handleAIGenerateChores}
                   disabled={isGeneratingChores}
-                  className="w-full py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 min-h-[42px] flex items-center justify-center gap-1.5"
+                  className={`w-full py-2.5 rounded-xl text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 min-h-[42px] flex items-center justify-center gap-1.5 ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
                 >
                   {isGeneratingChores ? (
                     <>
@@ -668,7 +668,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
               {generatedChores.length > 0 && (
                 <div className="space-y-3 animate-in fade-in duration-200">
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                       Generated Chore Templates ({generatedChores.length})
                     </span>
                     <span className="text-[10px] font-bold text-indigo-600">
@@ -692,7 +692,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                           className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
                             isSelected
                               ? 'bg-indigo-50/40 border-indigo-300 shadow-2xs'
-                              : 'bg-white border-slate-200 opacity-60'
+                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-60'
                           }`}
                         >
                           <input
@@ -703,7 +703,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 mb-1">
-                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
                                 {chore.title}
                               </h4>
                               <div className="flex items-center gap-1.5 shrink-0">
@@ -716,11 +716,11 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                               </div>
                             </div>
 
-                            <p className="text-[11px] text-slate-600 mb-2">
+                            <p className="text-[11px] text-slate-600 dark:text-slate-300 mb-2">
                               {chore.description}
                             </p>
 
-                            <div className="bg-white/80 rounded-xl p-2 border border-slate-200/80 text-[10px] text-slate-500 space-y-1">
+                            <div className="bg-white dark:bg-slate-800/80 rounded-xl p-2 border border-slate-200 dark:border-slate-700/80 text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 space-y-1">
                               <p className="font-bold text-slate-700">Inspection Checklist:</p>
                               <ul className="list-disc pl-3.5 space-y-0.5">
                                 {chore.qualityChecklist.map((item, i) => (
@@ -736,7 +736,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
 
                   <button
                     onClick={handleApplyGeneratedChores}
-                    className="w-full py-3 rounded-2xl text-xs sm:text-sm font-black bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md active:scale-98 transition-transform cursor-pointer flex items-center justify-center gap-2 min-h-[46px]"
+                    className={`w-full py-3 rounded-2xl text-xs sm:text-sm font-black shadow-md active:scale-98 transition-transform cursor-pointer flex items-center justify-center gap-2 min-h-[46px] ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Selected Chores to Chore Library</span>
@@ -749,27 +749,27 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
           {/* TAB 3: FAMILY COACH */}
           {activeTab === 'coach' && (
             <div className="space-y-4">
-              <div className="bg-slate-50/90 rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 space-y-3 shadow-2xs">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
+              <div className="bg-slate-50 dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-3.5 sm:p-4 space-y-3 shadow-2xs">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
                   Ask the Household Coach
                 </span>
 
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => handleAskCoach("How do I motivate kids without complaining?")}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 active:scale-95 transition-all cursor-pointer"
+                    className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 border border-slate-200 dark:border-slate-700 active:scale-95 transition-all cursor-pointer"
                   >
                     💡 Motivate without nagging
                   </button>
                   <button
                     onClick={() => handleAskCoach("What chores are best for a 5 year old?")}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 active:scale-95 transition-all cursor-pointer"
+                    className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 border border-slate-200 dark:border-slate-700 active:scale-95 transition-all cursor-pointer"
                   >
                     👶 Chores for 5-yr-olds
                   </button>
                   <button
                     onClick={() => handleAskCoach("How should we handle chore redo inspections fairly?")}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 active:scale-95 transition-all cursor-pointer"
+                    className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 border border-slate-200 dark:border-slate-700 active:scale-95 transition-all cursor-pointer"
                   >
                     🔍 Fair Redo inspections
                   </button>
@@ -784,7 +784,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleAskCoach();
                     }}
-                    className="flex-1 text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-emerald-500 min-h-[44px]"
+                    className="flex-1 text-xs font-semibold p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 min-h-[44px]"
                   />
                   <button
                     onClick={() => handleAskCoach()}

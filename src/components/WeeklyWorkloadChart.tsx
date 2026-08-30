@@ -26,6 +26,7 @@ import {
 import { Chore, HouseholdMember } from '../types';
 import { getWeekDates, isChoreScheduledForDate, getChoreAssigneeForDate } from '../utils/storage';
 import { soundFX } from '../utils/audio';
+import { ThemePreset, isGlassTheme } from '../utils/theme';
 
 interface WeeklyWorkloadChartProps {
   chores: Chore[];
@@ -33,6 +34,7 @@ interface WeeklyWorkloadChartProps {
   centerDateStr: string;
   onSelectDate?: (dateStr: string) => void;
   showInsights?: boolean;
+  currentTheme?: ThemePreset;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -63,7 +65,10 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
   centerDateStr,
   onSelectDate,
   showInsights = true,
+  currentTheme = 'rose',
 }) => {
+  const isGlass = isGlassTheme(currentTheme);
+
   const [metricMode, setMetricMode] = useState<'count' | 'minutes'>('count');
   const [breakdownMode, setBreakdownMode] = useState<'total' | 'member' | 'category'>('total');
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
@@ -144,16 +149,16 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden transition-all">
+    <div className={`${isGlass ? 'apple-glass-card border-white/20' : 'bg-white border-slate-200/90'} rounded-3xl border shadow-xs overflow-hidden transition-all`}>
       {/* Card Header with Unified Action Row */}
-      <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3.5 bg-gradient-to-b from-slate-50/70 to-white">
+      <div className={`p-4 sm:p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3.5 ${isGlass ? '' : 'bg-gradient-to-b from-slate-50/70 to-white'}`}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-xs shrink-0">
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight">
+              <h3 className={`text-base sm:text-lg font-black tracking-tight leading-tight ${isGlass ? 'text-slate-900 dark:text-white' : 'text-slate-900'}`}>
                 Workload Distribution
               </h3>
               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
@@ -176,7 +181,7 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
         {/* Clean Segmented Controls */}
         <div className="flex items-center gap-2 flex-wrap self-stretch md:self-auto justify-between md:justify-end">
           {/* Metric Toggle: Count vs Time */}
-          <div className="inline-flex rounded-xl p-1 bg-slate-100 border border-slate-200 text-xs">
+          <div className={`inline-flex rounded-xl p-1 text-xs border ${isGlass ? 'bg-white/20 border-white/40' : 'bg-slate-100 border-slate-200'}`}>
             <button
               onClick={() => {
                 soundFX.playPop();
@@ -184,8 +189,8 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
               }}
               className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer min-h-[28px] ${
                 metricMode === 'count'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? (isGlass ? 'bg-white/40 dark:bg-slate-800/60 text-slate-900 dark:text-white shadow-xs' : 'bg-white text-slate-900 dark:text-white shadow-xs')
+                  : 'text-slate-600 dark:text-slate-300 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Count
@@ -197,8 +202,8 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
               }}
               className={`px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer min-h-[28px] ${
                 metricMode === 'minutes'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? (isGlass ? 'bg-white/40 dark:bg-slate-800/60 text-slate-900 dark:text-white shadow-xs' : 'bg-white text-slate-900 dark:text-white shadow-xs')
+                  : 'text-slate-600 dark:text-slate-300 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Clock className="w-3 h-3 text-slate-500" />
@@ -207,7 +212,7 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
           </div>
 
           {/* Breakdown Mode */}
-          <div className="inline-flex rounded-xl p-1 bg-slate-100 border border-slate-200 text-xs">
+          <div className={`inline-flex rounded-xl p-1 text-xs border ${isGlass ? 'bg-white/20 border-white/40' : 'bg-slate-100 border-slate-200'}`}>
             <button
               onClick={() => {
                 soundFX.playPop();
@@ -215,8 +220,8 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
               }}
               className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer min-h-[28px] ${
                 breakdownMode === 'total'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? (isGlass ? 'bg-white/40 dark:bg-slate-800/60 text-slate-900 dark:text-white shadow-xs' : 'bg-white text-slate-900 dark:text-white shadow-xs')
+                  : 'text-slate-600 dark:text-slate-300 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Overview
@@ -228,8 +233,8 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
               }}
               className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer min-h-[28px] ${
                 breakdownMode === 'member'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? (isGlass ? 'bg-white/40 dark:bg-slate-800/60 text-slate-900 dark:text-white shadow-xs' : 'bg-white text-slate-900 dark:text-white shadow-xs')
+                  : 'text-slate-600 dark:text-slate-300 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Users className="w-3 h-3 text-indigo-600" />
@@ -242,8 +247,8 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
               }}
               className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer min-h-[28px] ${
                 breakdownMode === 'category'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? (isGlass ? 'bg-white/40 dark:bg-slate-800/60 text-slate-900 dark:text-white shadow-xs' : 'bg-white text-slate-900 dark:text-white shadow-xs')
+                  : 'text-slate-600 dark:text-slate-300 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Layers className="w-3 h-3 text-emerald-600" />
@@ -257,7 +262,7 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
               soundFX.playPop();
               setIsExpanded(!isExpanded);
             }}
-            className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-95 shadow-2xs"
+            className={`p-2 rounded-xl border transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-95 shadow-2xs ${isGlass ? 'bg-white/20 border-white/40 text-slate-900 dark:text-white hover:bg-white/30' : 'border-slate-200 bg-white text-slate-600 dark:text-slate-300 hover:bg-slate-100'}`}
             title={isExpanded ? 'Collapse Chart' : 'Expand Chart'}
           >
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -387,7 +392,7 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
                   allowDecimals={false}
                 />
                 <Tooltip 
-                  cursor={{ fill: '#f8fafc', opacity: 0.8 }}
+                  cursor={{ fill: 'rgba(148, 163, 184, 0.1)', opacity: 0.8 }}
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
@@ -495,7 +500,7 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
                   <span className="font-black text-slate-900 text-sm">
                     Workload Advice
                   </span>
-                  <p className="text-slate-600 leading-snug">
+                  <p className="text-slate-600 dark:text-slate-300 leading-snug">
                     {weekendPercentage >= 40 ? (
                       <span>
                         <strong>Weekend load is heavy ({weekendPercentage}% of weekly tasks).</strong> Shift recurring chores to Tuesday or Thursday to free up weekend family time.
@@ -519,7 +524,7 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
                     soundFX.playPop();
                     onSelectDate(peakDay.dateStr);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs whitespace-nowrap shrink-0 transition-all cursor-pointer active:scale-95 self-end sm:self-center min-h-[36px]"
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs whitespace-nowrap shrink-0 transition-all cursor-pointer active:scale-95 self-end sm:self-center min-h-[36px] shadow-2xs border ${isGlass ? 'bg-white/20 border-white/40 text-slate-900 dark:text-white hover:bg-white/30' : 'bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-900 dark:text-white border-slate-200'}`}
                 >
                   <span>Inspect {peakDay.dayName}</span>
                   <TrendingUp className="w-3.5 h-3.5 text-rose-500" />

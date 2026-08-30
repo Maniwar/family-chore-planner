@@ -6,6 +6,7 @@ import { soundFX } from '../utils/audio';
 import { getParentPin, setParentPin, isPinProtectionEnabled, setPinProtectionEnabled } from '../utils/parentLock';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
+import { ThemePreset, isGlassTheme } from '../utils/theme';
 
 interface HouseSettingsModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface HouseSettingsModalProps {
   onSaveHouseholdInfo: (info: HouseholdInfo) => void;
   onOpenPinChange?: () => void;
   onResetDemo?: () => void;
+  currentTheme?: ThemePreset;
 }
 
 export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
@@ -22,6 +24,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
   householdInfo,
   onSaveHouseholdInfo,
   onResetDemo,
+  currentTheme,
 }) => {
   const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
     onClose,
@@ -44,6 +47,8 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
   const [customPinInput, setCustomPinInput] = useState<string>('');
   const [pinNotice, setPinNotice] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
+  const [resetPasswordInput, setResetPasswordInput] = useState<string>('');
+  const [resetError, setResetError] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,23 +90,23 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150"
+      className={`fixed inset-0 z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150 ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-900/60 backdrop-blur-sm'}`}
       onClick={handleDismiss}
     >
       <div
         id="house-settings-modal"
         style={sheetStyle}
-        className="bg-slate-50 dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto flex flex-col max-h-[90vh]"
+        className={`${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800'} rounded-t-3xl sm:rounded-3xl max-w-lg w-full shadow-2xl border overflow-hidden my-auto flex flex-col max-h-[90vh]`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Interactive Grabber Touch-Bar */}
-        <div className="bg-white dark:bg-slate-900 shrink-0">
+        <div className={`${isGlassTheme(currentTheme) ? 'bg-transparent' : 'bg-white dark:bg-slate-900'} shrink-0`}>
           <BottomSheetGrabber dragHandleProps={dragHandleProps} onClose={handleDismiss} />
         </div>
 
         {/* Apple HIG Modal Header */}
         <div 
-          className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10 cursor-grab active:cursor-grabbing select-none"
+          className={`${isGlassTheme(currentTheme) ? 'bg-transparent border-b border-white/20 text-slate-900' : 'bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800'} px-5 py-3.5 flex items-center justify-between sticky top-0 z-10 cursor-grab active:cursor-grabbing select-none`}
           onTouchStart={dragHandleProps.onTouchStart}
           onPointerDown={dragHandleProps.onPointerDown}
         >
@@ -140,11 +145,11 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
           
           {/* SECTION 1: HOUSE PHOTO & IDENTITY (Apple Inset Grouped Card) */}
           <div className="space-y-2">
-            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+            <span className={`text-[11px] font-bold uppercase tracking-wider px-1 ${isGlassTheme(currentTheme) ? 'text-slate-600' : 'text-slate-400 dark:text-slate-500'}`}>
               Home Profile & Cover
             </span>
 
-            <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+            <div className={`rounded-2xl border shadow-2xs overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/80'}`}>
               
               {/* Photo Area */}
               <div className="p-3">
@@ -164,7 +169,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="min-h-[36px] px-3 rounded-xl bg-white/95 hover:bg-white text-slate-900 text-xs font-bold shadow-sm transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                          className={`min-h-[36px] px-3 rounded-xl text-xs font-bold shadow-sm transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-white/95 hover:bg-white text-slate-900'}`}
                         >
                           <Camera className="w-3.5 h-3.5 text-rose-600" />
                           <span>Change</span>
@@ -183,9 +188,9 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                 ) : (
                   <div 
                     onClick={() => fileInputRef.current?.click()}
-                    className="min-h-[140px] flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-rose-400 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-rose-50/20 text-center cursor-pointer transition-colors"
+                    className={`min-h-[140px] flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-rose-400 ${isGlassTheme(currentTheme) ? 'bg-white/10' : 'bg-slate-50/50 dark:bg-slate-800/50'} hover:bg-rose-50/20 text-center cursor-pointer transition-colors`}
                   >
-                    <div className="w-11 h-11 rounded-2xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-rose-500 shadow-2xs mb-2">
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-rose-500 shadow-2xs mb-2 border ${isGlassTheme(currentTheme) ? 'bg-white/40 border-white/50' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600'}`}>
                       <Camera className="w-5 h-5" />
                     </div>
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -213,7 +218,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
 
               {/* Family Name Row */}
               <div className="p-3.5 flex flex-col sm:flex-row sm:items-center gap-2">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 w-32 shrink-0">
+                <label className={`text-xs font-bold w-32 shrink-0 ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-700 dark:text-slate-300'}`}>
                   Family Name
                 </label>
                 <input
@@ -222,13 +227,13 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                   placeholder="e.g. The Berenji Family"
                   value={familyName}
                   onChange={(e) => setFamilyName(e.target.value)}
-                  className="flex-1 text-xs font-bold p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-rose-500 text-slate-900 dark:text-white"
+                  className={`flex-1 text-xs font-bold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white'}`}
                 />
               </div>
 
               {/* Motto Row */}
               <div className="p-3.5 flex flex-col sm:flex-row sm:items-center gap-2">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 w-32 shrink-0">
+                <label className={`text-xs font-bold w-32 shrink-0 ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-700 dark:text-slate-300'}`}>
                   Family Motto
                 </label>
                 <input
@@ -236,7 +241,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                   placeholder="e.g. Clean spaces, happy smiles & teamwork! ✨"
                   value={houseAddressOrMotto}
                   onChange={(e) => setHouseAddressOrMotto(e.target.value)}
-                  className="flex-1 text-xs font-medium p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-rose-500 text-slate-800 dark:text-slate-200"
+                  className={`flex-1 text-xs font-medium p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white'}`}
                 />
               </div>
             </div>
@@ -244,11 +249,11 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
 
           {/* SECTION 2: MOM / PARENT PIN SECURITY (Apple Inset Grouped) */}
           <div className="space-y-2">
-            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+            <span className={`text-[11px] font-bold uppercase tracking-wider px-1 ${isGlassTheme(currentTheme) ? 'text-slate-600' : 'text-slate-400 dark:text-slate-500'}`}>
               Mom / Parent Mode Security
             </span>
 
-            <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+            <div className={`rounded-2xl border shadow-2xs overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/80'}`}>
               
               {/* Toggle Row */}
               <div className="p-4 flex items-center justify-between">
@@ -311,7 +316,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                         placeholder="New 4-digit PIN"
                         value={customPinInput}
                         onChange={(e) => setCustomPinInput(e.target.value)}
-                        className="w-32 text-center text-xs font-bold p-2 rounded-xl border border-amber-300 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-amber-500"
+                        className={`w-32 text-center text-xs font-bold p-2 rounded-xl border focus:ring-2 focus:ring-amber-500 ${isGlassTheme(currentTheme) ? 'bg-white/40 border-white/20 focus:bg-white/60 text-slate-900' : 'border-amber-300 bg-white dark:bg-slate-900'}`}
                         autoFocus
                       />
                       <button
@@ -361,11 +366,11 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
           {/* SECTION 3: MAINTENANCE / DANGER ZONE */}
           {onResetDemo && (
             <div className="space-y-2">
-              <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+              <span className={`text-[11px] font-bold uppercase tracking-wider px-1 ${isGlassTheme(currentTheme) ? 'text-slate-600' : 'text-slate-400 dark:text-slate-500'}`}>
                 Data Maintenance
               </span>
 
-              <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs p-4 space-y-3">
+              <div className={`rounded-2xl border shadow-2xs p-4 space-y-3 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/80'}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -383,6 +388,8 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                       onClick={() => {
                         soundFX.playPop();
                         setShowResetConfirm(true);
+                        setResetPasswordInput('');
+                        setResetError('');
                       }}
                       className="min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900 transition-colors cursor-pointer"
                     >
@@ -392,19 +399,47 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                 </div>
 
                 {showResetConfirm && (
-                  <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl space-y-2 animate-in fade-in">
+                  <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl space-y-3 animate-in fade-in">
                     <p className="text-xs text-rose-800 dark:text-rose-300 font-semibold flex items-center gap-1.5">
                       <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                       <span>Are you sure? This restores sample data on this device.</span>
                     </p>
+                    <div className="space-y-2">
+                      <input
+                        type="password"
+                        placeholder={isPinEnabled ? "Enter Parent PIN to confirm" : "Type RESET to confirm"}
+                        value={resetPasswordInput}
+                        onChange={(e) => {
+                          setResetPasswordInput(e.target.value);
+                          setResetError('');
+                        }}
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:ring-2 focus:ring-rose-500 ${isGlassTheme(currentTheme) ? 'bg-white/50 border-white/40 placeholder:text-slate-500' : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700 placeholder:text-slate-400'}`}
+                      />
+                      {resetError && <p className="text-[10px] text-rose-600 font-bold">{resetError}</p>}
+                    </div>
                     <div className="flex items-center gap-2 pt-1">
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           soundFX.playPop();
-                          onResetDemo();
-                          setShowResetConfirm(false);
-                          onClose();
+                          if (isPinEnabled) {
+                            const { verifyParentPin } = await import('../utils/parentLock');
+                            if (!verifyParentPin(resetPasswordInput)) {
+                              setResetError('Incorrect PIN');
+                              return;
+                            }
+                            onResetDemo();
+                            setShowResetConfirm(false);
+                            onClose();
+                          } else {
+                            if (resetPasswordInput.trim().toUpperCase() !== 'RESET') {
+                              setResetError('Type RESET to confirm');
+                              return;
+                            }
+                            onResetDemo();
+                            setShowResetConfirm(false);
+                            onClose();
+                          }
                         }}
                         className="min-h-[36px] px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
                       >
@@ -413,7 +448,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setShowResetConfirm(false)}
-                        className="min-h-[36px] px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 cursor-pointer"
+                        className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-medium border cursor-pointer ${isGlassTheme(currentTheme) ? 'bg-white/30 border-white/40 hover:bg-white/40 text-slate-800' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
                       >
                         Cancel
                       </button>
@@ -425,7 +460,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="pt-2 flex items-center justify-end gap-3 sticky bottom-0 bg-slate-50 dark:bg-slate-900 py-3 border-t border-slate-200/80 dark:border-slate-800">
+          <div className={`pt-5 flex items-center justify-end gap-3 mt-4 border-t ${isGlassTheme(currentTheme) ? 'border-white/10' : 'border-slate-200/80 dark:border-slate-800'}`}>
             <button
               type="button"
               onClick={onClose}

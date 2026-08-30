@@ -35,13 +35,17 @@ import {
   saveSyncLogs,
 } from '../utils/googleCalendar';
 
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
+
 interface GoogleCalendarViewProps {
+  currentTheme: string;
   chores: Chore[];
   members: HouseholdMember[];
   selectedDate: string;
 }
 
 export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
+  currentTheme,
   chores,
   members,
   selectedDate,
@@ -222,7 +226,7 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
     <div className="space-y-6 max-w-6xl mx-auto pb-12 animate-in fade-in duration-150">
       
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+      <div className={`rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20 text-slate-900' : 'bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white'}`}>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2.5">
@@ -236,14 +240,14 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Google Family Calendar Sync
             </h1>
-            <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+            <p className={`text-sm ${isGlassTheme(currentTheme) ? 'text-slate-700' : 'text-slate-300'} max-w-2xl leading-relaxed`}>
               Sync daily & weekly chore routines, inspection checkpoints, and helper duties directly to your family's Google Calendar with reminders and quality checklists.
             </p>
           </div>
 
           {/* Connection Status Box */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 min-w-[260px]">
-            <div className="text-xs text-slate-300 font-medium mb-1">Status</div>
+          <div className={`${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] text-slate-900' : 'bg-white/10 backdrop-blur-md border-white/20 text-white'} border border-white/20 rounded-2xl p-4 min-w-[260px]`}>
+            <div className={`text-xs font-medium mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-300'}`}>Status</div>
             {token ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2.5">
@@ -352,21 +356,21 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
         <div className="space-y-6">
           
           {/* Target Google Calendar Card */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+          <div className={`rounded-3xl p-6 border shadow-xs space-y-4 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
+            <h3 className={`text-sm font-bold uppercase tracking-wider flex items-center gap-2 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600 dark:text-slate-400'}`}>
               <Layers className="w-4 h-4 text-indigo-600" />
               <span>Target Google Calendar</span>
             </h3>
 
             {token ? (
               <div className="space-y-3">
-                <label className="block text-xs font-medium text-slate-700">
+                <label className={`block text-xs font-medium ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-700 dark:text-slate-300'}`}>
                   Select which Google Calendar to sync events to:
                 </label>
                 <select
                   value={selectedCalendarId}
                   onChange={(e) => handleCalendarChange(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500"
+                  className={`w-full rounded-xl p-3 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 border ${isGlassTheme(currentTheme) ? 'bg-white/20 border-white/30 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 border-slate-300 text-slate-800 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200'}`}
                 >
                   {calendars.map(cal => (
                     <option key={cal.id} value={cal.id}>
@@ -382,7 +386,7 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
                   <button
                     onClick={handleCreateDedicatedCalendar}
                     disabled={isLoadingCalendars}
-                    className="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors flex items-center justify-center gap-1.5"
+                    className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 border ${isGlassTheme(currentTheme) ? 'bg-white/40 hover:bg-white/60 text-slate-900 border-white/30' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-300'}`}
                   >
                     <Plus className="w-4 h-4" />
                     <span>Create Dedicated "Family Chores" Calendar</span>
@@ -390,8 +394,8 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="p-4 bg-slate-50 rounded-2xl text-center space-y-3">
-                <p className="text-xs text-slate-600">Connect Google Calendar to select or create a shared family chore calendar.</p>
+              <div className={`p-4 rounded-2xl text-center space-y-3 ${isGlassTheme(currentTheme) ? 'bg-white/20 border border-white/20' : 'bg-slate-50 dark:bg-slate-900'}`}>
+                <p className={`text-xs ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600 dark:text-slate-400'}`}>Connect Google Calendar to select or create a shared family chore calendar.</p>
                 <button
                   onClick={handleConnectGoogle}
                   className="py-2 px-4 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors"
@@ -403,26 +407,26 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
           </div>
 
           {/* Sync Date & Trigger */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+          <div className={`rounded-3xl p-6 border shadow-xs space-y-4 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
+            <h3 className={`text-sm font-bold uppercase tracking-wider flex items-center gap-2 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600 dark:text-slate-400'}`}>
               <Clock className="w-4 h-4 text-indigo-600" />
               <span>Sync Date & Actions</span>
             </h3>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label className={`block text-xs font-medium mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-700 dark:text-slate-300'}`}>
                   Target Schedule Date:
                 </label>
                 <input
                   type="date"
                   value={syncTargetDate}
                   onChange={(e) => setSyncTargetDate(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800"
+                  className={`w-full p-2.5 rounded-xl text-xs font-semibold border focus:ring-2 focus:ring-indigo-500 ${isGlassTheme(currentTheme) ? 'bg-white/20 border-white/30 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 border-slate-300 text-slate-800 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200'}`}
                 />
               </div>
 
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 leading-tight space-y-1">
+              <div className={`p-3 rounded-xl border text-[11px] leading-tight space-y-1 ${isGlassTheme(currentTheme) ? 'bg-white/20 border-white/30 text-amber-900' : 'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-900/20 dark:border-amber-900/40 dark:text-amber-200'}`}>
                 <div className="font-bold flex items-center gap-1">
                   <Bell className="w-3 h-3 text-amber-700" />
                   <span>Calendar Reminders Included:</span>
@@ -433,7 +437,7 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
               <button
                 onClick={handleSyncSelectedChores}
                 disabled={isSyncing}
-                className="w-full py-3.5 px-4 rounded-2xl text-xs font-black bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white shadow-md transition-all flex items-center justify-center gap-2"
+                className={`w-full py-3.5 px-4 rounded-2xl text-xs font-black disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-slate-900 hover:bg-slate-800 text-white'}`}
               >
                 {isSyncing ? (
                   <>
@@ -452,7 +456,7 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
                 href="https://calendar.google.com"
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1.5"
+                className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border ${isGlassTheme(currentTheme) ? 'border-white/20 hover:bg-white/40 text-slate-800' : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'}`}
               >
                 <span>Open Google Calendar</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -466,13 +470,13 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
         <div className="lg:col-span-2 space-y-6">
           
           {/* Chore Selection List */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+          <div className={`rounded-3xl p-6 border shadow-xs space-y-4 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className={`text-base font-bold ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'}`}>
                   Chores to Include in Calendar Sync
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className={`text-xs ${isGlassTheme(currentTheme) ? 'text-slate-700' : 'text-slate-500 dark:text-slate-400'}`}>
                   Choose which routine tasks to push to the family schedule for {syncTargetDate}
                 </p>
               </div>
@@ -488,7 +492,7 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
                 >
                   Select All
                 </button>
-                <span className="text-slate-300">|</span>
+                <span className={`${isGlassTheme(currentTheme) ? 'text-slate-400' : 'text-slate-300'}`}>|</span>
                 <button
                   onClick={() => setSelectedChoreIds({})}
                   className="text-slate-500 hover:underline cursor-pointer"
@@ -504,8 +508,8 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
                 onClick={() => setFilterMemberId('all')}
                 className={`px-2.5 py-1 rounded-lg font-bold transition-colors shrink-0 cursor-pointer ${
                   filterMemberId === 'all'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? (isGlassTheme(currentTheme) ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs')
+                    : (isGlassTheme(currentTheme) ? 'bg-white/30 text-slate-800 hover:bg-white/50 border border-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700')
                 }`}
               >
                 All Helpers ({chores.filter(c => c.isActive).length})
@@ -541,7 +545,9 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
                   <div 
                     key={chore.id}
                     className={`p-3.5 flex items-center justify-between gap-3 transition-colors ${
-                      isSelected ? 'bg-white' : 'bg-slate-50/60 opacity-60'
+                      isSelected 
+                        ? (isGlassTheme(currentTheme) ? 'bg-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]' : 'bg-white dark:bg-slate-800') 
+                        : (isGlassTheme(currentTheme) ? 'bg-transparent opacity-60' : 'bg-slate-50/60 dark:bg-slate-900/60 opacity-60')
                     }`}
                   >
                     <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
@@ -557,14 +563,14 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-900 truncate">
+                          <span className={`text-xs font-bold truncate ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'}`}>
                             {chore.title}
                           </span>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${isGlassTheme(currentTheme) ? 'bg-white/30 text-slate-800 border border-white/20' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
                             {chore.category}
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                        <div className={`text-[11px] flex items-center gap-2 mt-0.5 ${isGlassTheme(currentTheme) ? 'text-slate-700' : 'text-slate-500 dark:text-slate-400'}`}>
                           <span>⏱️ {chore.estimatedMinutes}m</span>
                           <span>•</span>
                           <span className="capitalize">{chore.timeOfDay} slot</span>
@@ -577,7 +583,7 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
                     {/* Assigned member badge */}
                     <div className="text-xs">
                       {member ? (
-                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 font-bold text-slate-800">
+                        <span className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold border ${isGlassTheme(currentTheme) ? 'bg-white/30 border-white/20 text-slate-900' : 'bg-amber-50 border-amber-200 text-slate-800 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-200'}`}>
                           <span>{member.avatarEmoji}</span>
                           <span>{member.name}</span>
                         </span>
@@ -592,9 +598,9 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
           </div>
 
           {/* Sync History Logs */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+          <div className={`rounded-3xl p-6 border shadow-xs space-y-4 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+              <h3 className={`text-sm font-bold uppercase tracking-wider flex items-center gap-2 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600 dark:text-slate-400'}`}>
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>Recent Google Calendar Syncs ({syncLogs.length})</span>
               </h3>
@@ -614,7 +620,7 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
             </div>
 
             {syncLogs.length === 0 ? (
-              <div className="text-center py-8 text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <div className={`text-center py-8 text-xs rounded-2xl border border-dashed ${isGlassTheme(currentTheme) ? 'text-slate-600 bg-white/10 border-white/30' : 'text-slate-400 bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-700'}`}>
                 No Google Calendar sync events logged yet. Connect and click "Sync Selected Chores".
               </div>
             ) : (
@@ -622,15 +628,15 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
                 {syncLogs.slice(0, 10).map((log) => (
                   <div 
                     key={log.id} 
-                    className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3 text-xs"
+                    className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs ${isGlassTheme(currentTheme) ? 'bg-white/20 border-white/30' : 'bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-700'}`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
                         ✓
                       </div>
                       <div className="min-w-0">
-                        <div className="font-bold text-slate-900 truncate">{log.choreTitle}</div>
-                        <div className="text-[11px] text-slate-500">
+                        <div className={`font-bold truncate ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'}`}>{log.choreTitle}</div>
+                        <div className={`text-[11px] ${isGlassTheme(currentTheme) ? 'text-slate-700' : 'text-slate-500 dark:text-slate-400'}`}>
                           {log.memberName} • {log.date} at {log.syncedAt}
                         </div>
                       </div>

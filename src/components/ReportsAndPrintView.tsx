@@ -38,6 +38,7 @@ import {
   BarChart,
   Bar
 } from 'recharts';
+import { isGlassTheme, ThemePreset } from '../utils/theme';
 import { HouseholdMember, Chore, ChoreAssignmentLog, HouseholdInfo } from '../types';
 import { formatDisplayDate, formatTimeDisplay, getWeekDates, getTodayDateString, isChoreScheduledForDate, parseLocalDate } from '../utils/storage';
 import { WeeklyWorkloadChart } from './WeeklyWorkloadChart';
@@ -51,6 +52,7 @@ interface ReportsAndPrintViewProps {
   logs: ChoreAssignmentLog[];
   householdInfo: HouseholdInfo;
   currentDateStr: string;
+  currentTheme?: ThemePreset;
 }
 
 export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
@@ -59,6 +61,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
   logs,
   householdInfo,
   currentDateStr,
+  currentTheme,
 }) => {
   const [printFormat, setPrintFormat] = useState<'weekly_fridge' | 'daily_checklist' | 'kid_punchcard' | 'inspection_rubric'>('weekly_fridge');
   const [printMemberId, setPrintMemberId] = useState<string>('all');
@@ -192,22 +195,22 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-8">
+    <div className="space-y-6 max-w-7xl mx-auto pb-8 reports-glass-wrapper">
       
       {/* Screen-Only Control Dashboard */}
       <div className="no-print space-y-5">
         
         {/* Header Banner */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/30' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800'} rounded-3xl border p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
           <div className="flex items-center space-x-3.5">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-amber-500 text-white flex items-center justify-center text-2xl shadow-xs shrink-0">
               📊
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-tight">
+              <h2 className={`text-lg sm:text-xl font-black text-slate-900   leading-tight`}>
                 Household Quality & Print Hub
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className={`text-xs text-slate-500   mt-0.5`}>
                 Track helper quality ratings and generate formatted schedules for your refrigerator
               </p>
             </div>
@@ -216,7 +219,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               onClick={handleShare}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors min-h-[44px] cursor-pointer active:scale-95"
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700   bg-slate-100 hover:bg-slate-200 transition-colors min-h-[44px] cursor-pointer active:scale-95`}
             >
               <Share2 className="w-4 h-4" />
               <span>{copiedLink ? 'Link Copied!' : 'Share App'}</span>
@@ -260,9 +263,9 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
 
         {/* Analytics Summary Cards (Apple Health / Activity Style) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+          <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/30' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800'} p-4 sm:p-5 rounded-3xl border shadow-xs `}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+              <span className={`text-[11px] font-black uppercase tracking-wider ${isGlassTheme(currentTheme) ? 'text-slate-600' : 'text-slate-400'}`}>
                 Chores Inspected & Done
               </span>
               <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -270,16 +273,16 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
-                {completedLogs.length} <span className="text-sm font-semibold text-slate-500">completed</span>
+              <div className={`text-2xl sm:text-3xl font-black text-slate-900   leading-tight`}>
+                {completedLogs.length} <span className={`text-sm font-semibold text-slate-500  `}>completed</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className={`text-xs mt-1 ${isGlassTheme(currentTheme) ? 'text-slate-700 font-medium' : 'text-slate-500'}`}>
                 Quality inspected & approved by Mom
               </p>
             </div>
           </div>
 
-          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+          <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/30' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800'} p-4 sm:p-5 rounded-3xl border shadow-xs `}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-black uppercase tracking-wider text-amber-700">
                 Total Family Points Earned
@@ -292,15 +295,15 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
               <div className="text-2xl sm:text-3xl font-black text-amber-900 leading-tight">
                 {completedLogs.reduce((sum, l) => sum + (l.pointsAwarded || 0) + (l.bonusPoints || 0), 0)} <span className="text-sm font-semibold text-amber-700">pts</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className={`text-xs mt-1 ${isGlassTheme(currentTheme) ? 'text-slate-700 font-medium' : 'text-slate-500'}`}>
                 Includes quality effort and speed bonuses
               </p>
             </div>
           </div>
 
-          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+          <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/30' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800'} p-4 sm:p-5 rounded-3xl border shadow-xs `}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+              <span className={`text-[11px] font-black uppercase tracking-wider ${isGlassTheme(currentTheme) ? 'text-slate-600' : 'text-slate-400'}`}>
                 Average Quality Grade
               </span>
               <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
@@ -308,10 +311,10 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
               </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
-                4.8 <span className="text-base font-semibold text-slate-500">/ 5.0 ⭐</span>
+              <div className={`text-2xl sm:text-3xl font-black text-slate-900   leading-tight`}>
+                4.8 <span className={`text-base font-semibold text-slate-500  `}>/ 5.0 ⭐</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className={`text-xs mt-1 ${isGlassTheme(currentTheme) ? 'text-slate-700 font-medium' : 'text-slate-500'}`}>
                 Consistently high attention to detail
               </p>
             </div>
@@ -324,18 +327,19 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
           members={members}
           centerDateStr={currentDateStr}
           showInsights={true}
+          currentTheme={currentTheme}
         />
 
         {/* Member Quality Scorecard Grid */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 shadow-xs space-y-4">
-          <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+        <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/30' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800'} rounded-3xl border p-5 shadow-xs space-y-4`}>
+          <h3 className={`text-sm font-black text-slate-900   flex items-center gap-2`}>
             <Sparkles className="w-4 h-4 text-amber-500" />
             <span>Family Member Quality Scorecard</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {memberStats.map(({ member, completedCount, totalPointsAwarded, avgScore, assignedCount }) => (
-              <div key={member.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between gap-3">
+              <div key={member.id} className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-slate-50 border-slate-200/80'}`}>
                 <div className="flex items-center gap-3">
                   <Avatar
                     photoUrl={member.avatarPhotoUrl}
@@ -344,8 +348,8 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                     size="md"
                   />
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">{member.name}</h4>
-                    <p className="text-xs text-slate-500">{assignedCount} regular routines</p>
+                    <h4 className={`text-sm font-bold text-slate-900  `}>{member.name}</h4>
+                    <p className={`text-xs text-slate-500  `}>{assignedCount} regular routines</p>
                   </div>
                 </div>
 
@@ -366,18 +370,18 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
         {/* ========================================================================= */}
         {/* DISCIPLINE & WAIVED PENALTY TIMELINE TRACKER (Requested by User) */}
         {/* ========================================================================= */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-5">
+        <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/30' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800'} rounded-3xl border p-5 sm:p-6 shadow-xs space-y-5`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
                   <Activity className="w-4 h-4" />
                 </div>
-                <h3 className="text-base sm:text-lg font-black text-slate-900">
+                <h3 className={`text-base sm:text-lg font-black text-slate-900  `}>
                   Household Discipline & Waived Penalty Timeline
                 </h3>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className={`text-xs mt-1 ${isGlassTheme(currentTheme) ? 'text-slate-700 font-medium' : 'text-slate-500'}`}>
                 Track overdue tasks, redo inspections, and waived penalty grace periods across all helpers
               </p>
             </div>
@@ -393,7 +397,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
           </div>
 
           {/* Recharts Timeline Graph */}
-          <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70">
+          <div className={`p-4 rounded-2xl border ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-slate-50/70 border-slate-200/70'}`}>
             <div className="h-64 sm:h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={timelineData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
@@ -452,13 +456,13 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
 
           {/* Member Discipline & Waived Ranking Breakdown */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">
+            <h4 className={`text-xs font-black uppercase tracking-wider text-slate-500  `}>
               Discipline & Grace Breakdown by Family Member
             </h4>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {memberStats.map(({ member, completedCount, waivedCount, redoCount, lateCount }) => (
-                <div key={member.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2.5">
+                <div key={member.id} className={`p-4 rounded-2xl border space-y-2.5 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-slate-50 border-slate-200/80'}`}>
                   <div className="flex items-center gap-2.5">
                     <Avatar
                       photoUrl={member.avatarPhotoUrl}
@@ -467,25 +471,25 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                       size="sm"
                     />
                     <div>
-                      <h5 className="text-xs font-bold text-slate-900">{member.name}</h5>
-                      <span className="text-[10px] text-slate-500 capitalize">{member.role}</span>
+                      <h5 className={`text-xs font-bold ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900'}`}>{member.name}</h5>
+                      <span className={`text-[10px] capitalize ${isGlassTheme(currentTheme) ? 'text-slate-700' : 'text-slate-500'}`}>{member.role}</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
-                    <div className="bg-white p-2 rounded-xl border border-slate-200">
-                      <span className="text-[10px] font-bold text-slate-400 block">Overdue</span>
-                      <span className={`text-xs font-black ${lateCount > 0 ? 'text-amber-600' : 'text-slate-700'}`}>
+                    <div className={`p-2 rounded-xl border ${isGlassTheme(currentTheme) ? 'bg-white/40 border-white/40' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+                      <span className={`text-[10px] font-bold block ${isGlassTheme(currentTheme) ? 'text-slate-600' : 'text-slate-400'}`}>Overdue</span>
+                      <span className={`text-xs font-black ${lateCount > 0 ? 'text-amber-600' : 'text-slate-700  '}`}>
                         {lateCount}
                       </span>
                     </div>
-                    <div className="bg-white p-2 rounded-xl border border-slate-200">
-                      <span className="text-[10px] font-bold text-slate-400 block">Redos</span>
-                      <span className={`text-xs font-black ${redoCount > 0 ? 'text-rose-600' : 'text-slate-700'}`}>
+                    <div className={`p-2 rounded-xl border ${isGlassTheme(currentTheme) ? 'bg-white/40 border-white/40' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+                      <span className={`text-[10px] font-bold block ${isGlassTheme(currentTheme) ? 'text-slate-600' : 'text-slate-400'}`}>Redos</span>
+                      <span className={`text-xs font-black ${redoCount > 0 ? 'text-rose-600' : 'text-slate-700  '}`}>
                         {redoCount}
                       </span>
                     </div>
-                    <div className="bg-white p-2 rounded-xl border border-slate-200">
+                    <div className={`p-2 rounded-xl border ${isGlassTheme(currentTheme) ? 'bg-white/40 border-white/40' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
                       <span className="text-[10px] font-bold text-purple-600 block">Waived</span>
                       <span className="text-xs font-black text-purple-700">
                         {waivedCount}
@@ -501,18 +505,18 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
         {/* ========================================================================= */}
         {/* PRINTABLE CATALOG SELECTOR: APPLE INSET GROUPED SELECTION */}
         {/* ========================================================================= */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-5">
+        <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/30' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800'} rounded-3xl border p-5 sm:p-6 shadow-xs space-y-5`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                   <Printer className="w-4 h-4" />
                 </div>
-                <h3 className="text-base sm:text-lg font-black text-slate-900">
+                <h3 className={`text-base sm:text-lg font-black text-slate-900  `}>
                   Select Printable Template
                 </h3>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className={`text-xs mt-1 ${isGlassTheme(currentTheme) ? 'text-slate-700 font-medium' : 'text-slate-500'}`}>
                 Choose a format below. Live preview updates immediately below for easy review before sending to paper or PDF.
               </p>
             </div>
@@ -543,7 +547,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                   className={`p-4 rounded-2xl text-left transition-all border flex flex-col justify-between cursor-pointer active:scale-95 ${
                     isSelected
                       ? 'bg-rose-50/60 border-rose-400 ring-2 ring-rose-200 shadow-xs'
-                      : 'bg-slate-50/70 border-slate-200 hover:bg-slate-100 text-slate-700'
+                      : 'bg-slate-50/70 border-slate-200 hover:bg-slate-100 text-slate-700  '
                   }`}
                 >
                   <div className="space-y-1.5 mb-3">
@@ -555,16 +559,16 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                       </span>
                       {isSelected && <span className="text-xs font-black text-rose-600">✓ Selected</span>}
                     </div>
-                    <div className="text-sm font-black text-slate-900 leading-snug">
+                    <div className={`text-sm font-black text-slate-900   leading-snug`}>
                       {tmpl.name}
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed">
+                    <p className={`text-xs text-slate-500   leading-relaxed`}>
                       {tmpl.desc}
                     </p>
                   </div>
 
-                  <div className="text-[11px] text-slate-500 border-t border-slate-200/80 pt-2 flex items-center gap-1">
-                    <span className="font-bold text-slate-700">Best for:</span> {tmpl.idealFor}
+                  <div className={`text-[11px] text-slate-500   border-t border-slate-200/80 pt-2 flex items-center gap-1`}>
+                    <span className={`font-bold text-slate-700  `}>Best for:</span> {tmpl.idealFor}
                   </div>
                 </button>
               );
@@ -595,7 +599,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
 
             {/* Checkbox Options */}
             <div className="flex flex-wrap items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer select-none text-slate-700 font-medium min-h-[36px]">
+              <label className={`flex items-center gap-2 cursor-pointer select-none text-slate-700   font-medium min-h-[36px]`}>
                 <input
                   type="checkbox"
                   checked={includeCompletedCheckmarks}
@@ -605,7 +609,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                 <span>Show completed checkmarks in preview</span>
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer select-none text-slate-700 font-medium min-h-[36px]">
+              <label className={`flex items-center gap-2 cursor-pointer select-none text-slate-700   font-medium min-h-[36px]`}>
                 <input
                   type="checkbox"
                   checked={includeQualityNotes}
@@ -623,7 +627,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
       {/* ========================================================================= */}
       {/* PRINTABLE PREVIEW & PHYSICAL PRINT CONTAINER */}
       {/* ========================================================================= */}
-      <div id="printable-fridge-schedule" className="bg-white rounded-3xl border border-slate-300 p-5 sm:p-8 shadow-xs print-page">
+      <div id="printable-fridge-schedule" className={`${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/30 print-card' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800'} rounded-3xl border shadow-xs print-page`}>
         
         {/* Printable Header with House Name, Motto, and Photo if present */}
         <div className="border-b-2 border-slate-900 pb-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -643,10 +647,10 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
               </div>
             )}
             <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">
+              <span className={`text-[10px] font-black uppercase tracking-widest text-slate-500   block`}>
                 Household Management & Quality Schedule
               </span>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+              <h1 className={`text-xl sm:text-2xl font-black text-slate-900   tracking-tight leading-tight`}>
                 {householdInfo.familyName || 'Family Household Chore Chart'}
               </h1>
               <p className="text-xs text-slate-600 mt-0.5">
@@ -659,7 +663,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
             <div className="inline-block px-3 py-1 bg-slate-100 rounded-lg border border-slate-300 text-xs font-bold text-slate-800">
               📌 {PRINTABLE_TEMPLATES.find(t => t.id === printFormat)?.name.replace(/^[^\s]+\s/, '')}
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">
+            <p className={`text-[11px] text-slate-500   mt-1`}>
               Mom's Quality Standard: 100% Inspected
             </p>
           </div>
@@ -668,25 +672,25 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
         {/* 1. WEEKLY FRIDGE MATRIX FORMAT */}
         {printFormat === 'weekly_fridge' && (
           <div className="space-y-3">
-            <div className="no-print md:hidden text-[11px] text-slate-500 italic text-center pb-1">
+            <div className={`no-print md:hidden text-[11px] text-slate-500   italic text-center pb-1`}>
               ← Swipe horizontally to see all 7 days →
             </div>
             <div className="overflow-x-auto rounded-2xl border border-slate-300">
               <table className="w-full border-collapse text-xs min-w-[620px]">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-300">
-                    <th className="p-3 border-r border-slate-300 text-left w-1/3 font-black text-slate-900">
+                    <th className={`p-3 border-r border-slate-300 text-left w-1/3 font-black text-slate-900  `}>
                       Chore & Assigned Helper
                     </th>
-                    <th className="p-3 border-r border-slate-300 text-center w-16 font-black text-slate-900">
+                    <th className={`p-3 border-r border-slate-300 text-center w-16 font-black text-slate-900  `}>
                       Pts
                     </th>
                     {weekDays.map(d => (
                       <th key={d.dateStr} className={`p-2.5 border-r border-slate-300 text-center font-black ${
-                        d.isToday ? 'bg-rose-50 text-rose-900' : 'text-slate-900'
+                        d.isToday ? 'bg-rose-50 text-rose-900' : 'text-slate-900  '
                       }`}>
                         <div>{d.dayName}</div>
-                        <div className="text-[10px] text-slate-500 font-bold">{d.dayNumber}</div>
+                        <div className={`text-[10px] text-slate-500   font-bold`}>{d.dayNumber}</div>
                       </th>
                     ))}
                   </tr>
@@ -697,9 +701,9 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                     return (
                       <tr key={chore.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="p-3 border-r border-slate-200">
-                          <div className="font-bold text-slate-900 text-xs leading-snug">{chore.title}</div>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                            <span className="font-bold text-slate-700">{assignee ? `${assignee.name}` : 'Unassigned'}</span>
+                          <div className={`font-bold text-slate-900   text-xs leading-snug`}>{chore.title}</div>
+                          <div className={`text-[11px] text-slate-500   flex items-center gap-1.5 mt-0.5`}>
+                            <span className={`font-bold text-slate-700  `}>{assignee ? `${assignee.name}` : 'Unassigned'}</span>
                             <span>•</span>
                             <span>{formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)}</span>
                             <span>•</span>
@@ -720,7 +724,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                                 <div className={`w-6 h-6 border-2 rounded-lg mx-auto flex items-center justify-center font-black text-xs ${
                                   isDone 
                                     ? 'bg-emerald-500 border-emerald-500 text-white shadow-2xs' 
-                                    : 'border-slate-400 bg-white text-slate-700'
+                                    : 'border-slate-400 bg-white   text-slate-700  '
                                 }`}>
                                   {isDone ? '✓' : ''}
                                 </div>
@@ -749,8 +753,8 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                   <div key={chore.id} className="p-4 border border-slate-300 rounded-2xl space-y-2.5 print-card">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm leading-tight">{chore.title}</h4>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <h4 className={`font-bold text-slate-900   text-sm leading-tight`}>{chore.title}</h4>
+                        <p className={`text-xs text-slate-500   mt-0.5`}>
                           {assignee?.name} • {formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)} ({chore.category})
                         </p>
                       </div>
@@ -761,9 +765,9 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
 
                     {chore.qualityChecklist.length > 0 && (
                       <div className="pt-2 border-t border-slate-200 space-y-1 text-xs">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 block">Quality Cleaning Checklist:</span>
+                        <span className={`text-[10px] uppercase font-bold text-slate-500   block`}>Quality Cleaning Checklist:</span>
                         {chore.qualityChecklist.map((step, i) => (
-                          <div key={i} className="flex items-center gap-2 text-slate-700">
+                          <div key={i} className={`flex items-center gap-2 text-slate-700  `}>
                             <span className="w-4 h-4 border border-slate-400 rounded-sm shrink-0 inline-block" />
                             <span>{step}</span>
                           </div>
@@ -771,7 +775,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                       </div>
                     )}
 
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                    <div className={`pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400  `}>
                       <span>Helper Completed: [ ]</span>
                       <span>Mom Inspection: [ ⭐ ⭐ ⭐ ⭐ ⭐ ]</span>
                     </div>
@@ -798,8 +802,8 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                         size="md"
                       />
                       <div>
-                        <h3 className="font-bold text-base text-slate-900">{member.name}'s Chore Punchcard</h3>
-                        <p className="text-xs text-slate-500">Weekly Goal: {member.targetWeeklyPoints} points</p>
+                        <h3 className={`font-bold text-base text-slate-900  `}>{member.name}'s Chore Punchcard</h3>
+                        <p className={`text-xs text-slate-500  `}>Weekly Goal: {member.targetWeeklyPoints} points</p>
                       </div>
                     </div>
                     <span className="text-xs font-extrabold px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-full text-amber-800">
@@ -808,7 +812,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                   </div>
 
                   <div className="space-y-1.5 text-xs">
-                    <span className="font-bold text-slate-700 block">Assigned Tasks:</span>
+                    <span className={`font-bold text-slate-700   block`}>Assigned Tasks:</span>
                     {assigned.slice(0, 6).map(c => (
                       <div key={c.id} className="flex items-center justify-between border-b border-dotted pb-1">
                         <span>{c.title}</span>
@@ -839,7 +843,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
           <div className="space-y-4 text-xs">
             <div className="border border-slate-300 rounded-2xl overflow-hidden">
               <table className="w-full border-collapse text-left">
-                <thead className="bg-slate-100 border-b border-slate-300 font-bold text-slate-900">
+                <thead className={`bg-slate-100 border-b border-slate-300 font-bold text-slate-900  `}>
                   <tr>
                     <th className="p-3 border-r border-slate-300 w-24">Grade</th>
                     <th className="p-3 border-r border-slate-300 w-32">Rating</th>
@@ -865,12 +869,12 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
                     <td className="p-3 text-center font-bold text-blue-700">+2 Bonus Pts</td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-black text-base text-slate-700 border-r border-slate-200">B</td>
+                    <td className={`p-3 font-black text-base text-slate-700   border-r border-slate-200`}>B</td>
                     <td className="p-3 font-bold border-r border-slate-200">⭐⭐⭐ (3 Stars)</td>
                     <td className="p-3 border-r border-slate-200">
                       <strong>Good Effort:</strong> General area is cleaned. Met standard minimum requirements.
                     </td>
-                    <td className="p-3 text-center font-semibold text-slate-700">Standard Pts</td>
+                    <td className={`p-3 text-center font-semibold text-slate-700  `}>Standard Pts</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-black text-base text-rose-700 border-r border-slate-200">Redo</td>
@@ -900,7 +904,7 @@ export const ReportsAndPrintView: React.FC<ReportsAndPrintViewProps> = ({
               </div>
             </div>
 
-            <div className="text-right text-[11px] text-slate-400">
+            <div className={`text-right text-[11px] text-slate-400  `}>
               Printed from {householdInfo.familyName || 'Family Chore Hub'} • Keep up the great work!
             </div>
           </div>

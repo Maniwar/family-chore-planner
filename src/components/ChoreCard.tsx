@@ -26,7 +26,7 @@ import { SupportedLanguage, getTranslation, getCategoryTranslation } from '../ut
 import { Avatar } from './Avatar';
 import { CategoryBadge, StarPointsBadge, BadgeStyle } from './CategoryBadge';
 import { calculateDaysLate, getPenaltyTierInfo } from '../utils/penaltyEngine';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 
 interface ChoreCardProps {
   chore: Chore;
@@ -255,7 +255,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
         }}
       >
         <div 
-          className="bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom duration-200"
+          className={`${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'} rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border animate-in slide-in-from-bottom duration-200`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* iOS Grabber for Mobile */}
@@ -492,10 +492,10 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
           <div 
             className={`absolute inset-0 flex items-center justify-between px-3 font-black text-[11px] transition-colors duration-200 rounded-2xl ${
               isSwipeRightActive
-                ? isThresholdMetRight ? 'bg-emerald-600 text-white' : 'bg-emerald-500/90 text-white'
+                ? isThresholdMetRight ? 'bg-emerald-600 text-white z-0' : 'bg-emerald-500/90 text-white z-0'
                 : isSwipeLeftActive && isMomMode
-                ? isThresholdMetLeft ? 'bg-amber-600 text-white' : 'bg-amber-500/90 text-white'
-                : 'bg-slate-100 text-slate-400'
+                ? isThresholdMetLeft ? 'bg-amber-600 text-white z-0' : 'bg-amber-500/90 text-white z-0'
+                : 'bg-transparent pointer-events-none opacity-0'
             }`}
           >
             <div className={`flex items-center gap-1 transition-transform ${isSwipeRightActive ? 'opacity-100 scale-105' : 'opacity-0 scale-95'}`}>
@@ -520,14 +520,24 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
               transform: `translateX(${dragOffset}px)`,
               transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
             }}
-            className={`relative z-10 bg-white rounded-2xl border p-3 flex flex-col justify-between min-h-[146px] cursor-pointer hover:shadow-xs transition-all duration-200 active:scale-[0.99] ${
+            className={`relative z-10 ${
+              isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg
+            } rounded-2xl border p-3 flex flex-col justify-between min-h-[146px] cursor-pointer hover:shadow-xs transition-all duration-200 active:scale-[0.99] ${
               status === 'needs_review'
-                ? 'border-amber-300 bg-gradient-to-br from-white to-amber-50/40 ring-1 ring-amber-300'
+                ? isGlassTheme(currentTheme)
+                  ? 'border-amber-400/80 ring-1 ring-amber-400/50 shadow-[inset_0_0_20px_rgba(251,191,36,0.12)]'
+                  : 'border-amber-300 bg-amber-50/80 dark:bg-amber-950/30 text-slate-900 ring-1 ring-amber-300'
                 : status === 'approved'
-                ? 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/30'
+                ? isGlassTheme(currentTheme)
+                  ? 'border-emerald-400/80 ring-1 ring-emerald-400/50 shadow-[inset_0_0_20px_rgba(52,211,153,0.10)]'
+                  : 'border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/20'
                 : status === 'needs_redo'
-                ? 'border-rose-300 bg-gradient-to-br from-white to-rose-50/30 ring-1 ring-rose-200'
-                : 'border-slate-200 hover:border-slate-300'
+                ? isGlassTheme(currentTheme)
+                  ? 'border-rose-400/80 ring-1 ring-rose-400/50 shadow-[inset_0_0_20px_rgba(244,63,94,0.12)]'
+                  : 'border-rose-300 bg-rose-50/80 dark:bg-rose-950/30 ring-1 ring-rose-200'
+                : isGlassTheme(currentTheme)
+                ? 'border-white/20'
+                : `${theme.cardBorder} ${theme.cardHoverBorder}`
             }`}
           >
             <div>
@@ -647,13 +657,13 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
           className={`absolute inset-0 flex items-center justify-between px-4 font-black text-xs transition-colors duration-200 rounded-2xl ${
             isSwipeRightActive
               ? isThresholdMetRight
-                ? 'bg-emerald-600 text-white'
-                : 'bg-emerald-500/90 text-white'
+                ? 'bg-emerald-600 text-white z-0'
+                : 'bg-emerald-500/90 text-white z-0'
               : isSwipeLeftActive
               ? isThresholdMetLeft
-                ? 'bg-amber-600 text-white'
-                : 'bg-amber-500/90 text-white'
-              : 'bg-slate-100 text-slate-400'
+                ? 'bg-amber-600 text-white z-0'
+                : 'bg-amber-500/90 text-white z-0'
+              : 'bg-transparent pointer-events-none opacity-0'
           }`}
         >
           {/* Left/Right Action Indicators revealed under the card */}
@@ -692,14 +702,24 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
             transform: `translateX(${dragOffset}px)`,
             transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
           }}
-          className={`relative z-10 bg-white rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-xs ${
+          className={`relative z-10 ${
+            isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg
+          } rounded-2xl border transition-all duration-200 flex flex-col justify-between cursor-pointer hover:shadow-xs ${
             status === 'needs_review'
-              ? 'border-amber-300 bg-gradient-to-br from-white to-amber-50/40 ring-1 ring-amber-300'
+              ? isGlassTheme(currentTheme)
+                ? 'border-amber-400/80 ring-1 ring-amber-400/50 shadow-[inset_0_0_20px_rgba(251,191,36,0.12)]'
+                : 'border-amber-300 bg-amber-50/80 dark:bg-amber-950/30 ring-1 ring-amber-300'
               : status === 'approved'
-              ? 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/30'
+              ? isGlassTheme(currentTheme)
+                ? 'border-emerald-400/80 ring-1 ring-emerald-400/50 shadow-[inset_0_0_20px_rgba(52,211,153,0.10)]'
+                : 'border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/20'
               : status === 'needs_redo'
-              ? 'border-rose-300 bg-gradient-to-br from-white to-rose-50/30 ring-1 ring-rose-200'
-              : 'border-slate-200 hover:border-slate-300'
+              ? isGlassTheme(currentTheme)
+                ? 'border-rose-400/80 ring-1 ring-rose-400/50 shadow-[inset_0_0_20px_rgba(244,63,94,0.12)]'
+                : 'border-rose-300 bg-rose-50/80 dark:bg-rose-950/30 ring-1 ring-rose-200'
+              : isGlassTheme(currentTheme)
+              ? 'border-white/20'
+              : `${theme.cardBorder} ${theme.cardHoverBorder}`
           }`}
         >
           <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">

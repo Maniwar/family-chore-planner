@@ -9,20 +9,487 @@
     -webkit-touch-callout: none;
     overscroll-behavior-y: none;
     touch-action: manipulation;
-  }
+    background-color: var(--surface-2);
+      }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Roboto", "Outfit", system-ui, sans-serif;
   }
 }
 
-/* Mobile & Android Touch Target & Scrollbar optimizations */
-.touch-target {
-  min-height: 48px;
-  min-width: 48px;
+/* ==========================================================================
+   THEME SYSTEM: APPLE GLASS & ICE MATERIAL TOKEN ARCHITECTURE
+   ========================================================================== */
+
+/* 1. Default Baseline Tokens */
+:root {
+  --surface-1: #FFFFFF;
+  --surface-2: #F8FAFC;
+  --surface-elevated: #FFFFFF;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --border-default: rgba(226, 232, 240, 0.85);
+  --border-subtle: rgba(241, 245, 249, 0.85);
+  --border-hover: rgba(203, 213, 225, 0.95);
+  --shadow-default: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  
+  --glass-tint: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
+  --glass-blur: blur(20px) saturate(200%);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.25);
+  --glass-border-color: rgba(255, 255, 255, 0.25);
+  --glass-bevel: inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.30), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04);
+  --glass-card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.08) 100%);
+  --glass-card-border: rgba(255, 255, 255, 0.25);
+  --glass-card-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  --glass-shadow: 0 -8px 28px 0 rgba(15, 23, 42, 0.08);
+  --glass-shadow-down: 0 8px 28px 0 rgba(15, 23, 42, 0.08);
+  
+  --status-ontrack: #10B981;
+  --status-behind: #F59E0B;
+  --status-waybehind: #F43F5E;
 }
 
-/* Hide scrollbar for clean horizontal swipe tabs on mobile */
+/* 2. Frosted Glass Theme - Light (Apple visionOS 3D Liquid Glassmorphism) */
+[data-theme="glass"],
+[data-theme="frosted_glass"] {
+  --glass-tint: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.25) 100%);
+  --glass-blur: blur(20px) saturate(200%) brightness(1.02);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.30);
+  --glass-border-color: rgba(255, 255, 255, 0.30);
+  --glass-bevel: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.98), 
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04);
+  --glass-card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.08) 100%);
+  --glass-card-border: rgba(255, 255, 255, 0.30);
+  --glass-card-shadow: 
+    0 12px 32px -4px rgba(15, 23, 42, 0.09), 
+    0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  --glass-shadow: 0 -8px 28px 0 rgba(15, 23, 42, 0.08);
+  --glass-shadow-down: 0 8px 28px 0 rgba(15, 23, 42, 0.08);
+  
+  --surface-1: rgba(255, 255, 255, 0.25);
+  --surface-2: transparent;
+  --surface-elevated: rgba(255, 255, 255, 0.30);
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --border-default: rgba(255, 255, 255, 0.30);
+  --border-subtle: rgba(255, 255, 255, 0.65);
+  --border-hover: rgba(255, 255, 255, 1.0);
+  --shadow-default: 0 10px 28px 0 rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 16px 36px 0 rgba(15, 23, 42, 0.12);
+}
+
+/* 3. Frosted Glass Theme - Dark */
+.dark[data-theme="glass"],
+.dark[data-theme="frosted_glass"],
+[data-theme="glass"].dark,
+[data-theme="frosted_glass"].dark {
+  --glass-tint: linear-gradient(135deg, rgba(15, 23, 42, 0.35) 0%, rgba(30, 41, 59, 0.25) 100%);
+  --glass-blur: blur(20px) saturate(200%);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.18);
+  --glass-border-color: rgba(255, 255, 255, 0.18);
+  --glass-bevel: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.30);
+  --glass-card-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.20) 0%, rgba(30, 41, 59, 0.10) 100%);
+  --glass-card-border: rgba(255, 255, 255, 0.18);
+  --glass-card-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.45);
+  --glass-shadow: 0 -8px 32px 0 rgba(0, 0, 0, 0.45);
+  --glass-shadow-down: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  
+  --surface-1: rgba(15, 23, 42, 0.82);
+  --surface-2: transparent;
+  --surface-elevated: rgba(30, 41, 59, 0.88);
+  --text-primary: #F8FAFC;
+  --text-secondary: #E2E8F0;
+  --text-muted: #94A3B8;
+  --border-default: rgba(255, 255, 255, 0.18);
+  --border-subtle: rgba(255, 255, 255, 0.10);
+  --border-hover: rgba(255, 255, 255, 0.35);
+  --shadow-default: 0 12px 32px 0 rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 18px 44px 0 rgba(0, 0, 0, 0.55);
+}
+
+/* 4. Glacial Ice Theme - Light (Subzero Arctic Frost & Crystal Sheen) */
+[data-theme="ice"],
+[data-theme="crystal_ice"] {
+  --glass-tint: linear-gradient(135deg, rgba(240, 249, 255, 0.12) 0%, rgba(224, 242, 254, 0.02) 50%, rgba(240, 249, 255, 0.05) 100%);
+  --glass-blur: blur(20px) saturate(200%) brightness(1.02);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.40);
+  --glass-border-color: rgba(255, 255, 255, 0.30);
+  --glass-bevel: 
+    inset 0 2px 2px 0 rgba(255, 255, 255, 1.0), 
+    inset 0 -1px 1px 0 rgba(14, 116, 144, 0.08);
+  --glass-card-bg: linear-gradient(135deg, rgba(245, 251, 255, 0.15) 0%, rgba(224, 242, 254, 0.05) 50%, rgba(240, 249, 255, 0.08) 100%);
+  --glass-card-border: rgba(255, 255, 255, 0.30);
+  --glass-card-shadow: 
+    0 12px 32px 0 rgba(14, 116, 144, 0.10), 
+    0 4px 12px -1px rgba(14, 116, 144, 0.04);
+  --glass-shadow: 0 -8px 28px 0 rgba(12, 74, 110, 0.10);
+  --glass-shadow-down: 0 8px 28px 0 rgba(12, 74, 110, 0.10);
+  
+  --surface-1: rgba(245, 251, 255, 0.86);
+  --surface-2: transparent;
+  --surface-elevated: rgba(255, 255, 255, 0.94);
+  --text-primary: #082F49;
+  --text-secondary: #0C4A6E;
+  --text-muted: #0369A1;
+  --border-default: rgba(255, 255, 255, 0.30);
+  --border-subtle: rgba(186, 230, 253, 0.70);
+  --border-hover: rgba(56, 189, 248, 0.95);
+  --shadow-default: 0 10px 28px 0 rgba(14, 116, 144, 0.10);
+  --shadow-md: 0 16px 36px 0 rgba(14, 116, 144, 0.15);
+}
+
+/* 5. Glacial Ice Theme - Dark */
+.dark[data-theme="ice"],
+.dark[data-theme="crystal_ice"],
+[data-theme="ice"].dark,
+[data-theme="crystal_ice"].dark {
+  --glass-tint: linear-gradient(135deg, rgba(8, 28, 48, 0.15) 0%, rgba(14, 46, 74, 0.08) 100%);
+  --glass-blur: blur(20px) saturate(200%);
+  --glass-border: 1px solid rgba(186, 230, 253, 0.22);
+  --glass-border-color: rgba(186, 230, 253, 0.22);
+  --glass-bevel: inset 0 1.5px 1.5px 0 rgba(186, 230, 253, 0.40);
+  --glass-card-bg: linear-gradient(135deg, rgba(8, 28, 48, 0.15) 0%, rgba(14, 46, 74, 0.05) 100%);
+  --glass-card-border: rgba(186, 230, 253, 0.22);
+  --glass-card-shadow: 0 10px 32px 0 rgba(0, 18, 30, 0.50);
+  --glass-shadow: 0 -8px 28px 0 rgba(0, 18, 30, 0.50);
+  --glass-shadow-down: 0 8px 28px 0 rgba(0, 18, 30, 0.50);
+  
+  --surface-1: rgba(8, 28, 48, 0.84);
+  --surface-2: transparent;
+  --surface-elevated: rgba(14, 46, 74, 0.88);
+  --text-primary: #F0F9FF;
+  --text-secondary: #BAE6FD;
+  --text-muted: #7DD3FC;
+  --border-default: rgba(186, 230, 253, 0.22);
+  --border-subtle: rgba(186, 230, 253, 0.12);
+  --border-hover: rgba(56, 189, 248, 0.45);
+  --shadow-default: 0 10px 28px -4px rgba(0, 18, 30, 0.40);
+  --shadow-md: 0 16px 36px -4px rgba(0, 18, 30, 0.55);
+}
+
+/* ==========================================================================
+   APPLE VISIONOS & MACOS GLASS UTILITIES & 3D OPTICAL TEXTURES
+   ========================================================================== */
+
+/* Universal Apple Glass Surface */
+.apple-glass {
+  position: relative;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
+  box-shadow: var(--glass-card-shadow), var(--glass-bevel);
+  }
+
+/* Glass Card for Chores, Lists & Containers with 3D Top Reflection & Frosted Grain */
+.apple-glass-card {
+  position: relative;
+  background: var(--glass-card-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-card-border);
+  box-shadow: var(--glass-card-shadow), var(--glass-bevel);
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.2s ease;
+  overflow: hidden;
+}
+
+/* Top curved glass specular reflection sheen */
+
+
+/* Subtle frosted crystalline micro-sheen */
+
+
+.apple-glass-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: 
+    0 22px 48px -6px rgba(31, 38, 135, 0.20),
+    0 6px 16px -2px rgba(31, 38, 135, 0.08), 
+    var(--glass-bevel);
+}
+
+/* Glass Panel for Modals, Drawers & Deep Windows */
+.apple-glass-panel {
+  position: relative;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-color);
+  box-shadow: 0 24px 60px -8px rgba(15, 23, 42, 0.25), var(--glass-bevel);
+    overflow: hidden;
+}
+
+.apple-glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.40) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glass Top Header */
+.apple-glass-header {
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border-color);
+  box-shadow: var(--glass-shadow-down), var(--glass-bevel);
+}
+
+/* Glass Bottom Tab Bar */
+.apple-glass-tabbar {
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--glass-border-color);
+  box-shadow: var(--glass-shadow), var(--glass-bevel);
+}
+
+/* Glass Dock for Date Ribbon & Helper Filter Strip */
+.apple-glass-dock {
+  position: relative;
+  background: var(--glass-card-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-card-border);
+  box-shadow: 0 12px 36px 0 rgba(31, 38, 135, 0.14), var(--glass-bevel);
+  overflow: hidden;
+}
+
+.apple-glass-dock::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.40) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glass Button / Pill */
+.apple-glass-pill {
+  background: rgba(255, 255, 255, 0.25);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.40);
+  box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.06), inset 0 1px 1px 0 rgba(255, 255, 255, 1.0);
+  color: #0F172A;
+  transition: all 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.apple-glass-pill:hover {
+  background: rgba(255, 255, 255, 0.40);
+  border-color: rgba(255, 255, 255, 0.60);
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.10), inset 0 1px 1.5px 0 rgba(255, 255, 255, 1.0);
+  transform: translateY(-1px);
+}
+
+.apple-glass-pill:active {
+  transform: scale(0.97);
+}
+
+/* Apple VisionOS Translucent Glass Button */
+.apple-glass-button {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.40) 0%, rgba(255, 255, 255, 0.15) 100%);
+  -webkit-backdrop-filter: blur(16px) saturate(190%);
+  backdrop-filter: blur(16px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.12), inset 0 1px 1px 0 rgba(255, 255, 255, 1.0), inset 0 -1px 1px 0 rgba(255, 255, 255, 0.3);
+  color: #0F172A;
+  font-weight: 700;
+  border-radius: 0.875rem;
+  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.apple-glass-button:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.55) 100%);
+  border-color: rgba(255, 255, 255, 0.60);
+  box-shadow: 0 6px 16px -3px rgba(15, 23, 42, 0.15), inset 0 1px 2px 0 rgba(255, 255, 255, 1.0);
+  transform: translateY(-1px);
+}
+
+.apple-glass-button:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 4px 0 rgba(15, 23, 42, 0.08), inset 0 1px 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* Apple VisionOS Primary Colored Glass Button */
+.apple-glass-button-primary {
+  color: #0F172A;
+  position: relative;
+  background: rgba(255, 255, 255, 0.25);
+  -webkit-backdrop-filter: blur(16px) saturate(200%);
+  backdrop-filter: blur(16px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-top-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.40);
+    font-weight: 800;
+  border-radius: 0.875rem;
+  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+}
+
+.apple-glass-button-primary:hover {
+  background: rgba(255, 255, 255, 0.50);
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10), inset 0 1px 2px 0 rgba(255, 255, 255, 0.70);
+  transform: translateY(-1px);
+}
+
+.apple-glass-button-primary:active {
+  transform: scale(0.97);
+}
+
+/* Apple VisionOS Glass Input Container */
+.apple-glass-input {
+  background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  box-shadow: inset 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 2px 8px -2px rgba(15, 23, 42, 0.04);
+  color: #0F172A;
+  transition: all 0.18s ease;
+}
+
+.apple-glass-input:focus-within {
+  background: rgba(255, 255, 255, 0.30);
+  border-color: #0284C7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18), inset 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+}
+
+/* Ice Frost Specular Texture Overlay for Glacial Ice */
+[data-theme="ice"] .apple-glass::before,
+[data-theme="crystal_ice"] .apple-glass::before,
+
+
+/* Compatibility classes for legacy references */
+.chrome-glass {
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border-color);
+  }
+
+.chrome-glass-header {
+  box-shadow: var(--glass-shadow-down), var(--glass-bevel);
+  border-bottom: 1px solid var(--glass-border-color);
+}
+
+.chrome-glass-tabbar {
+  box-shadow: var(--glass-shadow), var(--glass-bevel);
+  border-top: 1px solid var(--glass-border-color);
+}
+
+.chrome-glass-modal {
+  box-shadow: 0 24px 60px -8px rgba(15, 23, 42, 0.35), 0 0 0 1px var(--glass-border-color), var(--glass-bevel);
+}
+
+/* Content surface utility */
+.content-surface {
+  background: var(--surface-1);
+    border-color: var(--border-default);
+  box-shadow: var(--shadow-default);
+}
+
+/* ==========================================================================
+   ACCESSIBILITY & HARDWARE CAPABILITY MEDIA QUERIES
+   ========================================================================== */
+
+/* 1. Unsupported Backdrop-Filter Fallback */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .apple-glass,
+  .apple-glass-card,
+  .apple-glass-header,
+  .apple-glass-tabbar,
+  .apple-glass-dock,
+  .apple-glass-pill,
+  .chrome-glass {
+    background-color: #FFFFFF !important;
+  }
+}
+
+/* 2. Reduced Transparency Preference */
+@media (prefers-reduced-transparency: reduce) {
+  .apple-glass,
+  .apple-glass-card,
+  .apple-glass-header,
+  .apple-glass-tabbar,
+  .apple-glass-dock,
+  .apple-glass-pill,
+  .chrome-glass {
+    background-color: #FFFFFF !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .dark .apple-glass,
+  .dark .apple-glass-card,
+  .dark .apple-glass-header,
+  .dark .apple-glass-tabbar,
+  .dark .apple-glass-dock,
+  .dark .apple-glass-pill,
+  .dark .chrome-glass {
+    background-color: #1E293B !important;
+  }
+}
+
+/* 3. High Contrast Preference */
+@media (prefers-contrast: more) {
+  :root {
+    --glass-tint: #FFFFFF;
+    --border-default: #0F172A;
+    --text-secondary: #0F172A;
+  }
+
+  .dark {
+    --glass-tint: #0B0E14;
+    --border-default: #FFFFFF;
+    --text-secondary: #FFFFFF;
+  }
+
+  .apple-glass,
+  .apple-glass-card,
+  .chrome-glass {
+    border-width: 2px !important;
+  }
+}
+
+/* 4. Forced Colors (High Contrast Mode) */
+@media (forced-colors: active) {
+  .apple-glass,
+  .apple-glass-card,
+  .chrome-glass {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: Canvas !important;
+    color: CanvasText !important;
+    border-color: ButtonBorder !important;
+  }
+}
+
+/* Mobile & Touch Target Utilities */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -31,7 +498,6 @@
   scrollbar-width: none;
 }
 
-/* Smooth momentum scrolling for Android & iOS drawers and lists */
 .scroll-touch {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
@@ -83,3 +549,15 @@
   }
 }
 
+
+
+
+
+
+/* Glass Theme Text Legibility Overrides */
+.glass-text-override {
+  color: #0f172a !important; /* text-slate-900 */
+}
+.dark .glass-text-override {
+  color: #f8fafc !important; /* text-slate-50 */
+}

@@ -64,7 +64,7 @@ import {
   PersonStatusSummary 
 } from '../utils/penaltyEngine';
 import { soundFX } from '../utils/audio';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { PersonStatusDrawer } from './PersonStatusDrawer';
 import { HouseholdDrilldownDrawer } from './HouseholdDrilldownDrawer';
 
@@ -343,17 +343,17 @@ export const StatusView: React.FC<StatusViewProps> = ({
   return (
     <div className="space-y-4 pb-20 sm:pb-8">
       {/* Top Header & Sub-Tabs */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-2xs">
+      <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-3xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200'} p-3.5 sm:p-5 shadow-2xs`}>
         <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-10 h-10 rounded-2xl ${isGlassTheme(currentTheme) ? 'apple-glass-pill bg-indigo-50/80 text-indigo-700 border-indigo-200/80' : 'bg-indigo-50 border border-indigo-100 text-indigo-600'} flex items-center justify-center`}>
               <Activity className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+              <h1 className="text-base sm:text-xl font-black text-slate-900 leading-tight">
                 Household Status
               </h1>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-600 font-medium">
                 Live accountability, lateness tracking & audit history
               </p>
             </div>
@@ -367,7 +367,11 @@ export const StatusView: React.FC<StatusViewProps> = ({
                   setTempSettings(penaltySettings);
                   setShowSettingsModal(true);
                 }}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer min-h-[36px] active:scale-95"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer min-h-[36px] active:scale-95 border ${
+                  isGlassTheme(currentTheme)
+                    ? 'apple-glass-button bg-white/10 dark:bg-white/5 text-slate-900 dark:text-white border-white/20 shadow-2xs'
+                    : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200'
+                }`}
                 title="Penalty and Grade Settings"
               >
                 <Settings className="w-3.5 h-3.5 text-slate-600" />
@@ -378,16 +382,20 @@ export const StatusView: React.FC<StatusViewProps> = ({
         </div>
 
         {/* Sub-Tabs: Now vs Trends & Waivers vs History */}
-        <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+        <div className={`flex ${isGlassTheme(currentTheme) ? 'apple-glass-dock bg-black/5 dark:bg-black/20 border-white/20' : 'bg-slate-100 border border-slate-200/60'} p-1 rounded-2xl gap-1.5`}>
           <button
             onClick={() => {
               soundFX.playPop();
               setActiveSubTab('now');
             }}
-            className={`flex-1 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px] ${
+            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px] ${
               activeSubTab === 'now'
-                ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill bg-white/20 dark:bg-white/10 text-slate-900 dark:text-white font-black shadow-md border-white/20'
+                  : 'bg-white text-slate-900 shadow-2xs font-extrabold'
+                : isGlassTheme(currentTheme)
+                ? 'text-slate-700 hover:text-slate-900 hover:bg-white/40'
+                : 'text-slate-500 hover:text-slate-900 dark:text-white'
             }`}
           >
             <Activity className="w-3.5 h-3.5 text-indigo-600" />
@@ -405,10 +413,14 @@ export const StatusView: React.FC<StatusViewProps> = ({
               soundFX.playPop();
               setActiveSubTab('timeline');
             }}
-            className={`flex-1 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px] ${
+            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px] ${
               activeSubTab === 'timeline'
-                ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill bg-white/20 dark:bg-white/10 text-slate-900 dark:text-white font-black shadow-md border-white/20'
+                  : 'bg-white text-slate-900 shadow-2xs font-extrabold'
+                : isGlassTheme(currentTheme)
+                ? 'text-slate-700 hover:text-slate-900 hover:bg-white/40'
+                : 'text-slate-500 hover:text-slate-900 dark:text-white'
             }`}
           >
             <BarChart2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -425,10 +437,14 @@ export const StatusView: React.FC<StatusViewProps> = ({
               soundFX.playPop();
               setActiveSubTab('history');
             }}
-            className={`flex-1 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px] ${
+            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px] ${
               activeSubTab === 'history'
-                ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-                : 'text-slate-500 hover:text-slate-800'
+                ? isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill bg-white/20 dark:bg-white/10 text-slate-900 dark:text-white font-black shadow-md border-white/20'
+                  : 'bg-white text-slate-900 shadow-2xs font-extrabold'
+                : isGlassTheme(currentTheme)
+                ? 'text-slate-700 hover:text-slate-900 hover:bg-white/40'
+                : 'text-slate-500 hover:text-slate-900 dark:text-white'
             }`}
           >
             <History className="w-3.5 h-3.5 text-amber-600" />
@@ -577,7 +593,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
                         });
                       }
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black shadow-xs cursor-pointer min-h-[36px] active:scale-95 transition-all"
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black shadow-xs cursor-pointer min-h-[36px] active:scale-95 transition-all ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white'}`}
                     title="Waive all family overdue chores immediately"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
@@ -598,7 +614,11 @@ export const StatusView: React.FC<StatusViewProps> = ({
                         setSelectedPersonSheet(summary);
                       }}
                       className={`rounded-2xl border p-3.5 sm:p-4 transition-all cursor-pointer hover:shadow-xs active:scale-[0.99] flex flex-col justify-between ${
-                        isWayBehind
+                        isGlassTheme(currentTheme)
+                          ? isWayBehind
+                            ? 'bg-rose-500/15 border-rose-300/80 ring-1 ring-rose-300/50 backdrop-blur-xl shadow-xs'
+                            : 'bg-amber-500/15 border-amber-300/80 ring-1 ring-amber-300/50 backdrop-blur-xl shadow-xs'
+                          : isWayBehind
                           ? 'bg-rose-50/50 border-rose-300 ring-1 ring-rose-200'
                           : 'bg-amber-50/40 border-amber-300'
                       }`}
@@ -727,7 +747,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
                         soundFX.playPop();
                         setSelectedPersonSheet(summary);
                       }}
-                      className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 hover:border-emerald-300 hover:shadow-2xs transition-all cursor-pointer flex items-center justify-between gap-2"
+                      className={`${theme.cardBg} rounded-2xl border ${theme.cardBorder} p-3 sm:p-4 hover:border-emerald-300 hover:shadow-2xs transition-all cursor-pointer flex items-center justify-between gap-2`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar
@@ -836,7 +856,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
           </div>
 
           {/* 14-Day Timeline Chart */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-3">
+          <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200'} p-4 shadow-2xs space-y-3`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -862,7 +882,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
                     className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       analyticsMetric === m.id
                         ? 'bg-white text-slate-900 shadow-2xs font-black'
-                        : 'text-slate-500 hover:text-slate-800'
+                        : 'text-slate-500 hover:text-slate-900 dark:text-white'
                     }`}
                   >
                     {m.label}
@@ -954,7 +974,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
           </div>
 
           {/* Member Comparison Bar Chart */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-3">
+          <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200'} p-4 shadow-2xs space-y-3`}>
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -1010,7 +1030,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
                   <Trophy className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">
+                  <h3 className={`text-sm font-black ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white' : 'text-slate-900'}`}>
                     Who Is Getting Things Waived The Most?
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
@@ -1069,7 +1089,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
                                 </span>
                               )}
                             </div>
-                            <p className="text-[11px] text-slate-500 font-medium">
+                            <p className={`text-[11px] font-medium ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>
                               ⭐ {stat.member.currentPoints || 0} pts · {stat.overdueCount} overdue · {stat.redoCount} redos
                             </p>
                           </div>
@@ -1151,9 +1171,9 @@ export const StatusView: React.FC<StatusViewProps> = ({
       {activeSubTab === 'history' && (
         <div className="space-y-4">
           {/* History Filters & Search */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-3 shadow-2xs space-y-2.5">
+          <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200'} p-3 shadow-2xs space-y-2.5`}>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                 <Filter className="w-3.5 h-3.5 text-slate-600" />
                 <span>Audit Filters</span>
               </span>
@@ -1349,7 +1369,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
       {/* HOUSEHOLD DRILLDOWN MODAL / BOTTOM SHEET */}
       {/* ======================================================== */}
       {drilldownType && (
-        <HouseholdDrilldownDrawer
+        <HouseholdDrilldownDrawer currentTheme={currentTheme}
           drilldownType={drilldownType}
           onClose={() => setDrilldownType(null)}
           theme={theme}
@@ -1385,7 +1405,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
           onClick={() => setNudgeModalTarget(null)}
         >
           <div 
-            className="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4 border border-slate-200"
+            className={`${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-white border-slate-200'} w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4 border`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -1394,10 +1414,10 @@ export const StatusView: React.FC<StatusViewProps> = ({
                   <BellRing className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">
+                  <h3 className={`text-sm font-black ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white' : 'text-slate-900'}`}>
                     Send Nudge to {nudgeModalTarget.member.name}
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">
+                  <p className={`text-[11px] font-medium ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>
                     Friendly reminder with in-app banner & sound
                   </p>
                 </div>
@@ -1474,7 +1494,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
           onClick={() => setWaiveTarget(null)}
         >
           <div 
-            className="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4 border border-slate-200"
+            className={`${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-white border-slate-200'} w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4 border`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -1483,10 +1503,10 @@ export const StatusView: React.FC<StatusViewProps> = ({
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">
+                  <h3 className={`text-sm font-black ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white' : 'text-slate-900'}`}>
                     Waive Lateness Penalty
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">
+                  <p className={`text-[11px] font-medium ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>
                     Restores 100% points without lateness deduction
                   </p>
                 </div>
@@ -1498,7 +1518,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
 
             <form onSubmit={handleWaiveSubmit} className="space-y-3">
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
-                <div className="font-bold text-slate-800">{waiveTarget.chore.title}</div>
+                <div className="font-bold text-slate-900 dark:text-white">{waiveTarget.chore.title}</div>
                 <div className="text-slate-500">Originally due: {waiveTarget.originalDueDate} ({waiveTarget.daysLate}d late)</div>
               </div>
 
@@ -1526,7 +1546,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center gap-1.5 cursor-pointer min-h-[38px]"
+                  className={`px-4 py-2 rounded-xl text-xs font-black shadow-2xs flex items-center gap-1.5 cursor-pointer min-h-[38px] ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>Confirm Waiver</span>
@@ -1546,7 +1566,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
           onClick={() => setExtendTarget(null)}
         >
           <div 
-            className="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4 border border-slate-200"
+            className={`${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-white border-slate-200'} w-full max-w-md rounded-3xl p-5 shadow-2xl space-y-4 border`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -1555,10 +1575,10 @@ export const StatusView: React.FC<StatusViewProps> = ({
                   <CalendarPlus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">
+                  <h3 className={`text-sm font-black ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white' : 'text-slate-900'}`}>
                     Extend Chore Due Date
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">
+                  <p className={`text-[11px] font-medium ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>
                     Resets late clock until new extension deadline
                   </p>
                 </div>
@@ -1570,7 +1590,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
 
             <form onSubmit={handleExtendSubmit} className="space-y-3">
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
-                <div className="font-bold text-slate-800">{extendTarget.chore.title}</div>
+                <div className="font-bold text-slate-900 dark:text-white">{extendTarget.chore.title}</div>
                 <div className="text-slate-500">Current effective due date: {extendTarget.effectiveDueDate}</div>
               </div>
 
@@ -1640,7 +1660,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
           onClick={() => setShowSettingsModal(false)}
         >
           <div 
-            className="bg-white w-full max-w-lg rounded-3xl p-5 shadow-2xl space-y-4 border border-slate-200 max-h-[85vh] overflow-y-auto"
+            className={`${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : 'bg-white border-slate-200'} w-full max-w-lg rounded-3xl p-5 shadow-2xl space-y-4 border max-h-[85vh] overflow-y-auto`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -1649,10 +1669,10 @@ export const StatusView: React.FC<StatusViewProps> = ({
                   <Sliders className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">
+                  <h3 className={`text-sm font-black ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white' : 'text-slate-900'}`}>
                     Penalty & Grade Configuration
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">
+                  <p className={`text-[11px] font-medium ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>
                     Control lateness deductions and quality multipliers
                   </p>
                 </div>
@@ -1664,47 +1684,47 @@ export const StatusView: React.FC<StatusViewProps> = ({
 
             {/* Lateness Tiers Schedule */}
             <div className="space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+              <h4 className={`text-xs font-black uppercase tracking-wider ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-slate-200' : 'text-slate-900 dark:text-white'}`}>
                 Lateness Tiers & Balance Deductions
               </h4>
 
               <div className="space-y-2 text-xs">
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div className={`p-2.5 rounded-xl border flex items-center justify-between ${isGlassTheme(currentTheme) ? 'bg-white/10 border-white/20' : 'bg-slate-50 border-slate-200'}`}>
                   <div>
-                    <span className="font-bold text-slate-800">&lt; 1 Day Late</span>
-                    <p className="text-[11px] text-slate-500">Same day grace / morning after</p>
+                    <span className={`font-bold ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-white'}`}>&lt; 1 Day Late</span>
+                    <p className={`text-[11px] ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>Same day grace / morning after</p>
                   </div>
-                  <span className="font-black text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
+                  <span className="font-black text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/20 px-2 py-1 rounded-lg border border-amber-200 dark:border-amber-500/30">
                     Earns 75% points
                   </span>
                 </div>
 
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div className={`p-2.5 rounded-xl border flex items-center justify-between ${isGlassTheme(currentTheme) ? 'bg-white/10 border-white/20' : 'bg-slate-50 border-slate-200'}`}>
                   <div>
-                    <span className="font-bold text-slate-800">1 to 2 Days Late</span>
-                    <p className="text-[11px] text-slate-500">Moderate delay</p>
+                    <span className={`font-bold ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-white'}`}>1 to 2 Days Late</span>
+                    <p className={`text-[11px] ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>Moderate delay</p>
                   </div>
-                  <span className="font-black text-amber-800 bg-amber-100 px-2 py-1 rounded-lg border border-amber-200">
+                  <span className="font-black text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/30 px-2 py-1 rounded-lg border border-amber-200 dark:border-amber-500/40">
                     Earns 50% points
                   </span>
                 </div>
 
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div className={`p-2.5 rounded-xl border flex items-center justify-between ${isGlassTheme(currentTheme) ? 'bg-white/10 border-white/20' : 'bg-slate-50 border-slate-200'}`}>
                   <div>
-                    <span className="font-bold text-slate-800">3 to 6 Days Late</span>
-                    <p className="text-[11px] text-slate-500">Severe delay</p>
+                    <span className={`font-bold ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-white'}`}>3 to 6 Days Late</span>
+                    <p className={`text-[11px] ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>Severe delay</p>
                   </div>
-                  <span className="font-black text-rose-700 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200">
+                  <span className="font-black text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/20 px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-500/30">
                     0% earn + 25% balance deduction
                   </span>
                 </div>
 
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div className={`p-2.5 rounded-xl border flex items-center justify-between ${isGlassTheme(currentTheme) ? 'bg-white/10 border-white/20' : 'bg-slate-50 border-slate-200'}`}>
                   <div>
-                    <span className="font-bold text-slate-800">7+ Days Late / Missed</span>
-                    <p className="text-[11px] text-slate-500">Abandoned or skipped</p>
+                    <span className={`font-bold ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-white'}`}>7+ Days Late / Missed</span>
+                    <p className={`text-[11px] ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>Abandoned or skipped</p>
                   </div>
-                  <span className="font-black text-rose-900 bg-rose-100 px-2 py-1 rounded-lg border border-rose-300">
+                  <span className="font-black text-rose-900 dark:text-rose-300 bg-rose-100 dark:bg-rose-500/30 px-2 py-1 rounded-lg border border-rose-300 dark:border-rose-500/40">
                     0% earn + 100% balance deduction
                   </span>
                 </div>
@@ -1713,16 +1733,16 @@ export const StatusView: React.FC<StatusViewProps> = ({
 
             {/* Quality Grade Multipliers */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+              <h4 className={`text-xs font-black uppercase tracking-wider ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-slate-200' : 'text-slate-900 dark:text-white'}`}>
                 Inspection Quality Multipliers (Stacked)
               </h4>
               <div className="grid grid-cols-5 gap-1.5 text-center">
                 {[
-                  { grade: 'A+', label: '100%', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-                  { grade: 'A', label: '90%', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-                  { grade: 'B', label: '75%', color: 'text-amber-700 bg-amber-50 border-amber-200' },
-                  { grade: 'C', label: '50%', color: 'text-amber-800 bg-amber-100 border-amber-200' },
-                  { grade: 'Redo', label: '0%', color: 'text-rose-700 bg-rose-50 border-rose-200' },
+                  { grade: 'A+', label: '100%', color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/20 border-emerald-200 dark:border-emerald-500/30' },
+                  { grade: 'A', label: '90%', color: 'text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/20 border-emerald-200 dark:border-emerald-500/30' },
+                  { grade: 'B', label: '75%', color: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/20 border-amber-200 dark:border-amber-500/30' },
+                  { grade: 'C', label: '50%', color: 'text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/30 border-amber-200 dark:border-amber-500/40' },
+                  { grade: 'Redo', label: '0%', color: 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/20 border-rose-200 dark:border-rose-500/30' },
                 ].map((g) => (
                   <div key={g.grade} className={`p-2 rounded-xl border text-xs ${g.color}`}>
                     <div className="font-black">{g.grade}</div>
@@ -1735,7 +1755,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
             {/* Negative Balance Toggle */}
             <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-slate-800">Allow Negative Balance</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">Allow Negative Balance</span>
                 <p className="text-[10px] text-slate-500">If disabled, deductions stop at 0 stars</p>
               </div>
               <input

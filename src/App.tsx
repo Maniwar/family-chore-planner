@@ -54,9 +54,10 @@ import { ParentPinModal } from './components/ParentPinModal';
 import { HouseholdSyncModal } from './components/HouseholdSyncModal';
 import { QuickSettingsModal } from './components/QuickSettingsModal';
 import { BadgeStyle } from './components/CategoryBadge';
+import { GlassIceShaderBackground } from './components/GlassIceShaderBackground';
 import { soundFX } from './utils/audio';
 import { SupportedLanguage, getTranslation } from './utils/i18n';
-import { ThemePreset, THEMES } from './utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from './utils/theme';
 import { evaluateHouseholdStatus, calculateInspectionAward, calculateDaysLate } from './utils/penaltyEngine';
 import { isPinProtectionEnabled, isParentSessionUnlocked, setParentSessionUnlocked, syncParentPinFromCloud, getParentPin } from './utils/parentLock';
 import { 
@@ -116,7 +117,7 @@ export default function App() {
 
   const theme = THEMES[currentTheme] || THEMES.rose;
 
-  // Sync document.documentElement 'dark' class with theme
+  // Sync document.documentElement 'dark' class and data-theme with active theme
   useEffect(() => {
     if (typeof document !== 'undefined') {
       if (theme.isDark) {
@@ -124,8 +125,13 @@ export default function App() {
       } else {
         document.documentElement.classList.remove('dark');
       }
+
+      const themeAttribute = currentTheme === 'frosted_glass' ? 'glass'
+        : currentTheme === 'crystal_ice' ? 'ice'
+        : currentTheme;
+      document.documentElement.setAttribute('data-theme', themeAttribute);
     }
-  }, [theme.isDark]);
+  }, [theme.isDark, currentTheme]);
 
   const [isSoundEnabled, setIsSoundEnabled] = useState<boolean>(() => soundFX.getEnabled());
 
@@ -1509,7 +1515,10 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen ${theme.appBgClass} flex flex-col font-sans antialiased relative overflow-x-hidden transition-colors duration-300`}>
+    <div className={`min-h-screen ${theme.appBgClass} ${isGlassTheme(currentTheme) ? 'glass-theme-active' : ''} flex flex-col font-sans antialiased relative overflow-x-hidden transition-colors duration-300`}>
+      {/* Real-time Dynamic Canvas Shader & Glass / Ice Optical Refraction Engine */}
+      <GlassIceShaderBackground currentTheme={currentTheme} />
+
       {/* Dynamic Ambient Background Glow Light Orbs */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden opacity-70 dark:opacity-40 no-print" aria-hidden="true">
         <div className={`absolute -top-32 -left-32 w-96 sm:w-[520px] h-96 sm:h-[520px] rounded-full ${theme.ambientGlow.orb1} blur-3xl filter transition-all duration-700 animate-pulse`} />
@@ -1562,7 +1571,7 @@ export default function App() {
 
       {/* Live Nudge Alert Banner for Kids & Family */}
       {activeNudgeBanner && (
-        <div className="fixed top-18 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-3.5 rounded-2xl shadow-xl border border-amber-300 flex items-center justify-between gap-3 animate-in slide-in-from-top-4 duration-300 no-print">
+        <div className="fixed top-18 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-50 chrome-glass chrome-glass-banner bg-amber-500/90 text-white p-3.5 rounded-2xl shadow-xl border border-amber-300/80 flex items-center justify-between gap-3 animate-in slide-in-from-top-4 duration-300 no-print">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
               <span className="text-base">🔔</span>
@@ -1598,6 +1607,16 @@ export default function App() {
         isMomMode={isMomMode}
         language={language}
         currentTheme={currentTheme}
+        dimmed={
+          isQuickSettingsOpen ||
+          isCloudSyncModalOpen ||
+          isHouseSettingsModalOpen ||
+          isAIAssignModalOpen ||
+          inspectModalData.isOpen ||
+          choreModalData.isOpen ||
+          memberModalData.isOpen ||
+          isParentPinModalOpen
+        }
       />
 
       {/* Primary Page Canvas */}
@@ -1750,6 +1769,7 @@ export default function App() {
             logs={logs}
             householdInfo={householdInfo}
             currentDateStr={currentDateStr}
+            currentTheme={currentTheme}
           />
         )}
 
@@ -1758,13 +1778,14 @@ export default function App() {
             chores={chores}
             members={members}
             selectedDate={currentDateStr}
+            currentTheme={currentTheme}
           />
         )}
       </main>
 
       {/* House Settings & Photo Modal */}
       {isHouseSettingsModalOpen && (
-        <HouseSettingsModal
+        <HouseSettingsModal currentTheme={currentTheme}
           isOpen={isHouseSettingsModalOpen}
           onClose={() => setIsHouseSettingsModalOpen(false)}
           householdInfo={householdInfo}

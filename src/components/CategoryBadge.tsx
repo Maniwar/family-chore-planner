@@ -243,7 +243,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
 
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full font-bold border shadow-2xs whitespace-nowrap ${getOriginalColor(category)} ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-full font-bold border shadow-2xs whitespace-nowrap ${getOriginalColor(category)} ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'
         } ${className}`}
       >
@@ -259,7 +259,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'emoji-3d') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full font-extrabold border border-white/80 dark:border-slate-700 shadow-sm whitespace-nowrap bg-gradient-to-b from-white to-slate-100 dark:from-slate-800 dark:to-slate-900 text-slate-800 dark:text-slate-100 ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-full font-extrabold border border-white/20 dark:border-slate-700 shadow-sm whitespace-nowrap bg-gradient-to-b from-white to-slate-100 dark:from-slate-800 dark:to-slate-900 text-slate-800 dark:text-slate-100 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
@@ -275,7 +275,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'emoji-sticker') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-xl font-bold border-2 border-slate-800 dark:border-slate-200 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-[1.5px_1.5px_0px_0px_rgba(15,23,42,0.9)] dark:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,0.9)] whitespace-nowrap ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-xl font-bold border-2 border-slate-800 dark:border-slate-200 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-[1.5px_1.5px_0px_0px_rgba(15,23,42,0.9)] dark:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,0.9)] whitespace-nowrap ${
           isXs ? 'px-1.5 py-0.5 text-[9px]' : isSm ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]'
         } ${className}`}
       >
@@ -289,7 +289,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'emoji-kawaii') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full font-black border border-pink-300 dark:border-pink-800 shadow-xs whitespace-nowrap bg-gradient-to-r from-pink-100 via-rose-50 to-pink-100 dark:from-pink-950/60 dark:to-rose-950/60 text-pink-800 dark:text-pink-200 ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-full font-black border border-pink-300 dark:border-pink-800 shadow-xs whitespace-nowrap bg-gradient-to-r from-pink-100 via-rose-50 to-pink-100 dark:from-pink-950/60 dark:to-rose-950/60 text-pink-800 dark:text-pink-200 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
@@ -305,7 +305,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'bubble') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full font-bold border border-white/60 shadow-xs whitespace-nowrap bg-gradient-to-r from-violet-500/15 via-fuchsia-500/15 to-pink-500/15 text-purple-900 dark:text-purple-200 dark:border-purple-600/50 ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-full font-bold border border-white/20 shadow-xs whitespace-nowrap bg-gradient-to-r from-violet-500/15 via-fuchsia-500/15 to-pink-500/15 text-purple-900 dark:text-purple-200 dark:border-purple-600/50 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
@@ -319,11 +319,11 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'vintage') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-md border font-serif tracking-normal shadow-2xs whitespace-nowrap bg-[#faf6ee] dark:bg-stone-900 border-[#e2d5c1] dark:border-stone-700 text-[#714b2d] dark:text-[#d7bfa8] ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-md border font-serif tracking-normal shadow-2xs whitespace-nowrap bg-[#faf6ee] dark:bg-stone-900 border-[#e2d5c1] dark:border-stone-700 text-[#714b2d] dark:text-[#d7bfa8] ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'
         } ${className}`}
       >
-        <span className="w-4 h-4 rounded-sm bg-[#ede2cf] dark:bg-stone-800 text-[#855734] dark:text-[#e0c8b2] flex items-center justify-center shrink-0">
+        <span className="w-4 h-4 rounded-sm bg-[#ede2cf] dark:bg-stone-800 text-[#855734] dark:text-[#e0c8b2] flex items-center justify-center ">
           <Icon className="w-3 h-3 stroke-[2.2]" />
         </span>
         <span className="truncate">{label}</span>
@@ -335,11 +335,11 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'minimal') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-md border font-medium tracking-tight whitespace-nowrap bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-md border font-medium tracking-tight whitespace-nowrap bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'
         } ${className}`}
       >
-        <Icon className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-slate-600 dark:text-slate-300 stroke-[2] shrink-0`} />
+        <Icon className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-slate-600 dark:text-slate-300 stroke-[2] `} />
         <span className="truncate">{label}</span>
       </span>
     );
@@ -349,7 +349,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'retro') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-md border-2 border-slate-900 dark:border-white font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] whitespace-nowrap bg-amber-300 dark:bg-amber-400 text-slate-950 ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-md border-2 border-slate-900 dark:border-white font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] whitespace-nowrap bg-amber-300 dark:bg-amber-400 text-slate-950 ${
           isXs ? 'px-1.5 py-0.5 text-[9px]' : isSm ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]'
         } ${className}`}
       >
@@ -363,11 +363,11 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'glass') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full border backdrop-blur-md font-semibold shadow-2xs whitespace-nowrap bg-white/75 dark:bg-slate-800/75 border-white/90 dark:border-slate-600/80 text-slate-800 dark:text-slate-100 ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-full border backdrop-blur-md font-semibold shadow-2xs whitespace-nowrap bg-white/75 dark:bg-slate-800/75 border-white/20 dark:border-slate-600/80 text-slate-800 dark:text-slate-100 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
-        <span className="w-4 h-4 rounded-full bg-sky-500/20 dark:bg-sky-400/20 text-sky-600 dark:text-sky-300 flex items-center justify-center shrink-0">
+        <span className="w-4 h-4 rounded-full bg-sky-500/20 dark:bg-sky-400/20 text-sky-600 dark:text-sky-300 flex items-center justify-center ">
           <Icon className="w-3 h-3 stroke-[2.2]" />
         </span>
         <span className="truncate">{label}</span>
@@ -379,11 +379,11 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'neon') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full font-extrabold tracking-wide border border-cyan-400/80 dark:border-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.35)] whitespace-nowrap bg-slate-900 text-cyan-300 ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-full font-extrabold tracking-wide border border-cyan-400/80 dark:border-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.35)] whitespace-nowrap bg-slate-900 text-cyan-300 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
-        <Zap className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-cyan-400 fill-cyan-400 shrink-0`} />
+        <Zap className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-cyan-400 fill-cyan-400 `} />
         <span className="truncate">{label}</span>
       </span>
     );
@@ -393,11 +393,11 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'nature') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full font-bold border border-emerald-300/80 dark:border-emerald-800 shadow-2xs whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 ${
+        className={`inline-flex min-w-0 items-center gap-1  rounded-full font-bold border border-emerald-300/80 dark:border-emerald-800 shadow-2xs whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
-        <Leaf className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-emerald-600 dark:text-emerald-400 fill-emerald-500/20 shrink-0`} />
+        <Leaf className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-emerald-600 dark:text-emerald-400 fill-emerald-500/20 `} />
         <span className="truncate">{label}</span>
       </span>
     );
@@ -458,11 +458,11 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full font-bold border shadow-2xs whitespace-nowrap ${colors.badge} ${
+      className={`inline-flex min-w-0 items-center gap-1  rounded-full font-bold border shadow-2xs whitespace-nowrap ${colors.badge} ${
         isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'
       } ${className}`}
     >
-      <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${colors.icon}`}>
+      <span className={`w-4 h-4 rounded-full flex items-center justify-center  ${colors.icon}`}>
         <Icon className="w-2.5 h-2.5 stroke-[2.5]" />
       </span>
       <span className="truncate">{label}</span>
@@ -492,7 +492,7 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'original') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200/90 dark:border-amber-800/70 shadow-2xs whitespace-nowrap ${
+        className={` shrink-0 inline-flex items-center gap-1  rounded-full font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200/90 dark:border-amber-800/70 shadow-2xs whitespace-nowrap ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-xs'
         } ${className}`}
       >
@@ -506,7 +506,7 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'emoji-3d') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full font-extrabold border border-amber-200/90 dark:border-slate-700 shadow-sm whitespace-nowrap bg-gradient-to-b from-amber-50 to-amber-100 dark:from-slate-800 dark:to-slate-900 text-amber-950 dark:text-amber-200 ${
+        className={`shrink-0 inline-flex items-center gap-1  rounded-full font-extrabold border border-amber-200/90 dark:border-slate-700 shadow-sm whitespace-nowrap bg-gradient-to-b from-amber-50 to-amber-100 dark:from-slate-800 dark:to-slate-900 text-amber-950 dark:text-amber-200 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-0.5 text-xs'
         } ${className}`}
       >
@@ -520,7 +520,7 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'emoji-sticker') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-xl font-bold border-2 border-slate-800 dark:border-slate-200 bg-amber-100 dark:bg-slate-900 text-slate-900 dark:text-white shadow-[1.5px_1.5px_0px_0px_rgba(15,23,42,0.9)] dark:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,0.9)] whitespace-nowrap ${
+        className={`shrink-0 inline-flex items-center gap-1  rounded-xl font-bold border-2 border-slate-800 dark:border-slate-200 bg-amber-100 dark:bg-slate-900 text-slate-900 dark:text-white shadow-[1.5px_1.5px_0px_0px_rgba(15,23,42,0.9)] dark:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,0.9)] whitespace-nowrap ${
           isXs ? 'px-1.5 py-0.5 text-[9px]' : isSm ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]'
         } ${className}`}
       >
@@ -534,7 +534,7 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'emoji-kawaii') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full font-black shadow-xs whitespace-nowrap bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-950/60 dark:to-yellow-950/60 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 ${
+        className={`shrink-0 inline-flex items-center gap-1  rounded-full font-black shadow-xs whitespace-nowrap bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-950/60 dark:to-yellow-950/60 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-0.5 text-xs'
         } ${className}`}
       >
@@ -548,7 +548,7 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'bubble') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full font-extrabold border border-amber-300/80 shadow-xs whitespace-nowrap bg-gradient-to-r from-amber-400/20 to-yellow-400/20 text-amber-900 dark:text-amber-200 ${
+        className={`shrink-0 inline-flex items-center gap-1  rounded-full font-extrabold border border-amber-300/80 shadow-xs whitespace-nowrap bg-gradient-to-r from-amber-400/20 to-yellow-400/20 text-amber-900 dark:text-amber-200 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-0.5 text-xs'
         } ${className}`}
       >
@@ -562,11 +562,11 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'vintage') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-md border font-serif font-bold shadow-2xs whitespace-nowrap bg-[#fcf5e8] dark:bg-stone-900 border-[#dfccb0] dark:border-stone-700 text-[#855325] dark:text-[#e4c9ad] ${
+        className={`shrink-0 inline-flex items-center gap-1  rounded-md border font-serif font-bold shadow-2xs whitespace-nowrap bg-[#fcf5e8] dark:bg-stone-900 border-[#dfccb0] dark:border-stone-700 text-[#855325] dark:text-[#e4c9ad] ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-xs'
         } ${className}`}
       >
-        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-[#c58d4a] text-[#a57032] shrink-0`} />
+        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-[#c58d4a] text-[#a57032] `} />
         <span>{points}{suffix ? ` ${suffix}` : ''}</span>
       </span>
     );
@@ -576,11 +576,11 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'minimal') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-md border font-semibold tracking-tight whitespace-nowrap bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 ${
+        className={`shrink-0 inline-flex items-center gap-1  rounded-md border font-semibold tracking-tight whitespace-nowrap bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-xs'
         } ${className}`}
       >
-        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-amber-500 fill-amber-400/40 stroke-[2] shrink-0`} />
+        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-amber-500 fill-amber-400/40 stroke-[2] `} />
         <span>{points}{suffix ? ` ${suffix}` : ''}</span>
       </span>
     );
@@ -590,11 +590,11 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'retro') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-md border-2 border-slate-900 dark:border-white font-black shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] whitespace-nowrap bg-yellow-400 dark:bg-yellow-400 text-slate-950 ${
+        className={`shrink-0 inline-flex items-center gap-1  rounded-md border-2 border-slate-900 dark:border-white font-black shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] whitespace-nowrap bg-yellow-400 dark:bg-yellow-400 text-slate-950 ${
           isXs ? 'px-1.5 py-0.5 text-[9px]' : isSm ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-[11px]'
         } ${className}`}
       >
-        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-slate-950 text-slate-950 shrink-0`} />
+        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-slate-950 text-slate-950 `} />
         <span>{points}{suffix ? ` ${suffix}` : ''}</span>
       </span>
     );
@@ -604,11 +604,11 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'glass') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full border backdrop-blur-md font-bold shadow-2xs whitespace-nowrap bg-amber-400/20 dark:bg-amber-400/15 border-amber-300/70 dark:border-amber-500/50 text-amber-900 dark:text-amber-200 ${
+        className={` shrink-0 inline-flex items-center gap-1  rounded-full border backdrop-blur-md font-bold shadow-2xs whitespace-nowrap bg-amber-400/20 dark:bg-amber-400/15 border-amber-300/70 dark:border-amber-500/50 text-amber-900 dark:text-amber-200 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-0.5 text-xs'
         } ${className}`}
       >
-        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-amber-400 text-amber-500 shrink-0`} />
+        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-amber-400 text-amber-500 `} />
         <span>{points}{suffix ? ` ${suffix}` : ''}</span>
       </span>
     );
@@ -618,11 +618,11 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'neon') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full font-black border border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.4)] whitespace-nowrap bg-slate-900 text-amber-300 ${
+        className={`shrink-0 inline-flex items-center gap-1  rounded-full font-black border border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.4)] whitespace-nowrap bg-slate-900 text-amber-300 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-0.5 text-xs'
         } ${className}`}
       >
-        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-amber-400 text-amber-400 shrink-0`} />
+        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-amber-400 text-amber-400 `} />
         <span>{points}{suffix ? ` ${suffix}` : ''}</span>
       </span>
     );
@@ -632,11 +632,11 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'nature') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full font-bold border border-amber-300 dark:border-amber-800 shadow-2xs whitespace-nowrap bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 ${
+        className={`shrink-0 inline-flex items-center gap-1  rounded-full font-bold border border-amber-300 dark:border-amber-800 shadow-2xs whitespace-nowrap bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 ${
           isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-xs'
         } ${className}`}
       >
-        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-amber-400 text-amber-500 shrink-0`} />
+        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-amber-400 text-amber-500 `} />
         <span>{points}{suffix ? ` ${suffix}` : ''}</span>
       </span>
     );
@@ -645,11 +645,11 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   // 12. DEFAULT PASTEL VECTOR STAR
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200/90 dark:border-amber-800/70 shadow-2xs whitespace-nowrap ${
+      className={` shrink-0 inline-flex items-center gap-1  rounded-full font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200/90 dark:border-amber-800/70 shadow-2xs whitespace-nowrap ${
         isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-xs'
       } ${className}`}
     >
-      <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-amber-400 text-amber-400 shrink-0`} />
+      <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-amber-400 text-amber-400 `} />
       <span>{points}{suffix ? ` ${suffix}` : ''}</span>
     </span>
   );

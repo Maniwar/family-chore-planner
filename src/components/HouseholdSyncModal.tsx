@@ -21,7 +21,7 @@ import {
 import { CloudHousehold, createNewHousehold, findHouseholdByCode, setCurrentHouseholdId } from '../utils/firebaseSync';
 import { getParentPin } from '../utils/parentLock';
 import { HouseholdInfo } from '../types';
-import { ThemePreset, THEMES } from '../utils/theme';
+import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { soundFX } from '../utils/audio';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
@@ -179,20 +179,16 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150 ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-900/60 backdrop-blur-xs'}`}
       onClick={handleDismiss}
     >
       <div 
         style={sheetStyle}
-        className={`rounded-t-3xl sm:rounded-3xl shadow-2xl border max-w-lg w-full overflow-hidden flex flex-col max-h-[88vh] ${
-          theme.isDark 
-            ? 'bg-slate-900 border-slate-800' 
-            : 'bg-white border-slate-200'
-        }`}
+        className={`rounded-t-3xl sm:rounded-3xl shadow-2xl border max-w-lg w-full overflow-hidden flex flex-col max-h-[88vh] ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/20' : theme.isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Interactive Grabber Touch-Bar */}
-        <div className={`${theme.heroBannerBg} shrink-0`}>
+        <div className={`${isGlassTheme(currentTheme) ? 'bg-transparent' : theme.heroBannerBg} shrink-0`}>
           <BottomSheetGrabber 
             dragHandleProps={dragHandleProps} 
             onClose={handleDismiss} 
@@ -202,7 +198,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
 
         {/* Header - Apple HIG Clean Visual Structure with Active Theme Respect */}
         <div 
-          className={`px-4 py-3 sm:px-5 sm:py-3.5 ${theme.heroBannerBg} text-white relative overflow-hidden border-b shrink-0 cursor-grab active:cursor-grabbing select-none ${theme.heroBannerBorder || 'border-white/10'}`}
+          className={`px-4 py-3 sm:px-5 sm:py-3.5 ${isGlassTheme(currentTheme) ? 'bg-transparent border-b border-white/20 text-slate-900' : theme.heroBannerBg + ' text-white border-b ' + (theme.heroBannerBorder || 'border-white/10')} relative overflow-hidden shrink-0 cursor-grab active:cursor-grabbing select-none`}
           onTouchStart={dragHandleProps.onTouchStart}
           onPointerDown={dragHandleProps.onPointerDown}
         >
@@ -240,14 +236,14 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
         </div>
 
         {/* iOS-Style Segmented Control Navigation */}
-        <div className={`px-4 pt-2.5 sm:px-5 shrink-0 ${theme.isDark ? 'bg-slate-900' : 'bg-white'}`}>
-          <div className={`p-1 rounded-xl flex gap-1 border ${theme.isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-slate-100/90 border-slate-200/60'}`}>
+        <div className={`px-4 pt-2.5 sm:px-5 shrink-0 ${isGlassTheme(currentTheme) ? 'bg-transparent' : theme.isDark ? 'bg-slate-900' : 'bg-white'}`}>
+          <div className={`p-1 rounded-xl flex gap-1 border ${isGlassTheme(currentTheme) ? 'bg-white/20 border-white/30 backdrop-blur-sm' : theme.isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-slate-100/90 border-slate-200/60'}`}>
             <button
               onClick={() => { soundFX.playPop(); setTab('status'); }}
               className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap text-center ${
                 tab === 'status' 
                   ? (theme.isDark ? 'bg-slate-700 text-white shadow-2xs font-extrabold' : 'bg-white text-slate-900 shadow-2xs font-extrabold')
-                  : (theme.isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')
+                  : (isGlassTheme(currentTheme) ? 'text-slate-700 hover:text-slate-900' : theme.isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')
               }`}
             >
               Status
@@ -257,7 +253,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
               className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap text-center ${
                 tab === 'join' 
                   ? (theme.isDark ? 'bg-slate-700 text-white shadow-2xs font-extrabold' : 'bg-white text-slate-900 shadow-2xs font-extrabold')
-                  : (theme.isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')
+                  : (isGlassTheme(currentTheme) ? 'text-slate-700 hover:text-slate-900' : theme.isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')
               }`}
             >
               Join Household
@@ -267,7 +263,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
               className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap text-center ${
                 tab === 'create' 
                   ? (theme.isDark ? 'bg-slate-700 text-white shadow-2xs font-extrabold' : 'bg-white text-slate-900 shadow-2xs font-extrabold')
-                  : (theme.isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')
+                  : (isGlassTheme(currentTheme) ? 'text-slate-700 hover:text-slate-900' : theme.isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')
               }`}
             >
               Create New
@@ -276,7 +272,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
         </div>
 
         {/* Content Body with Guaranteed Scroll & Spacing */}
-        <div className={`p-4 overflow-y-auto space-y-3.5 flex-1 min-h-0 overscroll-contain pb-5 ${theme.isDark ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-800'}`}>
+        <div className={`p-4 overflow-y-auto space-y-3.5 flex-1 min-h-0 overscroll-contain pb-5 ${isGlassTheme(currentTheme) ? 'bg-transparent text-slate-900' : theme.isDark ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-800'}`}>
           {errorMessage && (
             <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2.5 text-xs text-rose-800 animate-in fade-in">
               <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
@@ -519,7 +515,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                   onChange={(e) => setNewFamilyName(e.target.value)}
                   placeholder="e.g. The Miller Family"
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${
-                    theme.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                    isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 focus:bg-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : theme.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
                   }`}
                   required
                 />
@@ -535,7 +531,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                   onChange={(e) => setNewMotto(e.target.value)}
                   placeholder="e.g. Clean spaces, happy smiles & teamwork! ✨"
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${
-                    theme.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                    isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 focus:bg-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : theme.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
                   }`}
                 />
               </div>
@@ -551,7 +547,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                   onChange={(e) => setNewPassphrase(e.target.value)}
                   placeholder="e.g. secret123 (Leave blank for code-only access)"
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${
-                    theme.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                    isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 focus:bg-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : theme.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
                   }`}
                 />
               </div>
