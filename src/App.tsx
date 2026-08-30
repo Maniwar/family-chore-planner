@@ -28,6 +28,8 @@ import {
   saveEvents,
   loadStoredNudges,
   saveNudges,
+  loadStoredDailyLayout,
+  saveDailyLayout,
   DEFAULT_PENALTY_SETTINGS
 } from './utils/storage';
 import { HouseholdMember, Chore, ChoreAssignmentLog, RewardItem, RewardClaim, ViewMode, HouseholdInfo, HouseholdPenaltySettings, ChoreEvent, NudgeRecord } from './types';
@@ -181,6 +183,7 @@ export default function App() {
   });
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [dailyViewMode, setDailyViewMode] = useState<'list' | 'grid'>(() => loadStoredDailyLayout());
 
   // Parent PIN Security States
   const [isParentPinModalOpen, setIsParentPinModalOpen] = useState<boolean>(false);
@@ -1595,6 +1598,11 @@ export default function App() {
             isMomMode={isMomMode}
             language={language}
             currentTheme={currentTheme}
+            viewMode={dailyViewMode}
+            onViewModeChange={(mode) => {
+              setDailyViewMode(mode);
+              saveDailyLayout(mode);
+            }}
             onMarkComplete={handleMarkComplete}
             onOpenInspect={(chore, log) => handleOpenInspect(chore, log)}
             onQuickApprove={handleQuickApprove}

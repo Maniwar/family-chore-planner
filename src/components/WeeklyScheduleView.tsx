@@ -14,7 +14,7 @@ import {
   CalendarDays
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
-import { getWeekDates, parseLocalDate, isChoreScheduledForDate, getChoreAssigneeForDate, formatTimeDisplay } from '../utils/storage';
+import { getWeekDates, parseLocalDate, isChoreScheduledForDate, getChoreAssigneeForDate, formatTimeDisplay, formatDisplayDate } from '../utils/storage';
 import { WeeklyWorkloadChart } from './WeeklyWorkloadChart';
 import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
@@ -215,20 +215,23 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
       {/* Mobile Day Selector Strip (Visible on small screens < md) */}
       <div className="md:hidden space-y-3">
         {/* Weekday Picker Strip */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-3 shadow-2xs">
-          <div className="flex items-center justify-between px-1 py-1 mb-2 border-b border-slate-100 pb-2">
-            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-              Select Day:
-            </span>
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-3 sm:p-4 shadow-2xs">
+          <div className="flex items-center justify-between px-1 pb-2.5 mb-2.5 border-b border-slate-100">
+            <div className="flex items-center gap-1.5">
+              <CalendarDays className="w-4 h-4 text-slate-400" />
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                Select Day
+              </span>
+            </div>
             <button
               onClick={() => {
                 soundFX.playPop();
                 setMobileViewMode(mobileViewMode === 'single_day' ? 'all_days' : 'single_day');
               }}
-              className="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer active:scale-95 min-h-[32px]"
+              className="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200/80 px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer active:scale-95 min-h-[32px] transition-all"
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>{mobileViewMode === 'single_day' ? 'Expand All Days' : 'Focus Single Day'}</span>
+              <Layers className="w-3.5 h-3.5 text-slate-500" />
+              <span>{mobileViewMode === 'single_day' ? 'Expand All' : 'Focus Day'}</span>
             </button>
           </div>
 
@@ -252,12 +255,12 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                     setSelectedMobileDay(day.dateStr);
                     setMobileViewMode('single_day');
                   }}
-                  className={`py-2.5 px-1 rounded-2xl text-center transition-all flex flex-col items-center justify-center relative cursor-pointer min-h-[64px] active:scale-95 ${
+                  className={`py-2 px-1 rounded-2xl text-center transition-all flex flex-col items-center justify-center relative cursor-pointer min-h-[64px] active:scale-95 ${
                     isSelected
-                      ? `${theme.primaryBg} ${theme.primaryText} shadow-xs font-extrabold`
+                      ? `${theme.primaryBg} ${theme.primaryText} shadow-xs font-black ring-2 ring-offset-1 ring-slate-900/10`
                       : day.isToday
-                      ? `${theme.badgeBg} ${theme.badgeText} border ${theme.badgeBorder}`
-                      : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      ? `${theme.badgeBg} ${theme.badgeText} border ${theme.badgeBorder} font-bold`
+                      : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-100/80'
                   }`}
                 >
                   <span className={`text-[10px] font-black uppercase tracking-wider ${isSelected ? 'opacity-90' : 'text-slate-400'}`}>
@@ -266,7 +269,13 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                   <span className="text-base font-black leading-tight my-0.5">
                     {day.dayNumber}
                   </span>
-                  <span className={`text-[10px] font-bold ${isSelected ? 'opacity-95' : 'text-slate-500'}`}>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
+                    isSelected 
+                      ? 'bg-black/20 text-white' 
+                      : approvedCount === filteredScheduled.length && filteredScheduled.length > 0
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'text-slate-500'
+                  }`}>
                     {approvedCount}/{filteredScheduled.length}
                   </span>
                   {hasReview && (
@@ -289,30 +298,40 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
           const dayLogs = logs.filter(l => l.date === focusedDay.dateStr);
           const approvedCount = dayLogs.filter(l => l.status === 'approved' && filteredScheduled.some(c => c.id === l.choreId)).length;
           const reviewCount = dayLogs.filter(l => l.status === 'needs_review' && filteredScheduled.some(c => c.id === l.choreId)).length;
+          const percentDone = filteredScheduled.length > 0 ? Math.round((approvedCount / filteredScheduled.length) * 100) : 0;
 
           return (
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-3.5">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-black text-slate-900">
-                      {focusedDay.dayName}, {focusedDay.dateStr}
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
+              {/* Apple HIG Header with structured date, badge, and CTA */}
+              <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">
+                      {formatDisplayDate(focusedDay.dateStr)}
                     </h3>
                     {focusedDay.isToday && (
-                      <span className={`px-2.5 py-0.5 rounded-full ${theme.primaryBg} ${theme.primaryText} text-[10px] font-black`}>
+                      <span className={`px-2 py-0.5 rounded-full ${theme.primaryBg} ${theme.primaryText} text-[10px] font-black uppercase tracking-wider shadow-2xs`}>
                         TODAY
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    {approvedCount} of {filteredScheduled.length} completed
-                    {reviewCount > 0 && ` • ${reviewCount} waiting inspection`}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 font-medium flex-wrap">
+                    <span>{approvedCount} of {filteredScheduled.length} completed</span>
+                    {filteredScheduled.length > 0 && (
+                      <span className="text-[11px] font-bold text-slate-400">• {percentDone}% done</span>
+                    )}
+                    {reviewCount > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black">
+                        {reviewCount} to review
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => onSelectDate(focusedDay.dateStr)}
-                  className={`px-4 py-2 rounded-xl ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} text-xs font-black flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer min-h-[40px]`}
+                  className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} text-xs font-black shadow-xs active:scale-95 cursor-pointer min-h-[38px] transition-all`}
                 >
                   <span>Open Day</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -321,7 +340,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
 
               {/* Chores list */}
               {filteredScheduled.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-400 italic">
+                <div className="py-10 text-center text-xs text-slate-400 italic">
                   No chores scheduled for this day
                 </div>
               ) : (
@@ -342,17 +361,17 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                             onSelectDate(focusedDay.dateStr);
                           }
                         }}
-                        className={`p-3.5 rounded-2xl border text-xs cursor-pointer transition-all flex items-center justify-between gap-3 active:scale-[0.99] min-h-[56px] ${
+                        className={`p-3.5 sm:p-4 rounded-2xl border text-xs cursor-pointer transition-all flex items-center justify-between gap-3 active:scale-[0.99] min-h-[58px] ${
                           status === 'approved'
-                            ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                            ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950 shadow-2xs'
                             : status === 'needs_review'
-                            ? 'bg-amber-50 border-amber-300 text-amber-950 ring-1 ring-amber-200'
+                            ? 'bg-amber-50 border-amber-300 text-amber-950 ring-1 ring-amber-200 shadow-2xs'
                             : status === 'needs_redo'
-                            ? 'bg-rose-50 border-rose-200 text-rose-950'
-                            : 'bg-white border-slate-200 hover:border-slate-300 text-slate-900 shadow-2xs'
+                            ? 'bg-rose-50 border-rose-200 text-rose-950 shadow-2xs'
+                            : 'bg-white border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-2xs'
                         }`}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           {assignee && (
                             <Avatar
                               photoUrl={assignee.avatarPhotoUrl}
@@ -361,17 +380,28 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                               size="sm"
                             />
                           )}
-                          <div className="min-w-0">
-                            <p className="font-bold text-xs truncate text-slate-900">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-xs sm:text-sm text-slate-900 leading-snug line-clamp-2">
                               {chore.title}
                             </p>
-                            <p className="text-[11px] text-slate-500 font-medium">
-                              {formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)} • ⭐ {chore.defaultPoints} pts
-                            </p>
+                            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 font-medium flex-wrap">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-slate-400" />
+                                {formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)}
+                              </span>
+                              <span>•</span>
+                              <span className="font-bold text-amber-700">⭐ {chore.defaultPoints} pts</span>
+                              {assignee && selectedMemberId === 'all' && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-slate-600 font-semibold">{assignee.name.split(' ')[0]}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="shrink-0">
+                        <div className="shrink-0 flex items-center gap-2">
                           {status === 'approved' && (
                             <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-black text-xs flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -379,14 +409,18 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                             </span>
                           )}
                           {status === 'needs_review' && (
-                            <span className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs">
-                              Inspect 🔍
+                            <span className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs flex items-center gap-1">
+                              <span>Inspect</span>
+                              <span>🔍</span>
+                            </span>
+                          )}
+                          {status === 'needs_redo' && (
+                            <span className="px-2.5 py-1 rounded-xl bg-rose-100 text-rose-800 font-black text-xs">
+                              Redo
                             </span>
                           )}
                           {status === 'pending' && (
-                            <span className="text-slate-400 text-sm font-bold pr-1">
-                              →
-                            </span>
+                            <ChevronRight className="w-4 h-4 text-slate-400" />
                           )}
                         </div>
                       </div>

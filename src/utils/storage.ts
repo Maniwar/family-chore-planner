@@ -28,6 +28,27 @@ const STORAGE_KEYS = {
   PENALTY_SETTINGS: 'family_chores_penalty_settings_v1',
   EVENTS: 'family_chores_events_v1',
   NUDGES: 'family_chores_nudges_v1',
+  DAILY_LAYOUT: 'family_chores_daily_layout_v1',
+};
+
+export const loadStoredDailyLayout = (): 'list' | 'grid' => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.DAILY_LAYOUT);
+    if (saved === 'grid' || saved === 'list') {
+      return saved;
+    }
+  } catch (e) {
+    console.error('Failed to load daily layout preference', e);
+  }
+  return 'list';
+};
+
+export const saveDailyLayout = (layout: 'list' | 'grid'): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.DAILY_LAYOUT, layout);
+  } catch (e) {
+    console.error('Failed to save daily layout preference', e);
+  }
 };
 
 export const DEFAULT_HOUSEHOLD_INFO: HouseholdInfo = {

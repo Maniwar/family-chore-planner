@@ -26,7 +26,15 @@ import { Chore, ChoreAssignmentLog, HouseholdMember, ChoreCategory, TimeOfDay, V
 import { ChoreCard } from './ChoreCard';
 import { Avatar } from './Avatar';
 import { WeeklyWorkloadChart } from './WeeklyWorkloadChart';
-import { formatDisplayDate, parseLocalDate, getTodayDateString, isChoreScheduledForDate, getChoreAssigneeForDate } from '../utils/storage';
+import { 
+  formatDisplayDate, 
+  parseLocalDate, 
+  getTodayDateString, 
+  isChoreScheduledForDate, 
+  getChoreAssigneeForDate,
+  loadStoredDailyLayout,
+  saveDailyLayout 
+} from '../utils/storage';
 import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getTranslation, getCategoryTranslation } from '../utils/i18n';
 import { ThemePreset, THEMES } from '../utils/theme';
@@ -54,6 +62,8 @@ interface DailyScheduleViewProps {
   isMomMode: boolean;
   language?: SupportedLanguage;
   currentTheme?: ThemePreset;
+  viewMode?: 'list' | 'grid';
+  onViewModeChange?: (mode: 'list' | 'grid') => void;
   onMarkComplete: (choreId: string, note?: string, checklist?: { [key: number]: boolean }) => void;
   onOpenInspect: (chore: Chore, log: ChoreAssignmentLog) => void;
   onQuickApprove: (choreId: string, logId: string) => void;
@@ -76,6 +86,8 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   isMomMode,
   language = 'en',
   currentTheme = 'rose',
+  viewMode: propViewMode,
+  onViewModeChange,
   onMarkComplete,
   onOpenInspect,
   onQuickApprove,
@@ -94,7 +106,18 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showWorkloadChart, setShowWorkloadChart] = useState<boolean>(false);
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [internalViewMode, setInternalViewMode] = useState<'list' | 'grid'>(() => loadStoredDailyLayout());
+
+  const effectiveViewMode = propViewMode !== undefined ? propViewMode : internalViewMode;
+
+  const handleToggleViewMode = (newMode: 'list' | 'grid') => {
+    soundFX.playPop();
+    setInternalViewMode(newMode);
+    saveDailyLayout(newMode);
+    if (onViewModeChange) {
+      onViewModeChange(newMode);
+    }
+  };
 
   // Swipe Gestures for Day Navigation
   const touchStartXRef = useRef<number | null>(null);
@@ -320,24 +343,18 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             {/* Layout Toggle (List vs Grid) */}
             <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
               <button
-                onClick={() => {
-                  soundFX.playPop();
-                  setViewMode('list');
-                }}
+                onClick={() => handleToggleViewMode('list')}
                 className={`p-1 rounded-lg transition-all min-h-[28px] min-w-[28px] flex items-center justify-center cursor-pointer ${
-                  viewMode === 'list' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-400 hover:text-slate-700'
+                  effectiveViewMode === 'list' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-400 hover:text-slate-700'
                 }`}
                 title="List View"
               >
                 <LayoutList className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => {
-                  soundFX.playPop();
-                  setViewMode('grid');
-                }}
+                onClick={() => handleToggleViewMode('grid')}
                 className={`p-1 rounded-lg transition-all min-h-[28px] min-w-[28px] flex items-center justify-center cursor-pointer ${
-                  viewMode === 'grid' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-400 hover:text-slate-700'
+                  effectiveViewMode === 'grid' ? 'bg-white text-slate-900 shadow-2xs font-bold' : 'text-slate-400 hover:text-slate-700'
                 }`}
                 title="Grid View"
               >
@@ -959,21 +976,47 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           </span>
         </div>
 
-        {/* Mom Mode Add Chore Action - Contextually placed right above chores list */}
-        {isMomMode && (
-          <button
-            id="contextual-add-chore-btn"
-            onClick={() => {
-              soundFX.playPop();
-              onOpenNewChore();
-            }}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} shadow-xs transition-all active:scale-95 cursor-pointer min-h-[34px]`}
-            title="Create New Chore"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Chore</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Desktop/Tablet Layout Toggle */}
+          <div className="hidden sm:flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shadow-2xs">
+            <button
+              onClick={() => handleToggleViewMode('list')}
+              className={`p-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1 cursor-pointer ${
+                effectiveViewMode === 'list' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
+              title="List View"
+            >
+              <LayoutList className="w-3.5 h-3.5" />
+              <span className="text-[11px]">List</span>
+            </button>
+            <button
+              onClick={() => handleToggleViewMode('grid')}
+              className={`p-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1 cursor-pointer ${
+                effectiveViewMode === 'grid' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
+              title="Compact Tiles View"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="text-[11px]">Compact</span>
+            </button>
+          </div>
+
+          {/* Mom Mode Add Chore Action - Contextually placed right above chores list */}
+          {isMomMode && (
+            <button
+              id="contextual-add-chore-btn"
+              onClick={() => {
+                soundFX.playPop();
+                onOpenNewChore();
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} shadow-xs transition-all active:scale-95 cursor-pointer min-h-[34px]`}
+              title="Create New Chore"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Chore</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Chore Cards Grid */}
@@ -1005,7 +1048,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         </div>
       ) : (
         <div className={
-          viewMode === 'grid' 
+          effectiveViewMode === 'grid' 
             ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3" 
             : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
         }>
@@ -1018,7 +1061,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               isMomMode={isMomMode}
               language={language}
               currentTheme={currentTheme}
-              viewMode={viewMode}
+              viewMode={effectiveViewMode}
               onMarkComplete={onMarkComplete}
               onOpenInspect={onOpenInspect}
               onQuickApprove={onQuickApprove}

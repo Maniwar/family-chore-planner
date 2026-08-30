@@ -545,48 +545,48 @@ export const StatusView: React.FC<StatusViewProps> = ({
           {/* Section: Needs Attention (Behind & Way Behind) */}
           {behindMembers.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between px-1 flex-wrap gap-2">
-                <h2 className="text-xs font-black uppercase tracking-wider text-rose-600 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>Needs Attention ({behindMembers.length})</span>
-                </h2>
-
+              <div className="flex items-center justify-between px-1 gap-2">
                 <div className="flex items-center gap-2">
-                  {isMomMode && totalOverdue > 0 && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        soundFX.playStarChime(5);
-                        const allOverdue = behindMembers.flatMap(s =>
-                          s.overdueItems.map(i => ({
-                            choreId: i.chore.id,
-                            logId: i.log?.id,
-                            memberId: s.member.id,
-                            date: i.originalDueDate || i.effectiveDueDate,
-                            title: i.chore.title,
-                          }))
-                        );
-                        if (onBatchWaivePenalties) {
-                          onBatchWaivePenalties(allOverdue, 'Household admin waived all family overdue chores');
-                        } else {
-                          allOverdue.forEach(item => {
-                            onWaivePenalty(item.choreId, item.logId || `log_${item.choreId}_${item.date}`, item.memberId, 'Parent waived backlog', item.date);
-                          });
-                        }
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black shadow-xs cursor-pointer min-h-[36px] active:scale-95 transition-all"
-                      title="Waive all family overdue chores immediately"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Waive All ({totalOverdue})</span>
-                    </button>
-                  )}
-                  <span className="text-[11px] text-slate-400 font-medium">Sorted by severity</span>
+                  <h2 className="text-xs font-black uppercase tracking-wider text-rose-600 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>Needs Attention ({behindMembers.length})</span>
+                  </h2>
+                  <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">• Sorted by severity</span>
                 </div>
+
+                {isMomMode && totalOverdue > 0 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      soundFX.playStarChime(5);
+                      const allOverdue = behindMembers.flatMap(s =>
+                        s.overdueItems.map(i => ({
+                          choreId: i.chore.id,
+                          logId: i.log?.id,
+                          memberId: s.member.id,
+                          date: i.originalDueDate || i.effectiveDueDate,
+                          title: i.chore.title,
+                        }))
+                      );
+                      if (onBatchWaivePenalties) {
+                        onBatchWaivePenalties(allOverdue, 'Household admin waived all family overdue chores');
+                      } else {
+                        allOverdue.forEach(item => {
+                          onWaivePenalty(item.choreId, item.logId || `log_${item.choreId}_${item.date}`, item.memberId, 'Parent waived backlog', item.date);
+                        });
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black shadow-xs cursor-pointer min-h-[36px] active:scale-95 transition-all"
+                    title="Waive all family overdue chores immediately"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Waive All ({totalOverdue})</span>
+                  </button>
+                )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {behindMembers.map((summary) => {
                   const m = summary.member;
                   const isWayBehind = summary.status === 'way_behind';
@@ -597,98 +597,105 @@ export const StatusView: React.FC<StatusViewProps> = ({
                         soundFX.playPop();
                         setSelectedPersonSheet(summary);
                       }}
-                      className={`rounded-2xl border p-3 sm:p-4 transition-all cursor-pointer hover:shadow-xs active:scale-[0.99] flex flex-col justify-between ${
+                      className={`rounded-2xl border p-3.5 sm:p-4 transition-all cursor-pointer hover:shadow-xs active:scale-[0.99] flex flex-col justify-between ${
                         isWayBehind
                           ? 'bg-rose-50/50 border-rose-300 ring-1 ring-rose-200'
                           : 'bg-amber-50/40 border-amber-300'
                       }`}
                     >
+                      {/* Member Identity & Drilldown Header */}
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <Avatar
                             photoUrl={m.avatarPhotoUrl}
                             emoji={m.avatarEmoji}
                             name={m.name}
                             size="md"
                           />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-sm sm:text-base font-black text-slate-900">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-sm sm:text-base font-black text-slate-900 truncate">
                                 {m.name}
                               </h3>
                               {getStatusBadge(summary.status)}
                             </div>
-                            <p className="text-xs text-slate-600 font-semibold mt-0.5">
+                            <p className="text-xs text-slate-600 font-semibold mt-0.5 break-words">
                               {summary.summaryLine}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {isMomMode && (
-                            <>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenNudge(m);
-                                }}
-                                className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold shadow-2xs flex items-center gap-1 cursor-pointer min-h-[36px] active:scale-95"
-                                title="Send Nudge"
-                              >
-                                <BellRing className="w-3.5 h-3.5 text-amber-600" />
-                                <span className="hidden xs:inline">Nudge</span>
-                              </button>
-
-                              {summary.overdueItems.length > 0 && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    soundFX.playStarChime(5);
-                                    const itemsToWaive = summary.overdueItems.map(i => ({
-                                      choreId: i.chore.id,
-                                      logId: i.log?.id,
-                                      memberId: m.id,
-                                      date: i.originalDueDate || i.effectiveDueDate,
-                                      title: i.chore.title,
-                                    }));
-                                    if (onBatchWaivePenalties) {
-                                      onBatchWaivePenalties(itemsToWaive, `Waived overdue backlog for ${m.name}`);
-                                    } else {
-                                      itemsToWaive.forEach(item => {
-                                        onWaivePenalty(item.choreId, item.logId || `log_${item.choreId}_${item.date}`, item.memberId, 'Parent waived backlog', item.date);
-                                      });
-                                    }
-                                  }}
-                                  className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-black shadow-2xs flex items-center gap-1 cursor-pointer min-h-[36px] active:scale-95"
-                                  title={`Waive all ${summary.overdueItems.length} overdue chores for ${m.name}`}
-                                >
-                                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span>Waive ({summary.overdueItems.length})</span>
-                                </button>
-                              )}
-                            </>
-                          )}
-                          <ChevronRight className="w-5 h-5 text-slate-400" />
+                        <div className="flex items-center text-slate-400 shrink-0 pt-0.5">
+                          <ChevronRight className="w-5 h-5" />
                         </div>
                       </div>
 
                       {/* Overdue chore pills preview */}
-                      <div className="mt-3 pt-2.5 border-t border-slate-200/80 flex flex-wrap gap-1.5">
-                        {summary.overdueItems.slice(0, 3).map((item, idx) => (
-                          <span
-                            key={idx}
-                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${item.tierInfo.severityColor}`}
+                      {summary.overdueItems.length > 0 && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-200/80 flex flex-wrap gap-1.5">
+                          {summary.overdueItems.slice(0, 3).map((item, idx) => (
+                            <span
+                              key={idx}
+                              className={`px-2 py-1 rounded-lg text-[11px] font-bold border max-w-full sm:max-w-xs truncate ${item.tierInfo.severityColor}`}
+                            >
+                              {item.isRedo ? '🔄 Redo: ' : `${item.daysLate}d Late: `}
+                              {item.chore.title}
+                            </span>
+                          ))}
+                          {summary.overdueItems.length > 3 && (
+                            <span className="px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                              +{summary.overdueItems.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Action Bar for Mom Mode */}
+                      {isMomMode && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-end gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenNudge(m);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 text-xs font-bold shadow-2xs flex items-center gap-1.5 cursor-pointer min-h-[36px] active:scale-95 transition-all"
+                            title="Send Nudge"
                           >
-                            {item.isRedo ? '🔄 Redo: ' : `${item.daysLate}d Late: `}
-                            {item.chore.title}
-                          </span>
-                        ))}
-                        {summary.overdueItems.length > 3 && (
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                            +{summary.overdueItems.length - 3} more
-                          </span>
-                        )}
-                      </div>
+                            <BellRing className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Nudge</span>
+                          </button>
+
+                          {summary.overdueItems.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                soundFX.playStarChime(5);
+                                const itemsToWaive = summary.overdueItems.map(i => ({
+                                  choreId: i.chore.id,
+                                  logId: i.log?.id,
+                                  memberId: m.id,
+                                  date: i.originalDueDate || i.effectiveDueDate,
+                                  title: i.chore.title,
+                                }));
+                                if (onBatchWaivePenalties) {
+                                  onBatchWaivePenalties(itemsToWaive, `Waived overdue backlog for ${m.name}`);
+                                } else {
+                                  itemsToWaive.forEach(item => {
+                                    onWaivePenalty(item.choreId, item.logId || `log_${item.choreId}_${item.date}`, item.memberId, 'Parent waived backlog', item.date);
+                                  });
+                                }
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-black shadow-2xs flex items-center gap-1.5 cursor-pointer min-h-[36px] active:scale-95 transition-all"
+                              title={`Waive all ${summary.overdueItems.length} overdue chores for ${m.name}`}
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Waive ({summary.overdueItems.length})</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
