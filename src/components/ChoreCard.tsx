@@ -15,7 +15,9 @@ import {
   Hand,
   X,
   User,
-  Info
+  Info,
+  Check,
+  RotateCcw
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
 import { formatTimeDisplay } from '../utils/storage';
@@ -532,30 +534,16 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
             }`}
           >
             <div>
-              {/* Top row: Category pill (Emoji + Short Label) + Points + Edit */}
-              <div className="flex items-center justify-between gap-1 mb-1.5">
-                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border whitespace-nowrap flex items-center gap-1 ${getCategoryColor(chore.category)}`}>
+              {/* Top meta row: Category (Clean Emoji + Label) + Points */}
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 min-w-0 truncate">
                   <span>{catShort.emoji}</span>
-                  <span>{catShort.label}</span>
+                  <span className="truncate">{catShort.label}</span>
                 </span>
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-200">
-                    ⭐ {chore.defaultPoints}
-                  </span>
-                  {isMomMode && onEditChore && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditChore(chore);
-                      }}
-                      className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors shrink-0 active:scale-95 touch-target min-h-[30px] min-w-[30px] flex items-center justify-center -mr-1 cursor-pointer"
-                      title="Edit Chore"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/60 shrink-0">
+                  ⭐ {chore.defaultPoints}
+                </span>
               </div>
 
               {/* Title */}
@@ -564,42 +552,44 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
               </h4>
 
               {/* Time & Duration */}
-              <div className="flex items-center gap-1 text-[10px] text-slate-500 font-semibold mb-2">
+              <div className="flex items-center gap-1 text-[10px] text-slate-500 font-medium mb-1">
                 <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                 <span className="truncate">{formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)}</span>
                 {chore.estimatedMinutes && (
                   <span className="text-slate-400 font-normal">({chore.estimatedMinutes}m)</span>
                 )}
                 {totalChecklistCount > 0 && (
-                  <span className="ml-auto text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md border border-indigo-100">
+                  <span className="ml-auto text-[9px] font-bold text-indigo-600 bg-indigo-50/80 px-1.5 py-0.5 rounded-md border border-indigo-100/80">
                     {completedChecklistCount}/{totalChecklistCount} ✓
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Bottom Row: Assignee + Status / Action Button */}
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 mt-auto">
+            {/* Bottom Row: Assignee + Apple-style Checkmark / Inspection Circle Control */}
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
               {assignee ? (
-                <div className="flex items-center gap-1 min-w-0 flex-1" title={`${t.cardAssignedTo} ${assignee.name}`}>
+                <div className="flex items-center gap-2 min-w-0 flex-1" title={`${t.cardAssignedTo} ${assignee.name}`}>
                   <Avatar
                     photoUrl={assignee.avatarPhotoUrl}
                     emoji={assignee.avatarEmoji}
                     name={assignee.name}
-                    size="xs"
+                    size="sm"
                     showBorder={false}
                   />
-                  <span className="text-[11px] font-bold text-slate-700 truncate max-w-[65px]">
+                  <span className="text-xs font-semibold text-slate-700 truncate max-w-[95px]">
                     {assignee.name.split(' ')[0]}
                   </span>
                 </div>
               ) : <div className="flex-1" />}
 
-              {/* Action State */}
+              {/* Apple HIG Checkbox & State Action Button */}
               {status === 'approved' ? (
-                <div className="flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-xl border border-emerald-200">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  <span>Done</span>
+                <div 
+                  className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-2xs shrink-0"
+                  title="Completed & Approved"
+                >
+                  <Check className="w-4 h-4 stroke-[3]" />
                 </div>
               ) : status === 'needs_review' ? (
                 isMomMode ? (
@@ -609,28 +599,40 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                       soundFX.playStarChime(5);
                       if (log) onQuickApprove(chore.id, log.id);
                     }}
-                    className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black shadow-2xs active:scale-95 flex items-center gap-1 cursor-pointer min-h-[30px]"
-                    title="Pass 5⭐"
+                    className="w-7 h-7 rounded-lg bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center shadow-2xs active:scale-90 cursor-pointer shrink-0 transition-transform"
+                    title="Quick Approve 5⭐"
                   >
-                    <Sparkles className="w-3 h-3 text-amber-200" />
-                    <span>Pass 5⭐</span>
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
                   </button>
                 ) : (
-                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-1 rounded-xl border border-amber-200">
-                    Reviewing ✨
-                  </span>
+                  <div 
+                    className="w-7 h-7 rounded-lg bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shadow-2xs shrink-0"
+                    title="Waiting for Mom's Review"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  </div>
                 )
+              ) : status === 'needs_redo' ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleChildSubmit();
+                  }}
+                  className="w-7 h-7 rounded-lg border-2 border-rose-400 bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white flex items-center justify-center shadow-2xs active:scale-90 cursor-pointer shrink-0 transition-all"
+                  title="Touch-up completed, submit for review"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
+                </button>
               ) : (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleChildSubmit();
                   }}
-                  className={`px-2.5 py-1.5 ${theme.primaryBg} ${theme.primaryHover} ${theme.primaryText} rounded-xl text-[10px] font-black shadow-2xs active:scale-95 flex items-center gap-1 cursor-pointer min-h-[32px]`}
-                  title="Mark Done"
+                  className="w-7 h-7 rounded-lg border-2 border-slate-300 hover:border-emerald-500 bg-white hover:bg-emerald-500 text-slate-300 hover:text-white flex items-center justify-center shadow-2xs active:scale-90 cursor-pointer shrink-0 transition-all group"
+                  title="Mark as Done"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-                  <span>Done</span>
+                  <Check className="w-4 h-4 stroke-[2.5] opacity-50 group-hover:opacity-100 transition-opacity" />
                 </button>
               )}
             </div>
@@ -710,16 +712,16 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
         >
           <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
             <div>
-              {/* Top Meta Line: Category, Time, Points, Assignee & Edit */}
-              <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                  <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border whitespace-nowrap flex items-center gap-1 ${getCategoryColor(chore.category)}`}>
+              {/* Top Meta Line: Category, Time, Points & Assignee */}
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  <span className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 min-w-0">
                     <span>{catShort.emoji}</span>
-                    <span>{catShort.label}</span>
+                    <span className="truncate">{catShort.label}</span>
                   </span>
 
-                  <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-semibold whitespace-nowrap">
-                    <Clock className="w-3 h-3 text-slate-400" />
+                  <span className="inline-flex items-center gap-1 text-xs text-slate-400 font-medium whitespace-nowrap">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
                     {formatTimeDisplay(chore.scheduledTime, chore.timeOfDay)}
                     {chore.estimatedMinutes && (
                       <span className="text-slate-400 font-normal">({chore.estimatedMinutes}m)</span>
@@ -727,40 +729,27 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-200 shadow-2xs whitespace-nowrap">
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200/80 shadow-2xs whitespace-nowrap">
                     ⭐ {chore.defaultPoints} {t.pts}
                   </span>
 
                   {assignee && (
                     <div 
-                      className="flex items-center gap-1 bg-slate-50 pl-1 pr-1.5 py-0.5 rounded-full border border-slate-200 shadow-2xs"
+                      className="flex items-center gap-1.5 bg-slate-100/70 hover:bg-slate-100 pl-0.5 pr-2.5 py-0.5 rounded-full border border-slate-200/80 shadow-2xs transition-colors"
                       title={`${t.cardAssignedTo} ${assignee.name}`}
                     >
                       <Avatar
                         photoUrl={assignee.avatarPhotoUrl}
                         emoji={assignee.avatarEmoji}
                         name={assignee.name}
-                        size="xs"
+                        size="sm"
                         showBorder={false}
                       />
-                      <span className="text-[11px] font-bold text-slate-700 max-w-[65px] truncate hidden xs:inline">
+                      <span className="text-xs font-semibold text-slate-700 max-w-[85px] truncate">
                         {assignee.name.split(' ')[0]}
                       </span>
                     </div>
-                  )}
-
-                  {isMomMode && onEditChore && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditChore(chore);
-                      }}
-                      className="p-1 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors shrink-0 active:scale-95 min-h-[30px] min-w-[30px] flex items-center justify-center -mr-1 cursor-pointer"
-                      title="Edit Chore"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
                   )}
                 </div>
               </div>
@@ -883,8 +872,8 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                 </div>
               )}
 
-              {/* Action State Buttons */}
-              <div className="flex items-center gap-1.5 ml-auto">
+              {/* Action State Controls - Apple HIG Tactile Controls */}
+              <div className="flex items-center gap-2 ml-auto">
                 {/* PENDING / NEEDS REDO */}
                 {(status === 'pending' || status === 'needs_redo') && (
                   <>
@@ -903,24 +892,41 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                           };
                           onOpenInspect(chore, tempLog);
                         }}
-                        className="p-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors shrink-0 active:scale-95 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+                        className="w-8 h-8 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-colors shrink-0 active:scale-90 cursor-pointer flex items-center justify-center shadow-2xs"
                         title={t.inspectAndGrade}
+                        aria-label="Inspect and Grade"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        <Sparkles className="w-4 h-4 text-amber-500" />
                       </button>
                     )}
 
-                    <button
-                      id={`btn-complete-chore-${chore.id}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleChildSubmit();
-                      }}
-                      className={`inline-flex items-center justify-center gap-1.5 py-1.5 px-3.5 rounded-xl text-xs font-black ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} shadow-2xs transition-all active:scale-95 min-h-[36px] cursor-pointer`}
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span>{status === 'needs_redo' ? t.fixedSubmit : t.markDone}</span>
-                    </button>
+                    {status === 'needs_redo' ? (
+                      <button
+                        id={`btn-complete-chore-${chore.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleChildSubmit();
+                        }}
+                        className="w-8 h-8 rounded-xl border-2 border-rose-400 bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white flex items-center justify-center shadow-2xs transition-all active:scale-90 cursor-pointer shrink-0"
+                        title="Touch-up completed, submit for review"
+                        aria-label="Resubmit Chore"
+                      >
+                        <RotateCcw className="w-4 h-4 stroke-[2.5]" />
+                      </button>
+                    ) : (
+                      <button
+                        id={`btn-complete-chore-${chore.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleChildSubmit();
+                        }}
+                        className="w-8 h-8 rounded-xl border-2 border-slate-300 hover:border-emerald-500 bg-slate-50/60 hover:bg-emerald-500 text-slate-400 hover:text-white flex items-center justify-center shadow-2xs transition-all active:scale-90 cursor-pointer shrink-0 group"
+                        title="Mark as Done (or swipe right)"
+                        aria-label="Mark Chore as Done"
+                      >
+                        <Check className="w-4 h-4 stroke-[2.5] opacity-60 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    )}
                   </>
                 )}
 
@@ -935,10 +941,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                           soundFX.playPop();
                           onOpenInspect(chore, log);
                         }}
-                        className="inline-flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-xl text-xs font-black bg-amber-500 text-white hover:bg-amber-600 shadow-2xs transition-transform active:scale-95 min-h-[36px] cursor-pointer"
+                        className="w-8 h-8 rounded-xl bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center shadow-2xs transition-transform active:scale-90 cursor-pointer shrink-0"
+                        title="Inspect & Grade"
+                        aria-label="Inspect and Grade"
                       >
-                        <Sparkles className="w-3 h-3 shrink-0" />
-                        <span>Inspect</span>
+                        <Sparkles className="w-4 h-4" />
                       </button>
 
                       <button
@@ -948,28 +955,33 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                           soundFX.playStarChime(5);
                           onQuickApprove(chore.id, log.id);
                         }}
-                        className="inline-flex items-center justify-center gap-1 py-1.5 px-3 rounded-xl text-xs font-black bg-emerald-600 text-white hover:bg-emerald-700 shadow-2xs transition-transform active:scale-95 min-h-[36px] cursor-pointer"
+                        className="w-8 h-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-2xs transition-transform active:scale-90 cursor-pointer shrink-0"
                         title={t.quickApproveTitle}
+                        aria-label="Quick Approve 5 Stars"
                       >
-                        <CheckCircle2 className="w-3 h-3 text-white shrink-0" />
-                        <span>Pass 5⭐</span>
+                        <Check className="w-4 h-4 stroke-[3]" />
                       </button>
                     </div>
                   ) : (
-                    <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-                      <span>Reviewing ✨</span>
-                    </span>
+                    <div 
+                      className="h-8 px-2.5 rounded-xl bg-amber-50 border border-amber-200/90 text-amber-800 text-[11px] font-bold flex items-center gap-1.5 shadow-2xs"
+                      title="Waiting for Mom's Review"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      <span>Reviewing</span>
+                    </div>
                   )
                 )}
 
                 {/* APPROVED */}
                 {status === 'approved' && (
                   <div className="flex items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>Approved</span>
-                    </span>
+                    <div 
+                      className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-2xs shrink-0"
+                      title="Completed & Approved"
+                    >
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </div>
                     {isMomMode && log && (
                       <button
                         onClick={(e) => {
@@ -977,7 +989,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                           soundFX.playPop();
                           onOpenInspect(chore, log);
                         }}
-                        className="text-[11px] text-slate-500 hover:text-slate-800 underline font-medium p-1 min-h-[32px] flex items-center cursor-pointer"
+                        className="text-[11px] text-slate-400 hover:text-slate-700 underline font-medium px-1 py-1 min-h-[32px] flex items-center cursor-pointer"
                       >
                         Edit
                       </button>

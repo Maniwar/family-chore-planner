@@ -1335,6 +1335,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
           activePersonSummary={activePersonSummary}
           onClose={() => setSelectedPersonSheet(null)}
           isMomMode={isMomMode}
+          theme={theme}
           onOpenNudge={handleOpenNudge}
           onBatchWaivePenalties={onBatchWaivePenalties}
           onWaivePenalty={onWaivePenalty}
@@ -1585,7 +1586,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
                       onClick={() => setExtendDays(d)}
                       className={`py-2 rounded-xl text-xs font-black border transition-all cursor-pointer min-h-[38px] ${
                         extendDays === d
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                          ? `${theme.primaryBg} ${theme.primaryText} shadow-2xs`
                           : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
                       }`}
                     >
@@ -1603,7 +1604,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
                   type="text"
                   value={extendReason}
                   onChange={(e) => setExtendReason(e.target.value)}
-                  className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   placeholder="e.g., Weekend trip, exam study..."
                   required
                 />
@@ -1619,7 +1620,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs flex items-center gap-1.5 cursor-pointer min-h-[38px]"
+                  className={`px-4 py-2 rounded-xl text-xs font-black ${theme.primaryBg} ${theme.primaryHover} ${theme.primaryText} shadow-2xs flex items-center gap-1.5 cursor-pointer min-h-[38px]`}
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>Apply Extension</span>
@@ -1760,7 +1761,7 @@ export const StatusView: React.FC<StatusViewProps> = ({
                   onUpdatePenaltySettings(tempSettings);
                   setShowSettingsModal(false);
                 }}
-                className="px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs cursor-pointer min-h-[38px]"
+                className={`px-4 py-2 rounded-xl text-xs font-black ${theme.primaryBg} ${theme.primaryHover} ${theme.primaryText} shadow-2xs cursor-pointer min-h-[38px]`}
               >
                 Save Settings
               </button>

@@ -173,71 +173,79 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
       <div 
-        className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]"
+        className={`rounded-3xl shadow-2xl border max-w-lg w-full overflow-hidden flex flex-col max-h-[88vh] ${
+          theme.isDark 
+            ? 'bg-slate-900 border-slate-800' 
+            : 'bg-white border-slate-200'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className={`p-5 sm:p-6 ${theme.heroBannerBg} text-white flex items-center justify-between`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl">
-              ☁️
-            </div>
-            <div>
-              <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
-                Multi-Family Cloud Sync
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/25 font-bold uppercase tracking-wider">
-                  Firebase Live
-                </span>
+        {/* Header - Apple HIG Clean Visual Structure with Active Theme Respect */}
+        <div className={`px-4 py-3 sm:px-5 sm:py-3.5 ${theme.heroBannerBg} text-white relative overflow-hidden border-b shrink-0 ${theme.heroBannerBorder || 'border-white/10'}`}>
+          <div className="absolute -top-16 -right-16 w-36 h-36 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+          
+          <div className="flex items-start justify-between gap-3 relative z-10">
+            <div className="space-y-0.5 min-w-0 pr-2">
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30 text-[9px] font-bold tracking-wider uppercase whitespace-nowrap shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                Firebase Realtime Cloud
+              </div>
+              <h2 className="text-base font-extrabold tracking-tight text-white leading-tight">
+                Family Cloud Sync
               </h2>
-              <p className="text-xs text-white/80">
-                Sync kids, chores & point approvals live across all phones & tablets
+              <p className="text-[11px] text-white/90 leading-tight max-w-md">
+                Sync profiles, chores, photo proof & points live across all family devices.
               </p>
             </div>
+
+            <button
+              onClick={onClose}
+              className="p-1 text-white/80 hover:text-white rounded-xl hover:bg-white/15 transition-colors cursor-pointer shrink-0 -mr-1 -mt-0.5 min-h-[32px] min-w-[32px] flex items-center justify-center"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-white/80 hover:text-white rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-slate-100 bg-slate-50/80 px-4 pt-2 gap-1">
-          <button
-            onClick={() => { soundFX.playPop(); setTab('status'); }}
-            className={`px-3 py-2 text-xs font-bold rounded-t-xl transition-colors cursor-pointer ${
-              tab === 'status' 
-                ? 'bg-white text-slate-900 border-t border-x border-slate-200 shadow-2xs' 
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            Household Status
-          </button>
-          <button
-            onClick={() => { soundFX.playPop(); setTab('join'); }}
-            className={`px-3 py-2 text-xs font-bold rounded-t-xl transition-colors cursor-pointer ${
-              tab === 'join' 
-                ? 'bg-white text-slate-900 border-t border-x border-slate-200 shadow-2xs' 
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            Join with Family Code
-          </button>
-          <button
-            onClick={() => { soundFX.playPop(); setTab('create'); }}
-            className={`px-3 py-2 text-xs font-bold rounded-t-xl transition-colors cursor-pointer ${
-              tab === 'create' 
-                ? 'bg-white text-slate-900 border-t border-x border-slate-200 shadow-2xs' 
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            Create New Household
-          </button>
+        {/* iOS-Style Segmented Control Navigation */}
+        <div className={`px-4 pt-2.5 sm:px-5 shrink-0 ${theme.isDark ? 'bg-slate-900' : 'bg-white'}`}>
+          <div className={`p-1 rounded-xl flex gap-1 border ${theme.isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-slate-100/90 border-slate-200/60'}`}>
+            <button
+              onClick={() => { soundFX.playPop(); setTab('status'); }}
+              className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap text-center ${
+                tab === 'status' 
+                  ? (theme.isDark ? 'bg-slate-700 text-white shadow-2xs font-extrabold' : 'bg-white text-slate-900 shadow-2xs font-extrabold')
+                  : (theme.isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')
+              }`}
+            >
+              Status
+            </button>
+            <button
+              onClick={() => { soundFX.playPop(); setTab('join'); }}
+              className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap text-center ${
+                tab === 'join' 
+                  ? (theme.isDark ? 'bg-slate-700 text-white shadow-2xs font-extrabold' : 'bg-white text-slate-900 shadow-2xs font-extrabold')
+                  : (theme.isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')
+              }`}
+            >
+              Join Household
+            </button>
+            <button
+              onClick={() => { soundFX.playPop(); setTab('create'); }}
+              className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap text-center ${
+                tab === 'create' 
+                  ? (theme.isDark ? 'bg-slate-700 text-white shadow-2xs font-extrabold' : 'bg-white text-slate-900 shadow-2xs font-extrabold')
+                  : (theme.isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')
+              }`}
+            >
+              Create New
+            </button>
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-5">
+        {/* Content Body with Guaranteed Scroll & Spacing */}
+        <div className={`p-4 overflow-y-auto space-y-3.5 flex-1 min-h-0 overscroll-contain pb-5 ${theme.isDark ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-800'}`}>
           {errorMessage && (
             <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-2.5 text-xs text-rose-800 animate-in fade-in">
               <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
@@ -247,74 +255,90 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
 
           {/* TAB 1: STATUS */}
           {tab === 'status' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {activeHousehold ? (
                 <>
-                  <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
-                        <CheckCircle2 className="w-5 h-5" />
+                  {/* Compact Apple Inset Status Row */}
+                  <div className={`p-3 rounded-2xl border flex items-center justify-between gap-2.5 shadow-2xs ${
+                    theme.isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-slate-50 border-slate-200/80'
+                  }`}>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                        <CheckCircle2 className="w-4 h-4" />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-extrabold text-slate-900 text-sm">{activeHousehold.familyName}</h3>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                            Live Sync Active
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500">{activeHousehold.houseAddressOrMotto || 'Multi-device synchronized'}</p>
+                      <div className="min-w-0">
+                        <h3 className={`font-extrabold text-sm truncate leading-tight ${theme.isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {activeHousehold.familyName}
+                        </h3>
+                        <p className={`text-[11px] truncate leading-tight mt-0.5 ${theme.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {activeHousehold.houseAddressOrMotto || 'Live Multi-Device Sync'}
+                        </p>
                       </div>
                     </div>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300/80 whitespace-nowrap shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Live Sync Active
+                    </span>
                   </div>
 
-                  {/* Shareable Family Code Box */}
-                  <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-3 shadow-sm">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span className="font-bold uppercase tracking-wider flex items-center gap-1.5">
-                        <QrCode className="w-4 h-4 text-cyan-400" />
+                  {/* Streamlined Family Join Code Card */}
+                  <div className="bg-slate-900 text-white p-3.5 sm:p-4 rounded-2xl space-y-2.5 shadow-sm border border-slate-800">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span className="font-bold uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap">
+                        <QrCode className="w-3.5 h-3.5 text-sky-400" />
                         Family Join Code
                       </span>
-                      <span className="text-[11px] text-cyan-300 font-semibold">Share with family</span>
+                      <span className="text-[11px] text-sky-300 font-semibold whitespace-nowrap">Share with family</span>
                     </div>
 
-                    <div className="flex items-center justify-between bg-slate-800/90 border border-slate-700 p-3 rounded-xl">
-                      <span className="font-mono text-2xl font-black tracking-widest text-cyan-300">
+                    {/* Integrated Code + Quick Action Row */}
+                    <div className="flex items-center justify-between gap-2 bg-slate-800/90 border border-slate-700/80 p-2 sm:p-2.5 rounded-xl">
+                      <span className="font-mono text-xl sm:text-2xl font-black tracking-widest text-sky-300 select-all px-1 truncate">
                         {activeHousehold.householdCode}
                       </span>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           onClick={handleCopyCode}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs transition-colors cursor-pointer"
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer whitespace-nowrap active:scale-95 shadow-xs ${theme.primaryBg} ${theme.primaryText}`}
                         >
-                          {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{copiedCode ? 'Copied!' : 'Copy Code'}</span>
+                          {copiedCode ? <Check className="w-3.5 h-3.5 stroke-[2.5]" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedCode ? 'Copied!' : 'Copy'}</span>
                         </button>
                         <button
                           onClick={() => { soundFX.playPop(); setShowQRCode(!showQRCode); }}
-                          className={`p-1.5 rounded-lg border text-xs font-bold transition-colors cursor-pointer ${
+                          className={`p-1.5 rounded-lg border text-xs font-bold transition-colors cursor-pointer shrink-0 ${
                             showQRCode 
-                              ? 'bg-cyan-400 text-slate-950 border-cyan-400' 
+                              ? 'bg-sky-400 text-slate-950 border-sky-400' 
                               : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
                           }`}
                           title="Show QR Code"
+                          aria-label="Toggle QR Code"
                         >
-                          <QrCode className="w-4 h-4" />
+                          <QrCode className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
 
-                    {/* QR Code Quick Scan Overlay */}
+                    {/* 1-Click Invite Link Action */}
+                    <button
+                      onClick={handleCopyLink}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 text-sky-300 border border-slate-700/70 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{copiedLink ? '✓ Invite Link Copied to Clipboard!' : 'Copy 1-Click Family Invite Link'}</span>
+                    </button>
+
+                    {/* QR Code Scan Overlay (Expandable) */}
                     {showQRCode && (
-                      <div className="p-4 bg-white rounded-xl border border-slate-200 text-slate-900 flex flex-col items-center gap-2 animate-in fade-in zoom-in-95">
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 text-slate-900 flex flex-col items-center gap-2 animate-in fade-in zoom-in-95">
                         <p className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                          <Smartphone className="w-3.5 h-3.5 text-cyan-600" />
-                          Scan with Phone Camera to Join Instantly
+                          <Smartphone className="w-3.5 h-3.5 text-sky-600" />
+                          Scan to Join Instantly
                         </p>
                         <img 
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(getJoinUrl())}`}
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(getJoinUrl())}`}
                           alt="Family Join QR Code"
-                          className="w-36 h-36 rounded-lg border border-slate-100 p-1 bg-white shadow-xs"
+                          className="w-32 h-32 rounded-lg border border-slate-100 p-1 bg-white shadow-xs"
                         />
                         <p className="text-[10px] text-slate-400">
                           Or enter code <strong className="text-slate-800 font-mono">{activeHousehold.householdCode}</strong>
@@ -322,34 +346,23 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                       </div>
                     )}
 
-                    {/* 1-Click Join Link */}
-                    <div className="pt-1 flex flex-col sm:flex-row items-center gap-2">
-                      <button
-                        onClick={handleCopyLink}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-xs font-bold transition-colors cursor-pointer"
-                      >
-                        <Share2 className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>{copiedLink ? '✓ Invite Link Copied!' : 'Copy 1-Click Invite Link'}</span>
-                      </button>
-                    </div>
-
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      💡 Family members can open this app on their phone or tablet, click <strong className="text-white">Cloud Sync</strong>, and enter this code to join in real time!
+                    <p className="text-[11px] text-slate-400 leading-normal">
+                      💡 Family members can tap <strong className="text-slate-200">Join Household</strong> and enter this code to sync in real time.
                     </p>
                   </div>
 
-                  {/* Options */}
-                  <div className="pt-2 flex justify-between items-center text-xs">
+                  {/* Immediate Footer Options - Always Visible */}
+                  <div className="pt-1 flex justify-between items-center text-xs">
                     <button
                       onClick={handleDisconnect}
-                      className="text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                      className="text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1 hover:underline cursor-pointer min-h-[32px]"
                     >
                       <LogOut className="w-3.5 h-3.5" />
-                      Disconnect this device
+                      Disconnect device
                     </button>
                     <button
                       onClick={() => { soundFX.playPop(); setTab('create'); }}
-                      className="text-slate-600 hover:text-slate-900 font-semibold cursor-pointer"
+                      className={`font-semibold cursor-pointer min-h-[32px] flex items-center hover:underline ${theme.isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
                     >
                       Switch household →
                     </button>
@@ -391,8 +404,8 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
           {/* TAB 2: JOIN WITH CODE */}
           {tab === 'join' && (
             <form onSubmit={handleJoinHousehold} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              <div className="space-y-1.5">
+                <label className={`text-xs font-bold uppercase tracking-wider ${theme.isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Enter Family Join Code
                 </label>
                 <div className="relative">
@@ -405,11 +418,15 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                     }}
                     placeholder="e.g. NEST-7K9X"
                     maxLength={12}
-                    className="w-full uppercase font-mono tracking-widest text-center text-lg font-black px-4 py-3 rounded-2xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-slate-900 bg-slate-50"
+                    className={`w-full uppercase font-mono tracking-widest text-center text-lg font-black px-4 py-3 rounded-2xl border focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${
+                      theme.isDark 
+                        ? 'bg-slate-800 border-slate-700 text-sky-300' 
+                        : 'bg-slate-50 border-slate-300 text-slate-900'
+                    }`}
                     autoFocus
                   />
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className={`text-[11px] ${theme.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Ask the household creator for their code from the Cloud Sync status page.
                 </p>
               </div>
@@ -428,7 +445,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
                     value={joinPassphraseInput}
                     onChange={(e) => setJoinPassphraseInput(e.target.value)}
                     placeholder="Enter family password"
-                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-amber-300 text-xs font-bold focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-amber-300 text-xs font-bold focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-slate-900"
                     autoFocus
                   />
                 </div>
@@ -460,46 +477,60 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
 
           {/* TAB 3: CREATE NEW HOUSEHOLD */}
           {tab === 'create' && (
-            <form onSubmit={handleCreateHousehold} className="space-y-4">
+            <form onSubmit={handleCreateHousehold} className="space-y-3.5">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Family / Household Name</label>
+                <label className={`text-xs font-bold ${theme.isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Family / Household Name
+                </label>
                 <input
                   type="text"
                   value={newFamilyName}
                   onChange={(e) => setNewFamilyName(e.target.value)}
                   placeholder="e.g. The Miller Family"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-slate-900"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${
+                    theme.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  }`}
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">Family Motto or Subtitle (Optional)</label>
+                <label className={`text-xs font-bold ${theme.isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Family Motto or Subtitle (Optional)
+                </label>
                 <input
                   type="text"
                   value={newMotto}
                   onChange={(e) => setNewMotto(e.target.value)}
                   placeholder="e.g. Clean spaces, happy smiles & teamwork! ✨"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-slate-900"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${
+                    theme.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  }`}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                <label className={`text-xs font-bold flex items-center justify-between ${theme.isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   <span>Household Join Password (Optional)</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Extra privacy protection</span>
+                  <span className={`text-[10px] font-normal ${theme.isDark ? 'text-slate-400' : 'text-slate-400'}`}>Extra privacy protection</span>
                 </label>
                 <input
                   type="password"
                   value={newPassphrase}
                   onChange={(e) => setNewPassphrase(e.target.value)}
                   placeholder="e.g. secret123 (Leave blank for code-only access)"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-slate-900"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${
+                    theme.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  }`}
                 />
               </div>
 
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+              <div className={`p-3 rounded-xl border text-[11px] flex items-center gap-2 ${
+                theme.isDark 
+                  ? 'bg-amber-950/40 border-amber-800/60 text-amber-200' 
+                  : 'bg-amber-50 border-amber-200 text-amber-800'
+              }`}>
+                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
                 <span>
                   High-entropy codes and optional passwords guarantee no random stranger can guess or access your family's data.
                 </span>

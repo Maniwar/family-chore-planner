@@ -68,13 +68,13 @@ export const Avatar: React.FC<AvatarProps> = ({
   if (hasValidPhoto && !imageError) {
     return (
       <div
-        className={`relative inline-flex shrink-0 items-center justify-center rounded-2xl overflow-hidden bg-slate-100 ${sizeConfig.container} ${borderClass} ${className}`}
+        className={`relative inline-flex shrink-0 items-center justify-center rounded-full overflow-hidden bg-slate-100 ${sizeConfig.container} ${borderClass} ${className}`}
         title={name}
       >
         <img
           src={photoUrl}
           alt={name}
-          className="w-full h-full object-cover rounded-2xl"
+          className="w-full h-full object-cover rounded-full"
           referrerPolicy="no-referrer"
           onError={() => {
             console.warn(`[Avatar] Image load issue for "${name}". Falling back to emoji/icon.`);
@@ -93,7 +93,7 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   return (
     <div
-      className={`relative inline-flex shrink-0 items-center justify-center rounded-2xl ${colorClass} ${sizeConfig.container} ${borderClass} font-bold select-none ${className}`}
+      className={`relative inline-flex shrink-0 items-center justify-center rounded-full ${colorClass} ${sizeConfig.container} ${borderClass} font-bold select-none ${className}`}
       title={name}
     >
       {emoji ? (

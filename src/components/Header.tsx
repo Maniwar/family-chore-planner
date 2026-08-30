@@ -163,17 +163,27 @@ export const Header: React.FC<HeaderProps> = ({
               <span>{isMomMode ? 'Mom' : 'Kid'}</span>
             </button>
 
-            {/* Quick Tools & Settings Modal Trigger */}
+            {/* Quick Tools & Family Cloud Settings Modal Trigger */}
             <button
               id="mobile-quick-settings-btn"
               onClick={() => {
                 soundFX.playPop();
                 if (onOpenQuickSettings) onOpenQuickSettings();
               }}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition-colors active:scale-95 cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center"
-              title="Quick Tools & Settings"
+              className={`relative p-2 rounded-xl transition-all active:scale-95 cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center border ${
+                !householdInfo.isCloudSynced 
+                  ? 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-sky-700 shadow-2xs' 
+                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+              }`}
+              title={householdInfo.isCloudSynced ? "Household Hub & Settings" : "Set Up Family Cloud Sync & Settings"}
             >
               <SlidersHorizontal className="w-4 h-4" />
+              {!householdInfo.isCloudSynced && (
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500 border border-white"></span>
+                </span>
+              )}
             </button>
           </div>
         </div>

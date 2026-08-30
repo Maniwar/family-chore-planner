@@ -277,6 +277,49 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
     return true;
   });
 
+  // Intelligent Sorting for Daily Tasks (Apple HIG & Information Architecture):
+  // 1. Status Priority: Needs Redo (urgent) -> Pending (to-do) -> Needs Review (in-progress) -> Approved (done)
+  // 2. Chronological Scheduled Time: Morning (8:00 AM) -> Afternoon -> Evening -> Bedtime -> Anytime
+  // 3. Title alphabetically for clean predictability
+  const getStatusRank = (status?: string): number => {
+    switch (status) {
+      case 'needs_redo': return 0;
+      case 'pending':
+      case undefined: return 1;
+      case 'needs_review': return 2;
+      case 'approved': return 3;
+      default: return 1;
+    }
+  };
+
+  const getChoreSortTime = (chore: Chore): number => {
+    if (chore.scheduledTime && chore.scheduledTime.includes(':')) {
+      const [h, m] = chore.scheduledTime.split(':').map(Number);
+      return (isNaN(h) ? 12 : h) * 60 + (isNaN(m) ? 0 : m);
+    }
+    switch (chore.timeOfDay) {
+      case 'morning': return 8 * 60; // 8:00 AM
+      case 'afternoon': return 13 * 60; // 1:00 PM
+      case 'evening': return 18 * 60; // 6:00 PM
+      case 'bedtime': return 20 * 60; // 8:00 PM
+      default: return 12 * 60; // 12:00 PM
+    }
+  };
+
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    const rankA = getStatusRank(a.log?.status);
+    const rankB = getStatusRank(b.log?.status);
+    if (rankA !== rankB) {
+      return rankA - rankB;
+    }
+    const timeA = getChoreSortTime(a.chore);
+    const timeB = getChoreSortTime(b.chore);
+    if (timeA !== timeB) {
+      return timeA - timeB;
+    }
+    return a.chore.title.localeCompare(b.chore.title);
+  });
+
   const pendingInspectionItems = choresWithLogs
     .filter((item) => item.log && item.log.status === 'needs_review')
     .map((item) => ({ chore: item.chore, log: item.log! }));
@@ -300,7 +343,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       {/* Mobile iOS Ultra-Compact Header & Unified Filter Architecture */}
       <div className="sm:hidden space-y-2">
         {/* Row 1: Apple HIG Date Header with Navigation & View Controls */}
-        <div className="flex items-center justify-between gap-2 pt-1 px-1">
+        <div className="flex items-center justify-between gap-2 pt-1 px-0.5">
           {/* Date Segment with Touch Targets */}
           <div className="flex items-center gap-1 min-w-0">
             <button
@@ -312,9 +355,9 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             </button>
             
             <div className="min-w-0">
-              <h1 className="text-base font-black tracking-tight text-slate-900 leading-tight whitespace-nowrap flex items-center gap-1.5">
+              <h1 className="text-sm font-extrabold tracking-tight text-slate-900 leading-tight whitespace-nowrap flex items-center gap-1.5">
                 <span>{isToday ? 'Today' : formatDisplayDate(currentDateStr).split(',')[0]}</span>
-                <span className="text-xs font-semibold text-slate-500">
+                <span className="text-xs font-medium text-slate-500">
                   {formatDisplayDate(currentDateStr).split(',').slice(1).join(',')}
                 </span>
               </h1>
@@ -334,14 +377,14 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             {!isToday && (
               <button
                 onClick={handleJumpToday}
-                className={`text-[11px] font-bold ${theme.badgeText} ${theme.badgeBg} border ${theme.badgeBorder} px-2.5 py-1 rounded-xl active:scale-95 cursor-pointer min-h-[32px]`}
+                className={`text-[11px] font-bold ${theme.badgeText} ${theme.badgeBg} border ${theme.badgeBorder} px-2.5 py-1 rounded-full active:scale-95 cursor-pointer min-h-[30px]`}
               >
                 Today
               </button>
             )}
 
             {/* Layout Toggle (List vs Grid) */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+            <div className="flex items-center bg-slate-100/90 p-0.5 rounded-xl border border-slate-200">
               <button
                 onClick={() => handleToggleViewMode('list')}
                 className={`p-1 rounded-lg transition-all min-h-[28px] min-w-[28px] flex items-center justify-center cursor-pointer ${
@@ -385,7 +428,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 <span className="text-[9px] uppercase font-bold tracking-wider opacity-85">
                   {item.dayName.slice(0, 3)}
                 </span>
-                <span className="text-xs font-black mt-0.5 leading-none">
+                <span className="text-xs font-extrabold mt-0.5 leading-none">
                   {item.dayNum}
                 </span>
                 {item.choreCount > 0 && (
@@ -397,23 +440,23 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         </div>
 
         {/* Row 3: Daily Summary Metric Bar */}
-        <div className="flex items-center justify-between gap-2 px-1">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1 font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
-              <span>✅</span>
+        <div className="flex items-center justify-between gap-2 px-0.5">
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100/90 px-2.5 py-1 rounded-full border border-slate-200/80 text-[11px]">
+              <span className="text-emerald-600">✓</span>
               <span>{approvedCount}/{totalChores} done</span>
             </span>
-            <span className="inline-flex items-center gap-1 font-black text-amber-900 bg-amber-100 px-2.5 py-1 rounded-xl border border-amber-200 shadow-2xs">
+            <span className="inline-flex items-center gap-1 font-bold text-amber-900 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/80 text-[11px]">
               <span>⭐</span>
               <span>+{pointsEarnedToday} pts</span>
             </span>
           </div>
 
-          {/* Quick Matrix/Print View Shortcuts if available */}
+          {/* Quick Matrix View Shortcut */}
           {onNavigateView && (
             <button
               onClick={() => onNavigateView('weekly')}
-              className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-xl active:scale-95 cursor-pointer"
+              className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-full active:scale-95 cursor-pointer"
             >
               Weekly Matrix 📅
             </button>
@@ -425,9 +468,9 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           {/* Quick Search & Filter Trigger */}
           <button
             onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer min-h-[34px] shrink-0 active:scale-95 ${
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer min-h-[32px] shrink-0 active:scale-95 ${
               activeFilterCount > 0 || showMobileFilters
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs font-black'
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs font-bold'
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
             }`}
             title="Search and Filters"
@@ -442,10 +485,10 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               soundFX.playPop();
               if (onSelectMember) onSelectMember('all');
             }}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 shrink-0 cursor-pointer min-h-[34px] active:scale-95 border ${
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border ${
               selectedMemberId === 'all'
-                ? `${theme.primaryBg} ${theme.primaryText} border-transparent shadow-2xs font-black`
-                : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+                ? `${theme.primaryBg} ${theme.primaryText} border-transparent shadow-2xs font-bold`
+                : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
             }`}
           >
             <Home className="w-3 h-3" />
@@ -462,15 +505,15 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   soundFX.playPop();
                   if (onSelectMember) onSelectMember(m.id);
                 }}
-                className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 shrink-0 cursor-pointer min-h-[34px] active:scale-95 border ${
+                className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border ${
                   isSelected
-                    ? `${theme.primaryBg} ${theme.primaryText} border-transparent shadow-2xs font-black`
-                    : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+                    ? `${theme.primaryBg} ${theme.primaryText} border-transparent shadow-2xs font-bold`
+                    : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
                 }`}
               >
                 <Avatar photoUrl={m.avatarPhotoUrl} emoji={m.avatarEmoji} name={m.name} size="xs" showBorder={false} />
                 <span>{m.name.split(' ')[0]}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
                   isSelected ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-600'
                 }`}>
                   {count}
@@ -497,15 +540,15 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   soundFX.playPop();
                   setSelectedTimeFilter(isSelected ? 'all' : timeTab.id);
                 }}
-                className={`px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 shrink-0 cursor-pointer min-h-[34px] active:scale-95 border ${
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border ${
                   isSelected
-                    ? 'bg-amber-500 text-white border-amber-500 shadow-2xs font-black'
+                    ? 'bg-amber-500 text-white border-amber-500 shadow-2xs font-bold'
                     : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
                 }`}
               >
                 <Icon className="w-3 h-3" />
                 <span>{timeTab.label}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
                   isSelected ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {count}
@@ -1052,7 +1095,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3" 
             : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
         }>
-          {filtered.map(({ chore, log, assignee }) => (
+          {sortedFiltered.map(({ chore, log, assignee }) => (
             <ChoreCard
               key={`${chore.id}_${currentDateStr}`}
               chore={chore}

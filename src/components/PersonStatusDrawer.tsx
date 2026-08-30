@@ -5,7 +5,9 @@ import {
   BellRing, 
   CheckCircle2, 
   CalendarPlus, 
-  Info 
+  AlertCircle,
+  Clock,
+  ChevronRight
 } from 'lucide-react';
 import { 
   Chore, 
@@ -15,6 +17,8 @@ import {
 import { Avatar } from './Avatar';
 import { PersonStatusSummary } from '../utils/penaltyEngine';
 import { soundFX } from '../utils/audio';
+import { formatDisplayDate } from '../utils/storage';
+import { ThemeConfig, THEMES } from '../utils/theme';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
 
@@ -22,6 +26,7 @@ interface PersonStatusDrawerProps {
   activePersonSummary: PersonStatusSummary;
   onClose: () => void;
   isMomMode: boolean;
+  theme?: ThemeConfig;
   onOpenNudge: (member: HouseholdMember, chore?: Chore) => void;
   onBatchWaivePenalties?: (items: { choreId: string; logId?: string; memberId: string; date: string; title?: string }[], reason: string) => void;
   onWaivePenalty: (choreId: string, logId: string, memberId: string, reason: string, choreDate?: string) => void;
@@ -34,6 +39,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
   activePersonSummary,
   onClose,
   isMomMode,
+  theme = THEMES.rose,
   onOpenNudge,
   onBatchWaivePenalties,
   onWaivePenalty,
@@ -46,6 +52,9 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
     threshold: 60,
   });
 
+  const member = activePersonSummary.member;
+  const overdueCount = activePersonSummary.overdueItems.length;
+
   return (
     <div 
       className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150"
@@ -53,7 +62,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
     >
       <div
         style={sheetStyle}
-        className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-200 max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-200 safe-area-pb"
+        className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-200/90 max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-200 safe-area-pb"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Interactive Grabber Touch-Bar (Click, Drag, or Tap to Dismiss) */}
@@ -64,7 +73,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
 
         {/* Sheet Header (Also responsive to drag down) */}
         <div 
-          className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50 touch-none select-none cursor-grab active:cursor-grabbing"
+          className={`px-4 sm:px-5 py-3.5 border-b ${theme.headerBorder || 'border-slate-100'} flex items-center justify-between bg-slate-50/80 touch-none select-none cursor-grab active:cursor-grabbing`}
           onTouchStart={dragHandleProps.onTouchStart}
           onTouchMove={dragHandleProps.onTouchMove}
           onTouchEnd={dragHandleProps.onTouchEnd}
@@ -72,156 +81,171 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
           onPointerMove={dragHandleProps.onPointerMove}
           onPointerUp={dragHandleProps.onPointerUp}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Avatar
-              photoUrl={activePersonSummary.member.avatarPhotoUrl}
-              emoji={activePersonSummary.member.avatarEmoji}
-              name={activePersonSummary.member.name}
+              photoUrl={member.avatarPhotoUrl}
+              emoji={member.avatarEmoji}
+              name={member.name}
               size="md"
             />
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-black text-slate-900">
-                  {activePersonSummary.member.name}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-black text-slate-900 truncate">
+                  {member.name}
                 </h3>
                 {getStatusBadge(activePersonSummary.status)}
               </div>
-              <p className="text-xs text-slate-500 font-semibold">
-                ⭐ Balance: {activePersonSummary.member.currentPoints || 0} pts · {activePersonSummary.totalDueThisWeek} chores this week
+              <p className="text-xs text-slate-500 font-semibold mt-0.5 truncate">
+                ⭐ {member.currentPoints || 0} pts balance • {activePersonSummary.totalDueThisWeek} chores this week
               </p>
             </div>
           </div>
 
           <button
             onClick={handleDismiss}
-            className="p-1.5 rounded-full bg-slate-200/80 text-slate-600 hover:bg-slate-300 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-90"
+            className="p-2 rounded-full bg-slate-200/80 text-slate-600 hover:bg-slate-300 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-90 shrink-0 ml-2"
             title="Close modal"
             aria-label="Close modal"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
 
         {/* Sheet Content: List of Overdue Chores and Redos */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1 pb-10 sm:pb-5">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-700">
-              Unresolved Items ({activePersonSummary.overdueItems.length})
-            </span>
-            {isMomMode && activePersonSummary.overdueItems.length > 0 && (
-              <div className="flex items-center gap-1.5">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 pb-10 sm:pb-5">
+          {/* Section Header & Grouped Admin Quick Actions */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-500">
+                Unresolved Items ({overdueCount})
+              </span>
+            </div>
+
+            {isMomMode && overdueCount > 0 && (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => onOpenNudge(activePersonSummary.member)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-xs font-black shadow-2xs cursor-pointer min-h-[36px] active:scale-95 transition-all"
+                  type="button"
+                  onClick={() => onOpenNudge(member)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs font-bold transition-all min-h-[32px] cursor-pointer active:scale-95 border border-slate-200/60"
+                  title={`Send reminder nudge to ${member.name}`}
                 >
-                  <BellRing className="w-3.5 h-3.5" />
+                  <BellRing className="w-3.5 h-3.5 text-amber-600" />
                   <span>Nudge</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => {
                     soundFX.playStarChime(5);
                     const itemsToWaive = activePersonSummary.overdueItems.map(i => ({
                       choreId: i.chore.id,
                       logId: i.log?.id,
-                      memberId: activePersonSummary.member.id,
+                      memberId: member.id,
                       date: i.originalDueDate || i.effectiveDueDate,
                       title: i.chore.title,
                     }));
                     if (onBatchWaivePenalties) {
-                      onBatchWaivePenalties(itemsToWaive, `Parent waived past overdue backlog for ${activePersonSummary.member.name}`);
+                      onBatchWaivePenalties(itemsToWaive, `Parent waived past overdue backlog for ${member.name}`);
                     } else {
                       itemsToWaive.forEach(item => {
                         onWaivePenalty(item.choreId, item.logId || `log_${item.choreId}_${item.date}`, item.memberId, 'Parent waived backlog', item.date);
                       });
                     }
                   }}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black shadow-2xs cursor-pointer min-h-[36px] active:scale-95 transition-all"
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full ${theme.primaryBg} ${theme.primaryHover} ${theme.primaryText} text-xs font-black shadow-xs transition-all min-h-[32px] cursor-pointer active:scale-95`}
+                  title={`Waive all ${overdueCount} overdue chores for ${member.name}`}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Waive All ({activePersonSummary.overdueItems.length})</span>
+                  <span>Waive All ({overdueCount})</span>
                 </button>
               </div>
             )}
           </div>
 
-          {activePersonSummary.overdueItems.length === 0 ? (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center text-emerald-900 space-y-1">
-              <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-1" />
-              <h4 className="text-sm font-black">All Caught Up!</h4>
-              <p className="text-xs font-medium text-emerald-700">
-                No overdue chores or pending redos for this week.
+          {overdueCount === 0 ? (
+            <div className={`border ${theme.badgeBorder || 'border-emerald-200'} ${theme.badgeBg || 'bg-emerald-50'} rounded-2xl p-6 text-center space-y-1`}>
+              <CheckCircle2 className={`w-8 h-8 ${theme.badgeText || 'text-emerald-600'} mx-auto mb-1`} />
+              <h4 className={`text-sm font-black ${theme.badgeText || 'text-emerald-900'}`}>All Caught Up!</h4>
+              <p className="text-xs font-medium text-slate-500">
+                {member.name} has no overdue chores or pending redo items.
               </p>
             </div>
           ) : (
-            <div className="space-y-2.5">
-              {activePersonSummary.overdueItems.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-2xs space-y-2"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border ${item.tierInfo.severityColor}`}>
+            <div className="space-y-3">
+              {activePersonSummary.overdueItems.map((item, idx) => {
+                const formattedDate = formatDisplayDate(item.effectiveDueDate);
+                return (
+                  <div
+                    key={idx}
+                    className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:border-slate-300 transition-all space-y-3"
+                  >
+                    {/* Top Meta Header: Status Badge + Due Date on Left, Points on Right */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-extrabold border shrink-0 ${item.tierInfo.severityColor}`}>
                           {item.isRedo ? '🔄 Redo' : `${item.daysLate}d Late`}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-semibold">
-                          Due: {item.effectiveDueDate}
+                        <span className="text-xs text-slate-500 font-medium truncate flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span className="truncate">Due: {formattedDate}</span>
                         </span>
                       </div>
-                      <h4 className="text-sm font-black text-slate-900 mt-1">
-                        {item.chore.title}
-                      </h4>
+
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-50 text-amber-900 rounded-md text-xs font-black border border-amber-200/80 shrink-0">
+                        ⭐ {item.chore.defaultPoints} pts
+                      </span>
                     </div>
 
-                    <span className="px-2 py-1 bg-amber-100 text-amber-900 rounded-xl text-xs font-black shrink-0 border border-amber-200">
-                      ⭐ {item.chore.defaultPoints} pts
-                    </span>
-                  </div>
+                    {/* Chore Title */}
+                    <h4 className="text-sm sm:text-base font-black text-slate-900 leading-snug break-words">
+                      {item.chore.title}
+                    </h4>
 
-                  {/* Penalty Tier Status & Next Worsening Forecast */}
-                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 font-bold">Penalty State:</span>
-                      <span className="font-black text-slate-900">{item.tierInfo.tierLabel}</span>
+                    {/* Penalty Tier Status & Next Worsening Forecast (Apple Inset Box) */}
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-slate-500 font-medium">Penalty State:</span>
+                        <span className="font-black text-slate-900 text-right">{item.tierInfo.tierLabel}</span>
+                      </div>
+                      {item.tierInfo.nextWorseningNotice && (
+                        <div className="flex items-start gap-1.5 pt-1.5 border-t border-slate-200/60 text-[11px] font-semibold text-rose-600 leading-tight">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                          <span>{item.tierInfo.nextWorseningNotice}</span>
+                        </div>
+                      )}
                     </div>
-                    {item.tierInfo.nextWorseningNotice && (
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-rose-600">
-                        <Info className="w-3 h-3 shrink-0" />
-                        <span>{item.tierInfo.nextWorseningNotice}</span>
+
+                    {/* Parent Administrative Actions: Waive / Extend (Equal-width iOS Grid) */}
+                    {isMomMode && (
+                      <div className="grid grid-cols-2 gap-2 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            soundFX.playPop();
+                            setWaiveTarget({ ...item, member });
+                          }}
+                          className="inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-300/80 rounded-xl text-xs font-black cursor-pointer min-h-[38px] active:scale-98 transition-all shadow-2xs whitespace-nowrap"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Waive</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            soundFX.playPop();
+                            setExtendTarget({ ...item, member });
+                          }}
+                          className={`inline-flex items-center justify-center gap-1.5 py-2 px-3 ${theme.badgeBg} hover:brightness-95 active:scale-98 ${theme.badgeText} border ${theme.badgeBorder} rounded-xl text-xs font-black cursor-pointer min-h-[38px] transition-all shadow-2xs whitespace-nowrap`}
+                        >
+                          <CalendarPlus className="w-3.5 h-3.5 shrink-0" />
+                          <span>Extend</span>
+                        </button>
                       </div>
                     )}
                   </div>
-
-                  {/* Parent Administrative Actions: Waive / Extend */}
-                  {isMomMode && (
-                    <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          soundFX.playPop();
-                          setWaiveTarget({ ...item, member: activePersonSummary.member });
-                        }}
-                        className="flex-1 py-2 px-2.5 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] active:scale-95 transition-all"
-                      >
-                        <Sparkles className="w-4 h-4 text-emerald-600" />
-                        <span>Waive Penalty</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          soundFX.playPop();
-                          setExtendTarget({ ...item, member: activePersonSummary.member });
-                        }}
-                        className="flex-1 py-2 px-2.5 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-800 border border-indigo-200 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] active:scale-95 transition-all"
-                      >
-                        <CalendarPlus className="w-4 h-4 text-indigo-600" />
-                        <span>Extend Due Date</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

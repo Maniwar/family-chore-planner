@@ -87,7 +87,11 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
       {/* iOS Bottom Sheet / Modal Card */}
       <div 
         style={sheetStyle}
-        className="relative w-full max-w-lg bg-white rounded-t-[32px] sm:rounded-[28px] border-t sm:border border-slate-200/90 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col z-10 animate-in slide-in-from-bottom-6 duration-300 safe-area-pb"
+        className={`relative w-full max-w-lg rounded-t-[32px] sm:rounded-[28px] border-t sm:border shadow-2xl overflow-hidden max-h-[92vh] flex flex-col z-10 animate-in slide-in-from-bottom-6 duration-300 safe-area-pb ${
+          theme.isDark 
+            ? 'bg-slate-900 border-slate-800 text-slate-100' 
+            : 'bg-white border-slate-200/90 text-slate-800'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         
@@ -96,7 +100,9 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
 
         {/* Navigation Bar Header with Drag Handle Support */}
         <div 
-          className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 backdrop-blur-sm touch-none select-none cursor-grab active:cursor-grabbing"
+          className={`px-5 py-3 border-b flex items-center justify-between backdrop-blur-sm touch-none select-none cursor-grab active:cursor-grabbing ${
+            theme.isDark ? 'bg-slate-800/80 border-slate-700/60' : 'bg-slate-50/70 border-slate-100'
+          }`}
           onTouchStart={dragHandleProps.onTouchStart}
           onTouchMove={dragHandleProps.onTouchMove}
           onTouchEnd={dragHandleProps.onTouchEnd}
@@ -106,14 +112,14 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
         >
           <div className="flex items-center space-x-2.5">
             <div className={`w-8 h-8 rounded-xl ${theme.primaryBg} ${theme.primaryText} flex items-center justify-center text-sm font-black shadow-2xs`}>
-              ⚙️
+              🏡
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight">
-                Settings & Tools
+              <h2 className={`text-base font-extrabold tracking-tight leading-tight ${theme.isDark ? 'text-white' : 'text-slate-900'}`}>
+                Household & Cloud Hub
               </h2>
-              <p className="text-[11px] text-slate-500 font-medium">
-                {householdInfo.houseName} · Household Hub
+              <p className={`text-[11px] font-medium ${theme.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                {householdInfo.familyName || 'Family Home'} · Family Setup & Settings
               </p>
             </div>
           </div>
@@ -123,7 +129,9 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
               soundFX.playPop();
               handleDismiss();
             }}
-            className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all active:scale-90 cursor-pointer min-h-[36px] min-w-[36px]"
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 cursor-pointer min-h-[36px] min-w-[36px] ${
+              theme.isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-200/70 hover:bg-slate-200 text-slate-600'
+            }`}
             title="Close Settings"
             aria-label="Close Settings"
           >
@@ -134,11 +142,73 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
         {/* Content Body - Apple Inset Grouped Style */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-5 flex-1">
           
-          {/* GROUP 1: HOUSEHOLD & MANAGEMENT */}
+          {/* TOP SPOTLIGHT: FAMILY CLOUD SYNC BANNER (Apple ID / iCloud style onboarding) */}
+          {!householdInfo.isCloudSynced ? (
+            <div className="bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-600 rounded-2xl p-4 text-white shadow-md border border-sky-400/30">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-extrabold tracking-wide uppercase">
+                    <Cloud className="w-3 h-3 text-sky-200" />
+                    <span>First-Time Cloud Setup</span>
+                  </div>
+                  <h3 className="text-sm font-extrabold leading-snug">
+                    Set Up Your Family on the Cloud
+                  </h3>
+                  <p className="text-xs text-sky-100 leading-relaxed">
+                    Connect your household to sync chore boards, kids' point balances, and live photos in real-time across all family phones, tablets & browsers.
+                  </p>
+                </div>
+              </div>
+              <button
+                id="setup-family-cloud-cta-btn"
+                onClick={() => {
+                  soundFX.playFanfare();
+                  onClose();
+                  if (onOpenCloudSync) onOpenCloudSync();
+                }}
+                className="mt-3.5 w-full py-2.5 px-4 bg-white hover:bg-sky-50 text-sky-800 font-extrabold text-xs rounded-xl shadow-xs transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Cloud className="w-4 h-4 text-sky-600" />
+                <span>Set Up Family Cloud Hub Now</span>
+                <ChevronRight className="w-3.5 h-3.5 text-sky-600 stroke-[2.5]" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                onClose();
+                if (onOpenCloudSync) onOpenCloudSync();
+              }}
+              className="w-full bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-300/80 rounded-2xl p-3.5 text-left transition-all active:scale-98 cursor-pointer flex items-center justify-between gap-3 shadow-2xs group"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs sm:text-sm font-extrabold text-emerald-950 truncate">
+                      Family Cloud Active
+                    </p>
+                    <span className="text-[10px] font-black font-mono px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 border border-emerald-300">
+                      {householdInfo.householdCode || 'LIVE'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700 truncate">
+                    Multi-device real-time sync active · Tap to manage or invite devices
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-0.5 transition-transform shrink-0" />
+            </button>
+          )}
+
+          {/* GROUP 1: FAMILY & HOUSEHOLD MANAGEMENT */}
           <div>
             <div className="px-1 mb-1.5 flex items-center justify-between">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                Household Management
+                Family & Household
               </span>
               {isMomMode && (
                 <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
@@ -177,7 +247,47 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 </div>
               </button>
 
-              {/* Row 2: Chore Library & Routine Templates */}
+              {/* Row 2: House Photo & Motto Settings */}
+              <button
+                id="settings-house-motto-btn"
+                onClick={() => {
+                  soundFX.playPop();
+                  onClose();
+                  if (onOpenHouseSettings) onOpenHouseSettings();
+                }}
+                className="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-slate-100/80 active:bg-slate-200/60 transition-colors cursor-pointer min-h-[52px] group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 shadow-2xs">
+                    <Home className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                      House Details & Motto
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      "{householdInfo.motto || 'Clean spaces, happy smiles'}"
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-600 transition-colors">
+                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* GROUP 2: CHORES, REWARDS & ROUTINES */}
+          <div>
+            <div className="px-1 mb-1.5 flex items-center justify-between">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                Chores, Rewards & Tools
+              </span>
+            </div>
+
+            <div className="bg-slate-50/90 rounded-2xl border border-slate-200/80 overflow-hidden divide-y divide-slate-200/60 shadow-2xs">
+              
+              {/* Row 1: Chore Library & Routine Templates */}
               <button
                 id="settings-chore-library-btn"
                 onClick={() => {
@@ -210,7 +320,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 </div>
               </button>
 
-              {/* Row 3: AI Smart Chore Assigner & Coach */}
+              {/* Row 2: AI Smart Chore Assigner & Coach */}
               <button
                 id="settings-ai-assign-btn"
                 onClick={() => {
@@ -243,7 +353,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 </div>
               </button>
 
-              {/* Row 4: Reward Redemptions & Claims Log */}
+              {/* Row 3: Reward Redemptions & Claims Log */}
               <button
                 id="settings-redemptions-btn"
                 onClick={() => {
@@ -271,35 +381,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 </div>
               </button>
 
-              {/* Row 5: House Photo & Motto Settings */}
-              <button
-                id="settings-house-motto-btn"
-                onClick={() => {
-                  soundFX.playPop();
-                  onClose();
-                  if (onOpenHouseSettings) onOpenHouseSettings();
-                }}
-                className="w-full p-3.5 flex items-center justify-between gap-3 text-left hover:bg-slate-100/80 active:bg-slate-200/60 transition-colors cursor-pointer min-h-[52px] group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 shadow-2xs">
-                    <Home className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                      House Details & Motto
-                    </p>
-                    <p className="text-[11px] text-slate-500 truncate">
-                      "{householdInfo.motto || 'Clean spaces, happy smiles'}"
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-600 transition-colors">
-                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-                </div>
-              </button>
-
-              {/* Row 6: Fridge Printouts */}
+              {/* Row 4: Fridge Printouts */}
               <button
                 onClick={() => {
                   soundFX.playPop();
@@ -326,7 +408,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 </div>
               </button>
 
-              {/* Row 7: Google Calendar */}
+              {/* Row 5: Google Calendar */}
               <button
                 onClick={() => {
                   soundFX.playPop();
@@ -355,11 +437,11 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
             </div>
           </div>
 
-          {/* GROUP 2: APPEARANCE & PREFERENCES */}
+          {/* GROUP 3: APPEARANCE & PREFERENCES */}
           <div>
             <div className="px-1 mb-1.5 flex items-center justify-between">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                Appearance & Audio
+                Appearance & Sounds
               </span>
             </div>
 
@@ -475,11 +557,11 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
             </div>
           </div>
 
-          {/* GROUP 3: CLOUD SYNC & DATA */}
+          {/* GROUP 4: CLOUD SYNC & DATA MANAGEMENT */}
           <div>
             <div className="px-1 mb-1.5 flex items-center justify-between">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                Cloud Sync & Data
+                Data & Cloud Settings
               </span>
             </div>
 
