@@ -25,11 +25,13 @@ import { Chore, ChoreCategory, HouseholdMember } from '../types';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { soundFX } from '../utils/audio';
 import { formatChoreScheduleDisplay } from '../utils/storage';
+import { CategoryBadge, BadgeStyle, StarPointsBadge } from './CategoryBadge';
 
 interface ChoreLibraryViewProps {
   chores: Chore[];
   members: HouseholdMember[];
   currentTheme?: ThemePreset;
+  badgeStyle?: BadgeStyle;
   onOpenCreateChore: () => void;
   onEditChore: (chore: Chore) => void;
   onDeleteChore: (choreId: string) => void;
@@ -77,6 +79,7 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
   chores,
   members,
   currentTheme = 'rose',
+  badgeStyle = 'pastel',
   onOpenCreateChore,
   onEditChore,
   onDeleteChore,
@@ -508,16 +511,11 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                     
                     {/* Category Pill & iOS Active Status Switch */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${catColor.bg} ${catColor.text} ${catColor.border} border text-[11px] font-black`}>
-                        <span>{categoryEmoji}</span>
-                        <span className="uppercase tracking-wider">
-                          {chore.category}
-                        </span>
-                      </div>
+                      <CategoryBadge category={chore.category} size="sm" style={badgeStyle} />
 
                       {/* iOS Native Toggle Switch */}
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold text-slate-400">
+                        <span className={`text-[10px] font-bold ${isGlassTheme(currentTheme) ? 'text-white/70' : 'text-slate-400'}`}>
                           {chore.isActive ? 'Active' : 'Paused'}
                         </span>
                         <button
@@ -527,7 +525,13 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
                             onToggleChoreActive(chore.id);
                           }}
                           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer min-h-[30px] min-w-[40px] p-0.5 ${
-                            chore.isActive ? 'bg-emerald-500' : 'bg-slate-300'
+                            isGlassTheme(currentTheme) 
+                              ? chore.isActive 
+                                ? 'bg-emerald-500/30 border border-emerald-300/50 backdrop-blur-md shadow-[inset_0_1px_3px_rgba(0,0,0,0.2)]' 
+                                : 'bg-white/10 border border-white/20'
+                              : chore.isActive 
+                                ? 'bg-emerald-500' 
+                                : 'bg-slate-300'
                           }`}
                           role="switch"
                           aria-checked={chore.isActive}

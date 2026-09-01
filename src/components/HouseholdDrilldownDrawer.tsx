@@ -83,7 +83,7 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
 
   return (
     <div 
-      className={`fixed inset-0 z-[60] ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-950/60 backdrop-blur-md'} flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200`}
+      className={`fixed inset-0 z-[60] ${isGlassTheme(currentTheme) ? 'backdrop-blur-sm bg-slate-900/15 ' : 'bg-slate-950/60 '} flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200`}
       onClick={handleDismiss}
     >
       <div
@@ -96,7 +96,7 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
 
         {/* Modal Header */}
         <div 
-          className={`px-5 py-3.5 border-b flex items-center justify-between shrink-0 ${isGlassTheme(currentTheme) ? 'border-white/40 bg-white/40 dark:bg-black/20 backdrop-blur-md' : 'border-slate-100 bg-slate-50/70'}`}
+          className={`px-5 py-3.5 border-b flex items-center justify-between shrink-0 ${isGlassTheme(currentTheme) ? 'border-white/40 bg-white/40 dark:bg-black/20 ' : 'border-slate-100 bg-slate-50/70'}`}
         >
           <div 
             className="flex items-center gap-2.5 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"

@@ -197,7 +197,7 @@ export const Navigation: React.FC<NavigationProps> = ({
         id="ios-bottom-tab-bar"
         aria-label="Bottom Navigation Bar"
         className={`${forceMobileUi ? 'block' : 'md:hidden'} fixed bottom-0 left-0 right-0 z-30 ${
-          isGlassTheme(currentTheme) ? 'apple-glass-header backdrop-blur-2xl bg-white/80' : theme.navBg
+          isGlassTheme(currentTheme) ? 'apple-glass-header bg-white/80' : theme.navBg
         } border-t ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.navBorder} shadow-lg px-2 pt-1 safe-area-pb select-none transition-all duration-200 ${dimmed ? 'opacity-30 pointer-events-none' : 'opacity-100 translate-y-0'}`}
       >
         <div className="flex items-center justify-around h-12 max-w-md mx-auto">

@@ -246,7 +246,7 @@ export const GoogleCalendarView: React.FC<GoogleCalendarViewProps> = ({
           </div>
 
           {/* Connection Status Box */}
-          <div className={`${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] text-slate-900' : 'bg-white/10 backdrop-blur-md border-white/20 text-white'} border border-white/20 rounded-2xl p-4 min-w-[260px]`}>
+          <div className={`${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] text-slate-900' : 'bg-white/10  border-white/20 text-white'} border border-white/20 rounded-2xl p-4 min-w-[260px]`}>
             <div className={`text-xs font-medium mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-300'}`}>Status</div>
             {token ? (
               <div className="space-y-3">

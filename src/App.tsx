@@ -1573,6 +1573,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         onSelectMember={(id) => setSelectedMemberId(id)}
         pendingInspectionCount={pendingInspectionCount}
         onOpenNewChore={() => setChoreModalData({ isOpen: true, choreToEdit: null })}
+        forceMobileUi={forceMobileUi}
+        onToggleMobileUi={toggleMobileUi}
         onOpenInspectionQueue={() => setCurrentView('inspection')}
         onOpenPrintView={() => setCurrentView('reports')}
         onOpenAIAssign={() => setIsAIAssignModalOpen(true)}
@@ -1726,6 +1728,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             chores={chores}
             members={members}
             currentTheme={currentTheme}
+            badgeStyle={badgeStyle}
             onOpenCreateChore={() => setChoreModalData({ isOpen: true, choreToEdit: null })}
             onEditChore={(chore) => setChoreModalData({ isOpen: true, choreToEdit: chore })}
             onDeleteChore={handleDeleteChore}

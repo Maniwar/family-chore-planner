@@ -764,7 +764,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
 
       {/* 4. MOM ACTION MODAL (Bottom Sheet for Mobile, Centered for Desktop) */}
       {noteModalClaim && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 backdrop-blur-sm bg-slate-900/60  flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150">
           <div 
             className="fixed inset-0"
             onClick={() => setNoteModalClaim(null)}

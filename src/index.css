@@ -36,11 +36,11 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   
   --glass-tint: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
-  --glass-blur: blur(20px) saturate(200%);
+  --glass-blur: blur(12px) saturate(150%);
   --glass-border: 1px solid rgba(255, 255, 255, 0.25);
   --glass-border-color: rgba(255, 255, 255, 0.25);
   --glass-bevel: inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.30), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04);
-  --glass-card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.08) 100%);
+  --glass-card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.40) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.25) 100%);
   --glass-card-border: rgba(255, 255, 255, 0.25);
   --glass-card-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
   --glass-shadow: 0 -8px 28px 0 rgba(15, 23, 42, 0.08);
@@ -54,14 +54,14 @@
 /* 2. Frosted Glass Theme - Light (Apple visionOS 3D Liquid Glassmorphism) */
 [data-theme="glass"],
 [data-theme="frosted_glass"] {
-  --glass-tint: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.25) 100%);
-  --glass-blur: blur(20px) saturate(200%) brightness(1.02);
+  --glass-tint: linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.20) 50%, rgba(255, 255, 255, 0.30) 100%);
+  --glass-blur: blur(10px) saturate(160%) brightness(1.02);
   --glass-border: 1px solid rgba(255, 255, 255, 0.30);
   --glass-border-color: rgba(255, 255, 255, 0.30);
   --glass-bevel: 
     inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.98), 
     inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04);
-  --glass-card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.08) 100%);
+  --glass-card-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.40) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.25) 100%);
   --glass-card-border: rgba(255, 255, 255, 0.30);
   --glass-card-shadow: 
     0 12px 32px -4px rgba(15, 23, 42, 0.09), 
@@ -87,14 +87,14 @@
 .dark[data-theme="frosted_glass"],
 [data-theme="glass"].dark,
 [data-theme="frosted_glass"].dark {
-  --glass-tint: linear-gradient(135deg, rgba(15, 23, 42, 0.35) 0%, rgba(30, 41, 59, 0.25) 100%);
-  --glass-blur: blur(20px) saturate(200%);
+  --glass-tint: linear-gradient(135deg, rgba(15, 23, 42, 0.60) 0%, rgba(30, 41, 59, 0.40) 100%);
+  --glass-blur: blur(12px) saturate(150%);
   --glass-border: 1px solid rgba(255, 255, 255, 0.18);
   --glass-border-color: rgba(255, 255, 255, 0.18);
   --glass-bevel: 
     inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.35),
     inset 0 -1px 1px 0 rgba(0, 0, 0, 0.30);
-  --glass-card-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.20) 0%, rgba(30, 41, 59, 0.10) 100%);
+  --glass-card-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.45) 0%, rgba(30, 41, 59, 0.25) 100%);
   --glass-card-border: rgba(255, 255, 255, 0.18);
   --glass-card-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.45);
   --glass-shadow: 0 -8px 32px 0 rgba(0, 0, 0, 0.45);
@@ -116,8 +116,8 @@
 /* 4. Glacial Ice Theme - Light (Subzero Arctic Frost & Crystal Sheen) */
 [data-theme="ice"],
 [data-theme="crystal_ice"] {
-  --glass-tint: linear-gradient(135deg, rgba(240, 249, 255, 0.12) 0%, rgba(224, 242, 254, 0.02) 50%, rgba(240, 249, 255, 0.05) 100%);
-  --glass-blur: blur(20px) saturate(200%) brightness(1.02);
+  --glass-tint: linear-gradient(135deg, rgba(240, 249, 255, 0.15) 0%, rgba(224, 242, 254, 0.05) 50%, rgba(240, 249, 255, 0.10) 100%);
+  --glass-blur: blur(10px) saturate(160%) brightness(1.02);
   --glass-border: 1px solid rgba(255, 255, 255, 0.40);
   --glass-border-color: rgba(255, 255, 255, 0.30);
   --glass-bevel: 
@@ -150,7 +150,7 @@
 [data-theme="ice"].dark,
 [data-theme="crystal_ice"].dark {
   --glass-tint: linear-gradient(135deg, rgba(8, 28, 48, 0.15) 0%, rgba(14, 46, 74, 0.08) 100%);
-  --glass-blur: blur(20px) saturate(200%);
+  --glass-blur: blur(12px) saturate(150%);
   --glass-border: 1px solid rgba(186, 230, 253, 0.22);
   --glass-border-color: rgba(186, 230, 253, 0.22);
   --glass-bevel: inset 0 1.5px 1.5px 0 rgba(186, 230, 253, 0.40);
@@ -282,9 +282,9 @@
 
 /* Glass Button / Pill */
 .apple-glass-pill {
-  background: rgba(255, 255, 255, 0.25);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(255, 255, 255, 0.15);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  backdrop-filter: blur(8px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.40);
   box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.06), inset 0 1px 1px 0 rgba(255, 255, 255, 1.0);
   color: #0F172A;
@@ -306,8 +306,8 @@
 .apple-glass-button {
   position: relative;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.40) 0%, rgba(255, 255, 255, 0.15) 100%);
-  -webkit-backdrop-filter: blur(16px) saturate(190%);
-  backdrop-filter: blur(16px) saturate(190%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  backdrop-filter: blur(8px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.25);
   box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.12), inset 0 1px 1px 0 rgba(255, 255, 255, 1.0), inset 0 -1px 1px 0 rgba(255, 255, 255, 0.3);
   color: #0F172A;
@@ -334,9 +334,9 @@
 .apple-glass-button-primary {
   color: #0F172A;
   position: relative;
-  background: rgba(255, 255, 255, 0.25);
-  -webkit-backdrop-filter: blur(16px) saturate(200%);
-  backdrop-filter: blur(16px) saturate(200%);
+  background: rgba(255, 255, 255, 0.15);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  backdrop-filter: blur(8px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-top-color: rgba(255, 255, 255, 0.45);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.40);
@@ -359,9 +359,9 @@
 
 /* Apple VisionOS Glass Input Container */
 .apple-glass-input {
-  background: rgba(255, 255, 255, 0.82);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(255, 255, 255, 0.50);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  backdrop-filter: blur(8px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.30);
   box-shadow: inset 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 2px 8px -2px rgba(15, 23, 42, 0.04);
   color: #0F172A;
@@ -560,4 +560,51 @@
 }
 .dark .glass-text-override {
   color: #f8fafc !important; /* text-slate-50 */
+}
+
+.dark .apple-glass-input {
+  background: rgba(15, 23, 42, 0.40);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 2px 8px -2px rgba(0, 0, 0, 0.2);
+  color: #F8FAFC;
+}
+.dark .apple-glass-input::placeholder {
+  color: rgba(248, 250, 252, 0.4);
+}
+.dark .apple-glass-input:focus-within {
+  background: rgba(15, 23, 42, 0.60);
+  border-color: #38BDF8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18), inset 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.dark .apple-glass-button {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.3), inset 0 1px 1px 0 rgba(255, 255, 255, 0.3);
+  color: #F8FAFC;
+}
+.dark .apple-glass-button:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 6px 16px -3px rgba(0, 0, 0, 0.3), inset 0 1px 2px 0 rgba(255, 255, 255, 0.4);
+}
+.dark .apple-glass-button-primary {
+  color: #F8FAFC;
+}
+
+.dark .apple-glass-pill {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px -1px rgba(0, 0, 0, 0.2), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+  color: #F8FAFC;
+}
+.dark .apple-glass-pill:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.3), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.3);
+}
+
+.apple-glass, .apple-glass-card, .apple-glass-panel, .apple-glass-header, .apple-glass-tabbar, .apple-glass-dock, .apple-glass-pill, .apple-glass-button, .apple-glass-button-primary, .apple-glass-input {
+  transform: translateZ(0);
+  will-change: transform;
 }

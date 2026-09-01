@@ -134,7 +134,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4 ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-900/60 backdrop-blur-sm'}`}
+      className={`fixed inset-0 z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4 ${isGlassTheme(currentTheme) ? 'backdrop-blur-sm bg-slate-900/15 ' : 'bg-slate-900/60 '}`}
       onClick={handleDismiss}
     >
       <div 
@@ -270,7 +270,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                   className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-base sm:text-lg flex items-center justify-center transition-all cursor-pointer ${
                     avatarEmoji === emoji
                       ? `${theme.badgeBg} border-2 ${theme.badgeBorder} scale-105 shadow-xs`
-                      : isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md hover:bg-white/20 border-white/20 text-slate-900' : 'bg-slate-100 hover:bg-slate-200 border border-slate-200'
+                      : isGlassTheme(currentTheme) ? 'bg-white/10  hover:bg-white/20 border-white/20 text-slate-900' : 'bg-slate-100 hover:bg-slate-200 border border-slate-200'
                   }`}
                 >
                   {emoji}
@@ -290,7 +290,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               placeholder="e.g. Lucas"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full text-sm p-3 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 placeholder:text-slate-500 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
+              className={`w-full text-sm p-3 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 text-slate-900 placeholder:text-slate-500 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
             />
           </div>
 
@@ -303,7 +303,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as MemberRole)}
-                className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
+                className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
               >
                 <option value="child">Child</option>
                 <option value="teen">Teen / Young Adult</option>
@@ -320,7 +320,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                 type="date"
                 value={birthDate}
                 onChange={(e) => handleBirthDateChange(e.target.value)}
-                className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
+                className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
               />
             </div>
 
@@ -335,7 +335,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                 placeholder="e.g. 7"
                 value={age ?? ''}
                 onChange={(e) => handleAgeChange(e.target.value ? Number(e.target.value) : undefined)}
-                className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
+                className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
               />
             </div>
           </div>
@@ -354,7 +354,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               max="500"
               value={targetWeeklyPoints}
               onChange={(e) => setTargetWeeklyPoints(Number(e.target.value))}
-              className={`w-full text-xs p-2.5 rounded-xl border font-bold focus:ring-2 ${theme.accentRing} ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : 'border-slate-300 text-amber-900 bg-white placeholder:text-slate-400'}`}
+              className={`w-full text-xs p-2.5 rounded-xl border font-bold focus:ring-2 ${theme.accentRing} ${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : 'border-slate-300 text-amber-900 bg-white placeholder:text-slate-400'}`}
             />
             <p className="text-[11px] text-slate-400 mt-1">
               Target for earning full weekly allowance or goal rewards.

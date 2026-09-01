@@ -222,7 +222,7 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
                     soundFX.playPop();
                     onNavigateToRedemptions();
                   }}
-                  className={`text-[11px] font-black px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${isGlassTheme(currentTheme) ? 'bg-amber-200/50 text-amber-950 border border-amber-300/60 hover:bg-amber-200/70 shadow-xs backdrop-blur-md' : 'text-amber-900 dark:text-amber-200 bg-amber-200/80 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800'}`}
+                  className={`text-[11px] font-black px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${isGlassTheme(currentTheme) ? 'bg-amber-200/50 text-amber-950 border border-amber-300/60 hover:bg-amber-200/70 shadow-xs ' : 'text-amber-900 dark:text-amber-200 bg-amber-200/80 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800'}`}
                 >
                   <span>Track & Manage</span>
                   <ChevronRight className="w-3 h-3" />
@@ -465,7 +465,7 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
 
       {/* Claim Modal - Mobile iOS Bottom Sheet */}
       {claimModalReward && (
-        <div className={`fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150 ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-900/60 backdrop-blur-xs'}`}>
+        <div className={`fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150 ${isGlassTheme(currentTheme) ? 'backdrop-blur-sm bg-slate-900/15 ' : 'bg-slate-900/60 '}`}>
           <div 
             className="fixed inset-0"
             onClick={() => setClaimModalReward(null)}
@@ -617,7 +617,7 @@ function AddRewardModalComponent({ onClose, currentTheme, isGlassTheme, onSave }
   };
 
   return (
-    <div className={`fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150 ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-900/60 backdrop-blur-xs'}`}>
+    <div className={`fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150 ${isGlassTheme(currentTheme) ? 'backdrop-blur-sm bg-slate-900/15 ' : 'bg-slate-900/60 '}`}>
       <div 
         className="fixed inset-0"
         onClick={handleDismiss}

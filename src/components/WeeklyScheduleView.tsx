@@ -28,6 +28,7 @@ interface WeeklyScheduleViewProps {
   members: HouseholdMember[];
   selectedMemberId: string;
   currentTheme?: ThemePreset;
+  forceMobileUi?: boolean;
   onSelectMember: (id: string) => void;
   onOpenInspect: (chore: Chore, log: ChoreAssignmentLog) => void;
   onOpenPrintView: () => void;
@@ -41,6 +42,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
   members,
   selectedMemberId,
   currentTheme = 'rose',
+  forceMobileUi = false,
   onSelectMember,
   onOpenInspect,
   onOpenPrintView,
@@ -224,7 +226,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
       />
 
       {/* Mobile Day Selector Strip (Visible on small screens < md) */}
-      <div className="md:hidden space-y-3">
+      <div className={`${forceMobileUi ? 'block' : 'md:hidden'} space-y-3`}>
         {/* Weekday Picker Strip */}
         <div className={`${
           isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'
@@ -363,7 +365,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                   No chores scheduled for this day
                 </div>
               ) : (
-                <div className="space-y-2.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
                   {filteredScheduled.map((chore) => {
                     const log = logs.find(l => l.choreId === chore.id && l.date === focusedDay.dateStr);
                     const effectiveAssigneeId = getChoreAssigneeForDate(chore, focusedDay.dateStr);
@@ -383,11 +385,11 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                         className={`p-3.5 sm:p-4 rounded-2xl border text-xs cursor-pointer transition-all flex items-center justify-between gap-3 active:scale-[0.99] min-h-[58px] ${
                           isGlassTheme(currentTheme)
                             ? status === 'approved'
-                              ? 'bg-emerald-500/15 border-emerald-300/80 text-emerald-950 backdrop-blur-xl shadow-2xs'
+                              ? 'bg-emerald-500/15 border-emerald-300/80 text-emerald-950  shadow-2xs'
                               : status === 'needs_review'
-                              ? 'bg-amber-500/20 border-amber-300/90 text-amber-950 ring-1 ring-amber-300/60 backdrop-blur-xl shadow-2xs'
+                              ? 'bg-amber-500/20 border-amber-300/90 text-amber-950 ring-1 ring-amber-300/60  shadow-2xs'
                               : status === 'needs_redo'
-                              ? 'bg-rose-500/15 border-rose-300/80 text-rose-950 backdrop-blur-xl shadow-2xs'
+                              ? 'bg-rose-500/15 border-rose-300/80 text-rose-950  shadow-2xs'
                               : `${theme.cardBg} border-white/20 hover:border-white text-slate-900 shadow-2xs`
                             : status === 'approved'
                             ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950 shadow-2xs'
@@ -461,7 +463,7 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
       </div>
 
       {/* 7-Day Columns Matrix (Desktop OR when Mobile 'all_days' mode is selected) */}
-      <div className={`grid grid-cols-1 md:grid-cols-7 gap-3 ${mobileViewMode === 'single_day' ? 'hidden md:grid' : 'grid'}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-7 gap-3 ${mobileViewMode === 'single_day' ? (forceMobileUi ? 'hidden' : 'hidden md:grid') : (forceMobileUi ? 'hidden' : 'grid')}`}>
         {weekDays.map((day) => {
           const scheduled = chores.filter(c => isChoreScheduledForDate(c, day.dateStr));
           const filteredScheduled = selectedMemberId === 'all'
@@ -546,12 +548,12 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                         className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all active:scale-[0.98] ${
                           isGlassTheme(currentTheme)
                             ? status === 'approved'
-                              ? 'bg-emerald-500/15 border-emerald-300/80 text-emerald-950 backdrop-blur-md'
+                              ? 'bg-emerald-500/15 border-emerald-300/80 text-emerald-950 '
                               : status === 'needs_review'
-                              ? 'bg-amber-500/20 border-amber-300/90 text-amber-950 ring-1 ring-amber-300/50 backdrop-blur-md'
+                              ? 'bg-amber-500/20 border-amber-300/90 text-amber-950 ring-1 ring-amber-300/50 '
                               : status === 'needs_redo'
-                              ? 'bg-rose-500/15 border-rose-300/80 text-rose-950 backdrop-blur-md'
-                              : 'bg-white/20 border-white/20 hover:border-white text-slate-900 shadow-2xs backdrop-blur-md'
+                              ? 'bg-rose-500/15 border-rose-300/80 text-rose-950 '
+                              : 'bg-white/20 border-white/20 hover:border-white text-slate-900 shadow-2xs '
                             : status === 'approved'
                             ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
                             : status === 'needs_review'

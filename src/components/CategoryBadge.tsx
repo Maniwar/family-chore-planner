@@ -363,11 +363,11 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   if (style === 'glass') {
     return (
       <span
-        className={`inline-flex min-w-0 items-center gap-1  rounded-full border backdrop-blur-md font-semibold shadow-2xs whitespace-nowrap bg-white/75 dark:bg-slate-800/75 border-white/20 dark:border-slate-600/80 text-slate-800 dark:text-slate-100 ${
-          isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
+        className={`inline-flex min-w-0 items-center gap-1.5 rounded-full font-bold whitespace-nowrap apple-glass-pill ${
+          isXs ? 'px-2 py-0.5 text-[10px]' : isSm ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
-        <span className="w-4 h-4 rounded-full bg-sky-500/20 dark:bg-sky-400/20 text-sky-600 dark:text-sky-300 flex items-center justify-center ">
+        <span className="w-4 h-4 rounded-full bg-sky-500/20 dark:bg-sky-400/20 text-sky-600 dark:text-sky-300 flex items-center justify-center">
           <Icon className="w-3 h-3 stroke-[2.2]" />
         </span>
         <span className="truncate">{label}</span>
@@ -604,11 +604,11 @@ export const StarPointsBadge: React.FC<StarPointsBadgeProps> = ({
   if (style === 'glass') {
     return (
       <span
-        className={` shrink-0 inline-flex items-center gap-1  rounded-full border backdrop-blur-md font-bold shadow-2xs whitespace-nowrap bg-amber-400/20 dark:bg-amber-400/15 border-amber-300/70 dark:border-amber-500/50 text-amber-900 dark:text-amber-200 ${
-          isXs ? 'px-1.5 py-0.5 text-[10px]' : isSm ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-0.5 text-xs'
+        className={`shrink-0 inline-flex items-center gap-1.5 rounded-full font-bold whitespace-nowrap apple-glass-pill ${
+          isXs ? 'px-2 py-0.5 text-[10px]' : isSm ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
-        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-amber-400 text-amber-500 `} />
+        <Star className={`${isXs ? 'w-3 h-3' : isSm ? 'w-3.5 h-3.5' : 'w-4 h-4'} fill-amber-400 text-amber-500 drop-shadow-sm`} />
         <span>{points}{suffix ? ` ${suffix}` : ''}</span>
       </span>
     );

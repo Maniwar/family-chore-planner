@@ -90,7 +90,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150 ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-900/60 backdrop-blur-sm'}`}
+      className={`fixed inset-0 z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150 ${isGlassTheme(currentTheme) ? 'backdrop-blur-sm bg-slate-900/15 ' : 'bg-slate-900/60 '}`}
       onClick={handleDismiss}
     >
       <div
@@ -162,7 +162,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                       referrerPolicy="no-referrer"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end justify-between p-3">
-                      <span className="text-xs font-bold text-white bg-black/50 px-2.5 py-1 rounded-lg backdrop-blur-md">
+                      <span className="text-xs font-bold text-white bg-black/50 px-2.5 py-1 rounded-lg ">
                         🏡 {familyName}
                       </span>
                       <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                   placeholder="e.g. The Berenji Family"
                   value={familyName}
                   onChange={(e) => setFamilyName(e.target.value)}
-                  className={`flex-1 text-xs font-bold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white'}`}
+                  className={`flex-1 text-xs font-bold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 ${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white'}`}
                 />
               </div>
 
@@ -241,7 +241,7 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
                   placeholder="e.g. Clean spaces, happy smiles & teamwork! ✨"
                   value={houseAddressOrMotto}
                   onChange={(e) => setHouseAddressOrMotto(e.target.value)}
-                  className={`flex-1 text-xs font-medium p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white'}`}
+                  className={`flex-1 text-xs font-medium p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 ${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white'}`}
                 />
               </div>
             </div>

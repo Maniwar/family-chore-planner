@@ -298,7 +298,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-50 overflow-y-auto ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-950/60 backdrop-blur-md'} flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200`}
+      className={`fixed inset-0 z-50 overflow-y-auto ${isGlassTheme(currentTheme) ? (THEMES[currentTheme].isDark ? 'bg-slate-900/40 backdrop-blur-md' : 'bg-white/30 backdrop-blur-md') : 'bg-slate-950/60 '} flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200`}
       onClick={handleDismiss}
     >
       <div 
@@ -310,7 +310,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
         <BottomSheetGrabber dragHandleProps={dragHandleProps} onClose={handleDismiss} />
 
         {/* Navigation Bar Header */}
-        <div className={`px-5 py-3 border-b flex items-center justify-between shrink-0 ${isGlassTheme(currentTheme) ? 'bg-transparent border-white/20' : 'bg-slate-50 dark:bg-slate-900/70 border-slate-100 dark:border-slate-700 backdrop-blur-sm'}`}>
+        <div className={`px-5 py-3 border-b flex items-center justify-between shrink-0 ${isGlassTheme(currentTheme) ? 'bg-transparent border-white/20' : 'bg-slate-50 dark:bg-slate-900/70 border-slate-100 dark:border-slate-700 '}`}>
           <div 
             className="flex items-center space-x-2.5 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
             onTouchStart={dragHandleProps.onTouchStart}

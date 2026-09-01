@@ -18,7 +18,8 @@ import {
   Cloud,
   CloudCheck,
   Smartphone,
-  Monitor
+  Monitor,
+  Settings
 } from 'lucide-react';
 import { HouseholdMember, HouseholdInfo } from '../types';
 import { soundFX } from '../utils/audio';
@@ -126,7 +127,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Cloud Synced" />
                 )}
               </div>
-              <p className="text-[10px] text-white/80 truncate max-w-[170px]">
+              <p className={`text-[10px] truncate max-w-[170px] ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-white/80'}`}>
                 {householdInfo.houseAddressOrMotto || t.appSubtitle}
               </p>
             </div>
@@ -252,7 +253,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {t.momsCommand}
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-white/80 whitespace-nowrap max-w-[220px] 2xl:max-w-xs truncate">
+              <p className={`text-[11px] sm:text-xs whitespace-nowrap max-w-[220px] 2xl:max-w-xs truncate ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-white/80'}`}>
                 {householdInfo.houseAddressOrMotto || t.appSubtitle}
               </p>
             </div>
@@ -278,7 +279,7 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
 
               {showLangMenu && (
-                <div className="absolute right-0 mt-1.5 w-48 bg-white/10 dark:bg-black/10 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-1.5 z-50 space-y-1">
+                <div className="absolute right-0 mt-1.5 w-48 bg-white/10 dark:bg-black/10  rounded-2xl shadow-xl border border-white/20 p-1.5 z-50 space-y-1">
                   <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     Piliin ang Wika / Pagsasao
                   </div>
@@ -352,7 +353,7 @@ export const Header: React.FC<HeaderProps> = ({
                     className="fixed inset-0 z-40" 
                     onClick={() => setShowThemeMenu(false)} 
                   />
-                  <div className={`absolute right-0 mt-2 w-64 sm:w-72 rounded-2xl shadow-2xl p-2 z-50 space-y-1 max-h-[85vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150 border ${isGlassTheme(currentTheme) ? 'bg-white/20 backdrop-blur-3xl border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)]' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
+                  <div className={`absolute right-0 mt-2 w-64 sm:w-72 rounded-2xl shadow-2xl p-2 z-50 space-y-1 max-h-[85vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150 border ${isGlassTheme(currentTheme) ? 'apple-glass-panel bg-white/20 border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
                     <div className={`px-2.5 py-1.5 flex items-center justify-between border-b mb-1 ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-100 dark:border-slate-800'}`}>
                       <span className={`text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'}`}>
                         <Palette className="w-3 h-3 text-amber-500" />
@@ -376,8 +377,8 @@ export const Header: React.FC<HeaderProps> = ({
                           }}
                           className={`w-full flex items-center justify-between p-2 rounded-xl text-xs text-left transition-all ${
                             isSelected 
-                              ? (isGlassTheme(currentTheme) ? 'bg-white/40 shadow-sm border border-white/30' : 'bg-slate-900 dark:bg-slate-800 text-white shadow-xs font-bold') 
-                              : (isGlassTheme(currentTheme) ? 'hover:bg-white/20 border border-transparent' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent')
+                              ? (isGlassTheme(currentTheme) ? 'bg-white/50 shadow-sm border border-white/40' : 'bg-slate-900 dark:bg-slate-800 text-white shadow-xs font-bold') 
+                              : (isGlassTheme(currentTheme) ? 'hover:bg-white/30 border border-transparent' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent')
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -415,6 +416,23 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
+            {/* Quick Tools & Family Cloud Settings Modal Trigger */}
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                if (onOpenQuickSettings) onOpenQuickSettings();
+              }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill bg-white/5 dark:bg-black/10 text-slate-800 drop-shadow-sm hover:bg-white/30 border-white/20'
+                  : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+              }`}
+              title="Household Hub & Quick Settings"
+            >
+              <Settings className={`w-4 h-4 ${isGlassTheme(currentTheme) ? 'text-slate-800' : ''}`} />
+              <span className="hidden xl:inline text-[11px] font-semibold">Settings</span>
+            </button>
+
             {/* Cloud Sync Button (Firebase Multi-Family) */}
             <button
               onClick={() => {
@@ -427,7 +445,7 @@ export const Header: React.FC<HeaderProps> = ({
                     ? 'apple-glass-pill bg-emerald-500/20 text-emerald-900 border-emerald-300/80 shadow-2xs'
                     : 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
                   : isGlassTheme(currentTheme)
-                  ? 'apple-glass-pill bg-white/5 dark:bg-black/10 text-white drop-shadow-sm hover:bg-white border-white/20'
+                  ? 'apple-glass-pill bg-white/5 dark:bg-black/10 text-slate-800 drop-shadow-sm hover:bg-white/30 border-white/20'
                   : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
               }`}
               title={householdInfo.isCloudSynced ? `Cloud Synced (${householdInfo.householdCode || 'Live'})` : 'Connect Multi-Family Cloud Sync'}

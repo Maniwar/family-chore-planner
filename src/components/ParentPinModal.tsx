@@ -168,7 +168,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-50 overflow-y-auto ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-900/70 backdrop-blur-xs'} flex items-center justify-center p-3 sm:p-4`}
+      className={`fixed inset-0 z-50 overflow-y-auto ${isGlassTheme(currentTheme) ? 'backdrop-blur-sm bg-slate-900/15 ' : 'bg-slate-900/70 '} flex items-center justify-center p-3 sm:p-4`}
       onClick={onClose}
     >
       <div
@@ -181,7 +181,7 @@ export const ParentPinModal: React.FC<ParentPinModalProps> = ({
         {/* Top Header */}
         <div className={`${isGlassTheme(currentTheme) ? 'bg-transparent text-slate-900 dark:text-white border-b border-white/20' : theme.primaryBg + ' ' + theme.primaryText} p-4 sm:p-5 flex items-center justify-between`}>
           <div className="flex items-center space-x-2.5">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shadow-xs ${isGlassTheme(currentTheme) ? 'bg-slate-900/10 text-slate-700' : 'bg-white/20 text-white backdrop-blur-xs'}`}>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shadow-xs ${isGlassTheme(currentTheme) ? 'bg-slate-900/10 text-slate-700' : 'bg-white/20 text-white '}`}>
               <Lock className={`w-5 h-5 ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white dark:text-white' : 'text-white'}`} />
             </div>
             <div>

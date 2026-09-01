@@ -1,3 +1,4 @@
+import { isGlassTheme } from '../utils/theme';
 import React from 'react';
 import { 
   X, 
@@ -21,6 +22,15 @@ import { formatDisplayDate } from '../utils/storage';
 import { ThemeConfig, THEMES } from '../utils/theme';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
+
+const getGlassySeverityColor = (severityColor: string, isGlass: boolean) => {
+  if (!isGlass) return severityColor;
+  if (severityColor.includes('rose')) return 'backdrop-blur-md bg-rose-500/20 border-rose-300/40 text-rose-900 shadow-xs ring-1 ring-rose-400/20';
+  if (severityColor.includes('amber')) return 'backdrop-blur-md bg-amber-500/20 border-amber-300/40 text-amber-900 shadow-xs ring-1 ring-amber-400/20';
+  if (severityColor.includes('emerald')) return 'backdrop-blur-md bg-emerald-500/20 border-emerald-300/40 text-emerald-900 shadow-xs ring-1 ring-emerald-400/20';
+  if (severityColor.includes('purple')) return 'backdrop-blur-md bg-purple-500/20 border-purple-300/40 text-purple-900 shadow-xs ring-1 ring-purple-400/20';
+  return severityColor;
+};
 
 interface PersonStatusDrawerProps {
   activePersonSummary: PersonStatusSummary;
@@ -57,12 +67,12 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150"
+      className={`fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150 ${isGlassTheme(theme.id) ? (theme.isDark ? 'bg-slate-900/40 backdrop-blur-md' : 'bg-white/30 backdrop-blur-md') : 'backdrop-blur-sm bg-black/60'}`}
       onClick={handleDismiss}
     >
       <div
         style={sheetStyle}
-        className={`w-full max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-200 safe-area-pb ${isGlassTheme(currentTheme) ? "apple-glass-panel border-white/30" : "bg-white border-slate-200/90"}`}
+        className={`w-full max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 duration-200 safe-area-pb ${isGlassTheme(theme.id) ? "apple-glass-panel border-white/30" : "bg-white border-slate-200/90"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Interactive Grabber Touch-Bar (Click, Drag, or Tap to Dismiss) */}
@@ -73,7 +83,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
 
         {/* Sheet Header (Also responsive to drag down) */}
         <div 
-          className={`px-4 sm:px-5 py-3.5 border-b ${theme.headerBorder || 'border-slate-100'} flex items-center justify-between bg-slate-50/80`}
+          className={`px-4 sm:px-5 py-3.5 border-b ${theme.headerBorder || 'border-slate-100'} flex items-center justify-between ${isGlassTheme(theme.id) ? 'transparent' : 'bg-slate-50/80'}`}
         >
           <div 
             className="flex items-center gap-3 min-w-0 flex-1 select-none cursor-grab active:cursor-grabbing"
@@ -182,21 +192,20 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                 return (
                   <div
                     key={idx}
-                    className={`rounded-2xl border p-4 shadow-2xs transition-all space-y-3 ${isGlassTheme(currentTheme) ? "apple-glass-card border-white/20 hover:border-white/40" : "bg-white border-slate-200/90 hover:border-slate-300"}`}
+                    className={`rounded-2xl border p-4 shadow-2xs transition-all space-y-3 ${isGlassTheme(theme.id) ? "apple-glass-card border-white/20 hover:border-white/40" : "bg-white border-slate-200/90 hover:border-slate-300"}`}
                   >
                     {/* Top Meta Header: Status Badge + Due Date on Left, Points on Right */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-extrabold border shrink-0 ${item.tierInfo.severityColor}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-extrabold border shrink-0 ${getGlassySeverityColor(item.tierInfo.severityColor, isGlassTheme(theme.id))}`}>
                           {item.isRedo ? '🔄 Redo' : `${item.daysLate}d Late`}
                         </span>
-                        <span className="text-xs text-slate-500 font-medium truncate flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className={`text-xs font-medium truncate flex items-center gap-1 ${isGlassTheme(theme.id) ? 'text-slate-600' : 'text-slate-500'}`}>
+                          <Clock className={`w-3 h-3 shrink-0 ${isGlassTheme(theme.id) ? 'text-slate-400' : 'text-slate-400'}`} />
                           <span className="truncate">Due: {formattedDate}</span>
                         </span>
                       </div>
-
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-50 text-amber-900 rounded-md text-xs font-black border border-amber-200/80 shrink-0">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-black border shrink-0 ${isGlassTheme(theme.id) ? 'apple-glass-card bg-amber-500/10 text-amber-950 border-amber-300/40 shadow-xs' : 'bg-amber-50 text-amber-900 border-amber-200/80'}`}>
                         ⭐ {item.chore.defaultPoints} pts
                       </span>
                     </div>
@@ -207,14 +216,14 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                     </h4>
 
                     {/* Penalty Tier Status & Next Worsening Forecast (Apple Inset Box) */}
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-xs space-y-1.5">
+                    <div className={`p-3 rounded-xl border text-xs space-y-1.5 ${isGlassTheme(theme.id) ? 'bg-white/10 border-white/30 shadow-[inset_0_1px_3px_rgba(255,255,255,0.2)]' : 'bg-slate-50 border-slate-200/70'}`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-slate-500 font-medium">Penalty State:</span>
+                        <span className={`font-medium ${isGlassTheme(theme.id) ? 'text-slate-600' : 'text-slate-500'}`}>Penalty State:</span>
                         <span className="font-black text-slate-900 text-right">{item.tierInfo.tierLabel}</span>
                       </div>
                       {item.tierInfo.nextWorseningNotice && (
-                        <div className="flex items-start gap-1.5 pt-1.5 border-t border-slate-200/60 text-[11px] font-semibold text-rose-600 leading-tight">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500" />
+                        <div className={`flex items-start gap-1.5 pt-1.5 border-t text-[11px] font-semibold leading-tight ${isGlassTheme(theme.id) ? 'border-white/30 text-rose-700' : 'border-slate-200/60 text-rose-600'}`}>
+                          <AlertCircle className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isGlassTheme(theme.id) ? 'text-rose-600' : 'text-rose-500'}`} />
                           <span>{item.tierInfo.nextWorseningNotice}</span>
                         </div>
                       )}
@@ -229,9 +238,9 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                             soundFX.playPop();
                             setWaiveTarget({ ...item, member });
                           }}
-                          className="inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-300/80 rounded-xl text-xs font-black cursor-pointer min-h-[38px] active:scale-98 transition-all shadow-2xs whitespace-nowrap"
+                          className={`inline-flex items-center justify-center gap-1.5 py-2 px-3 ${isGlassTheme(theme.id) ? 'apple-glass-button text-emerald-900 border-emerald-300/40' : 'bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border-emerald-300/80'} rounded-xl text-xs font-black cursor-pointer min-h-[38px] active:scale-98 transition-all shadow-2xs whitespace-nowrap`}
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <Sparkles className={`w-3.5 h-3.5 shrink-0 ${isGlassTheme(theme.id) ? 'text-emerald-700' : 'text-emerald-600'}`} />
                           <span>Waive</span>
                         </button>
 
@@ -241,9 +250,9 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                             soundFX.playPop();
                             setExtendTarget({ ...item, member });
                           }}
-                          className={`inline-flex items-center justify-center gap-1.5 py-2 px-3 ${theme.badgeBg} hover:brightness-95 active:scale-98 ${theme.badgeText} border ${theme.badgeBorder} rounded-xl text-xs font-black cursor-pointer min-h-[38px] transition-all shadow-2xs whitespace-nowrap`}
+                          className={`inline-flex items-center justify-center gap-1.5 py-2 px-3 ${isGlassTheme(theme.id) ? 'apple-glass-button text-indigo-900 border-indigo-300/40' : theme.badgeBg + ' hover:brightness-95 ' + theme.badgeText + ' border ' + theme.badgeBorder} rounded-xl text-xs font-black cursor-pointer min-h-[38px] active:scale-98 transition-all shadow-2xs whitespace-nowrap`}
                         >
-                          <CalendarPlus className="w-3.5 h-3.5 shrink-0" />
+                          <CalendarPlus className={`w-3.5 h-3.5 shrink-0 ${isGlassTheme(theme.id) ? 'text-indigo-700' : ''}`} />
                           <span>Extend</span>
                         </button>
                       </div>

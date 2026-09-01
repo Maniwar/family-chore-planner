@@ -571,7 +571,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                   isSelected
                     ? 'bg-amber-500 text-white border-amber-500 shadow-2xs font-bold'
                     : isGlassTheme(currentTheme)
-                    ? 'bg-white/30 hover:bg-white/40 text-slate-600 border-white/20 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)]'
+                    ? 'bg-white/30 hover:bg-white/40 text-slate-600 border-white/20  shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)]'
                     : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
                 }`}
               >
@@ -831,7 +831,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       {onSelectMember && (
         <div className={`hidden sm:block ${isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.cardBorder} p-3 sm:p-4 shadow-xs space-y-2`}>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>
               <Users className="w-3.5 h-3.5 text-indigo-500" />
               <span>Filter Chores by Helper</span>
             </span>
@@ -919,9 +919,9 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
 
       {/* Desktop Filter and Search Bar */}
       <div className={`hidden sm:block ${isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.cardBorder} p-3 sm:p-4 space-y-3 shadow-xs transition-colors duration-200`}>
-        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 items-stretch sm:items-center justify-between">
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
           {/* Search box */}
-          <div className="relative flex-1 min-w-0">
+          <div className="relative w-full lg:w-64 xl:w-80 shrink-0">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -947,7 +947,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               }}
               className={`${
                 isGlassTheme(currentTheme)
-                  ? 'apple-glass-pill bg-white/75 border-white/20 text-slate-900 shadow-2xs font-bold'
+                  ? 'apple-glass-pill bg-white/20 border-white/20 text-slate-900 shadow-2xs font-bold'
                   : 'bg-slate-50 border border-slate-200 text-slate-700'
               } py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border`}
             >
@@ -967,7 +967,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               }}
               className={`${
                 isGlassTheme(currentTheme)
-                  ? 'apple-glass-pill bg-white/75 border-white/20 text-slate-900 shadow-2xs font-bold'
+                  ? 'apple-glass-pill bg-white/20 border-white/20 text-slate-900 shadow-2xs font-bold'
                   : 'bg-slate-50 border border-slate-200 text-slate-700'
               } py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border`}
             >
@@ -986,7 +986,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               }}
               className={`${
                 isGlassTheme(currentTheme)
-                  ? 'apple-glass-pill bg-white/75 border-white/20 text-slate-900 shadow-2xs font-bold'
+                  ? 'apple-glass-pill bg-white/20 border-white/20 text-slate-900 shadow-2xs font-bold'
                   : 'bg-slate-50 border border-slate-200 text-slate-700'
               } py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border`}
             >
@@ -1083,7 +1083,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             </h2>
             <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full shrink-0 ${
               isGlassTheme(currentTheme)
-                ? 'apple-glass-pill bg-white/90 text-sky-950 border border-white/20 shadow-2xs'
+                ? 'apple-glass-pill bg-white/20 text-sky-950 border border-white/20 shadow-2xs'
                 : 'bg-slate-200/80 text-slate-700'
             }`}>
               {filtered.length}
@@ -1099,7 +1099,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               className={`p-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1 cursor-pointer ${
                 effectiveViewMode === 'list' 
                   ? isGlassTheme(currentTheme)
-                    ? 'apple-glass-pill bg-white/95 text-slate-950 font-black shadow-xs border-white/20'
+                    ? 'apple-glass-pill bg-white/20 text-slate-950 font-black shadow-xs border-white/20'
                     : 'bg-white text-slate-900 shadow-2xs' 
                   : 'text-slate-500 hover:text-slate-800'
               }`}
@@ -1113,7 +1113,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               className={`p-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1 cursor-pointer ${
                 effectiveViewMode === 'grid' 
                   ? isGlassTheme(currentTheme)
-                    ? 'apple-glass-pill bg-white/95 text-slate-950 font-black shadow-xs border-white/20'
+                    ? 'apple-glass-pill bg-white/20 text-slate-950 font-black shadow-xs border-white/20'
                     : 'bg-white text-slate-900 shadow-2xs' 
                   : 'text-slate-500 hover:text-slate-800'
               }`}
@@ -1237,7 +1237,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                       <span className="text-[11px] font-extrabold text-slate-600 hidden sm:inline">
                         {completedCount}/{group.items.length} done
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-black text-amber-900 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-200/80 shadow-2xs">
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 ${isGlassTheme(currentTheme) ? 'apple-glass-pill text-amber-900 dark:text-amber-200' : 'text-amber-900 bg-amber-100/90 rounded-full border border-amber-200/80 shadow-2xs'}`}>
                         <span>⭐</span>
                         <span>+{totalGroupPoints} pts</span>
                       </span>

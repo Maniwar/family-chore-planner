@@ -422,7 +422,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-50 overflow-y-auto ${isGlassTheme(currentTheme) ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-950/60 backdrop-blur-md'} flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200`}
+      className={`fixed inset-0 z-50 overflow-y-auto ${isGlassTheme(currentTheme) ? (THEMES[currentTheme].isDark ? 'bg-slate-900/40 backdrop-blur-md' : 'bg-white/30 backdrop-blur-md') : 'bg-slate-950/60 '} flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200`}
       onClick={handleDismiss}
     >
       <div 
@@ -434,7 +434,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
         <BottomSheetGrabber dragHandleProps={dragHandleProps} onClose={handleDismiss} />
 
         {/* Navigation Bar Header */}
-        <div className={`px-5 py-3.5 border-b flex items-center justify-between shrink-0 ${isGlassTheme(currentTheme) ? 'border-white/20' : 'backdrop-blur-md bg-slate-50/80 border-slate-100'}`}>
+        <div className={`px-5 py-3.5 border-b flex items-center justify-between shrink-0 ${isGlassTheme(currentTheme) ? 'border-white/20' : ' bg-slate-50/80 border-slate-100'}`}>
           <div 
             className="flex items-center space-x-3 flex-1 min-w-0 select-none cursor-grab active:cursor-grabbing"
             onTouchStart={dragHandleProps.onTouchStart}
@@ -535,7 +535,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                 onChange={(e) => setTitle(e.target.value)}
                 onBlur={handleTitleBlur}
                 placeholder="e.g. Empty & Reload Dishwasher"
-                className={`w-full text-sm font-bold p-3.5 rounded-2xl border focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all min-h-[48px] shadow-2xs ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 focus:bg-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'border-slate-200 bg-slate-50/60 focus:bg-white'}`}
+                className={`w-full text-sm font-bold p-3.5 rounded-2xl border focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all min-h-[48px] shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'border-slate-200 bg-slate-50/60 focus:bg-white'}`}
               />
               <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium pl-1">
                 💡 Type a name like "Clean Bathroom Sink" to automatically draft inspection criteria.
@@ -552,7 +552,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
                 placeholder="Clear instructions for the helper..."
-                className={`w-full text-xs font-medium p-3 rounded-2xl border focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all shadow-2xs ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 focus:bg-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'border-slate-200 bg-slate-50/60 focus:bg-white'}`}
+                className={`w-full text-xs font-medium p-3 rounded-2xl border focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'border-slate-200 bg-slate-50/60 focus:bg-white'}`}
               />
             </div>
 
@@ -560,13 +560,13 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
             <div className={`rounded-2xl border p-3.5 space-y-3 shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-slate-50/90 border-slate-200/80'}`}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1">
                     Room / Category
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as ChoreCategory)}
-                    className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900' : 'border-slate-200 bg-white'}`}
+                    className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'border-slate-200 bg-white'}`}
                   >
                     <option value="Kitchen">🍳 Kitchen</option>
                     <option value="Living Room">🛋️ Living Room</option>
@@ -581,13 +581,13 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1">
                     Time of Day
                   </label>
                   <select
                     value={timeOfDay}
                     onChange={(e) => setTimeOfDay(e.target.value as TimeOfDay)}
-                    className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900' : 'border-slate-200 bg-white'}`}
+                    className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'border-slate-200 bg-white'}`}
                   >
                     <option value="morning">🌅 Morning (Before School)</option>
                     <option value="afternoon">☀️ Afternoon (After School)</option>
@@ -603,7 +603,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
             <div className={`rounded-2xl border p-3.5 space-y-3.5 shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-slate-50/90 border-slate-200/80'}`}>
               <div className="space-y-2">
                 <div>
-                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 block">
+                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 block">
                     Helper Assignment & Schedule
                   </label>
                   <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400">
@@ -651,13 +651,13 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1">
                         Assigned Helper
                       </label>
                       <select
                         value={assignedMemberId}
                         onChange={(e) => setAssignedMemberId(e.target.value)}
-                        className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900' : 'border-slate-200 bg-white'}`}
+                        className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'border-slate-200 bg-white'}`}
                       >
                         <option value="unassigned">🤝 Anyone / Unassigned</option>
                         {members.map(m => (
@@ -669,13 +669,13 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1">
                         Frequency
                       </label>
                       <select
                         value={frequency}
                         onChange={(e) => setFrequency(e.target.value as ChoreFrequency)}
-                        className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900' : 'border-slate-200 bg-white'}`}
+                        className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'border-slate-200 bg-white'}`}
                       >
                         <option value="daily">📅 Every Day</option>
                         <option value="weekdays">🎒 Mon – Fri (School Days)</option>
@@ -730,9 +730,9 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                     </div>
                     
                     {/* Preset 1: Alternate 2 helpers */}
-                    <div className={`p-2.5 rounded-xl border space-y-2 w-full shadow-2xs ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900' : 'bg-white border-rose-200'}`}>
+                    <div className={`p-2.5 rounded-xl border space-y-2 w-full shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'bg-white border-rose-200'}`}>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-700">Alternate 2 Helpers:</span>
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Alternate 2 Helpers:</span>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Takes turns every day</span>
                       </div>
 
@@ -742,7 +742,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                           <select
                             value={rotateHelperA}
                             onChange={(e) => setRotateHelperA(e.target.value)}
-                            className={`w-full text-xs font-semibold p-2 rounded-lg border focus:ring-2 focus:ring-rose-500 min-h-[38px] truncate ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 focus:bg-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 border-slate-200 focus:bg-white text-slate-900'}`}
+                            className={`w-full text-xs font-semibold p-2 rounded-lg border focus:ring-2 focus:ring-rose-500 min-h-[38px] truncate ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'bg-slate-50 border-slate-200 focus:bg-white text-slate-900'}`}
                           >
                             {members.map(m => (
                               <option key={m.id} value={m.id}>{m.avatarEmoji} {m.name}</option>
@@ -755,7 +755,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                           <select
                             value={rotateHelperB}
                             onChange={(e) => setRotateHelperB(e.target.value)}
-                            className={`w-full text-xs font-semibold p-2 rounded-lg border focus:ring-2 focus:ring-rose-500 min-h-[38px] truncate ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 focus:bg-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-slate-50 border-slate-200 focus:bg-white text-slate-900'}`}
+                            className={`w-full text-xs font-semibold p-2 rounded-lg border focus:ring-2 focus:ring-rose-500 min-h-[38px] truncate ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'bg-slate-50 border-slate-200 focus:bg-white text-slate-900'}`}
                           >
                             {members.map(m => (
                               <option key={m.id} value={m.id}>{m.avatarEmoji} {m.name}</option>
@@ -780,7 +780,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                       whileTap={{ scale: 0.97 }}
                       type="button"
                       onClick={handleApplyRotateAllKids}
-                      className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-2 min-h-[40px] ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md hover:bg-white/20 border-white/20 text-slate-800' : 'bg-white hover:bg-rose-100 text-rose-800 border-rose-200'}`}
+                      className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-2 min-h-[40px] ${isGlassTheme(currentTheme) ? 'apple-glass-button text-slate-900' : 'bg-white hover:bg-rose-100 text-rose-800 border-rose-200'}`}
                     >
                       <RotateCw className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                       <span>Rotate Across All Kids & Teens</span>
@@ -803,7 +803,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                             key={day.num}
                             className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs transition-colors w-full ${
                               !isOff 
-                                ? (isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900' : 'bg-slate-50/90 border-slate-200/90')
+                                ? (isGlassTheme(currentTheme) ? 'apple-glass-input' : 'bg-slate-50/90 border-slate-200/90')
                                 : (isGlassTheme(currentTheme) ? 'bg-white/20 border-dashed border-white/40 opacity-60' : 'bg-slate-100/60 border-dashed border-slate-200 opacity-60')
                             }`}
                           >
@@ -813,7 +813,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                               }`}>
                                 {day.short}
                               </span>
-                              <span className="font-bold text-slate-700 text-xs hidden sm:inline truncate">
+                              <span className="font-bold text-slate-700 dark:text-slate-200 text-xs hidden sm:inline truncate">
                                 {day.full}
                               </span>
                             </div>
@@ -822,7 +822,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                               <select
                                 value={currentAssigneeId}
                                 onChange={(e) => handleSetDayAssignee(day.num, e.target.value)}
-                                className={`w-full text-xs font-bold p-2 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[42px] truncate ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 focus:bg-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-white border-slate-200 focus:bg-white text-slate-900'}`}
+                                className={`w-full text-xs font-bold p-2 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[42px] truncate ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'bg-white border-slate-200 focus:bg-white text-slate-900'}`}
                               >
                                 <option value="off">🚫 Rest / Off (No Chore)</option>
                                 <option value="unassigned">🤝 Anyone / Open</option>
@@ -846,7 +846,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
             <div className={`rounded-2xl border p-3.5 space-y-3 shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-slate-50/90 border-slate-200/80'}`}>
               <div className="grid grid-cols-3 gap-2.5">
                 <div className="min-w-0">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1 truncate">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1 truncate">
                     ⭐ Points
                   </label>
                   <input
@@ -855,12 +855,12 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                     max="500"
                     value={defaultPoints}
                     onChange={(e) => setDefaultPoints(Number(e.target.value))}
-                    className={`w-full text-xs font-bold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] text-amber-900 ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900' : 'border-slate-200 bg-white'}`}
+                    className={`w-full text-xs font-bold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] text-amber-900 ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'border-slate-200 bg-white'}`}
                   />
                 </div>
 
                 <div className="min-w-0">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1 truncate">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1 truncate">
                     ⏱️ Minutes
                   </label>
                   <input
@@ -869,18 +869,18 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                     max="180"
                     value={estimatedMinutes}
                     onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
-                    className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900' : 'border-slate-200 bg-white'}`}
+                    className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'border-slate-200 bg-white'}`}
                   />
                 </div>
 
                 <div className="min-w-0">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1 truncate">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1 truncate">
                     Difficulty
                   </label>
                   <select
                     value={difficulty}
                     onChange={(e) => setDifficulty(e.target.value as any)}
-                    className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900' : 'border-slate-200 bg-white'}`}
+                    className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'border-slate-200 bg-white'}`}
                   >
                     <option value="easy">🟢 Easy</option>
                     <option value="medium">🟡 Med</option>
@@ -894,9 +894,9 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
             <div className={`rounded-2xl border p-3.5 space-y-3 shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-slate-50/90 border-slate-200/80'}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                     <span>Quality Inspection Checklist</span>
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full">
+                    <span className={`text-[10px] font-black px-2 py-0.5 ${isGlassTheme(currentTheme) ? 'apple-glass-pill text-emerald-900 dark:text-emerald-200' : 'bg-emerald-100 text-emerald-800 rounded-full'}`}>
                       {qualityChecklist.length} steps
                     </span>
                   </span>
@@ -935,8 +935,8 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
               </div>
 
               {/* Auto-Draft Toggle Pill */}
-              <div className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-[11px] ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 text-slate-900' : 'bg-white border-slate-200/80'}`}>
-                <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+              <div className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-[11px] ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'bg-white border-slate-200/80'}`}>
+                <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                   <span>⚡</span>
                   <span>Auto-draft checklist when chore is named</span>
                 </span>
@@ -944,7 +944,13 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                   type="button"
                   onClick={() => setAutoDraftEnabled(!autoDraftEnabled)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer shrink-0 ${
-                    autoDraftEnabled ? 'bg-purple-600' : 'bg-slate-300'
+                    isGlassTheme(currentTheme)
+                      ? autoDraftEnabled
+                        ? 'bg-purple-500/80 border border-white/30 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                        : 'bg-white/20 border border-white/30 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]'
+                      : autoDraftEnabled 
+                        ? 'bg-purple-600' 
+                        : 'bg-slate-300'
                   }`}
                   role="switch"
                   aria-checked={autoDraftEnabled}
@@ -993,12 +999,12 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                   {qualityChecklist.map((item, idx) => (
                     <div 
                       key={idx} 
-                      className={`flex items-center gap-2.5 text-xs p-3 rounded-xl border shadow-2xs transition-colors ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20' : 'bg-white border-slate-200 hover:border-slate-300'}`}
+                      className={`flex items-center gap-2.5 text-xs p-3 rounded-xl border shadow-2xs transition-colors ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'bg-white border-slate-200 hover:border-slate-300'}`}
                     >
                       <div className="w-5 h-5 rounded-md bg-emerald-50 text-emerald-700 font-black text-[10px] flex items-center justify-center shrink-0">
                         {idx + 1}
                       </div>
-                      <span className="flex-1 text-slate-800 font-medium leading-relaxed break-words min-w-0">
+                      <span className="flex-1 text-slate-800 dark:text-slate-100 font-medium leading-relaxed break-words min-w-0">
                         {item}
                       </span>
                       <motion.button
@@ -1034,7 +1040,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                             soundFX.playPop();
                             setQualityChecklist([...qualityChecklist, suggestion]);
                           }}
-                          className={`text-[11px] font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-2xs min-h-[34px] ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md hover:bg-white/20 border-white/20 text-slate-800' : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'}`}
+                          className={`text-[11px] font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-2xs min-h-[34px] ${isGlassTheme(currentTheme) ? 'apple-glass-button text-slate-900' : 'bg-white hover:bg-slate-100 text-slate-700 dark:text-slate-200 border-slate-200'}`}
                         >
                           <span className="text-emerald-600 font-bold">+</span>
                           <span>{suggestion}</span>
@@ -1058,13 +1064,13 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                       handleAddChecklistItem();
                     }
                   }}
-                  className={`flex-1 text-xs p-3 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] min-w-0 ${isGlassTheme(currentTheme) ? 'bg-white/10 backdrop-blur-md border-white/20 focus:bg-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]' : 'bg-white border-slate-200 focus:bg-white text-slate-900'}`}
+                  className={`flex-1 text-xs p-3 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] min-w-0 ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'bg-white border-slate-200 focus:bg-white text-slate-900'}`}
                 />
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   type="button"
                   onClick={handleAddChecklistItem}
-                  className="px-4 py-2.5 bg-slate-200/90 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition-colors shrink-0 cursor-pointer min-h-[44px] flex items-center gap-1"
+                  className="px-4 py-2.5 bg-slate-200/90 hover:bg-slate-300 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-xl transition-colors shrink-0 cursor-pointer min-h-[44px] flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add Step</span>
@@ -1075,7 +1081,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
           </div>
 
           {/* Sticky Actions Footer */}
-          <div className={`p-3.5 sm:p-4 border-t flex items-center justify-end gap-2.5 shrink-0 safe-area-pb ${isGlassTheme(currentTheme) ? 'bg-transparent border-white/20' : 'backdrop-blur-md bg-slate-50/95 border-slate-100'}`}>
+          <div className={`p-3.5 sm:p-4 border-t flex items-center justify-end gap-2.5 shrink-0 safe-area-pb ${isGlassTheme(currentTheme) ? 'bg-transparent border-white/20' : ' bg-slate-50/95 border-slate-100'}`}>
             <motion.button
               whileTap={{ scale: 0.96 }}
               type="button"

@@ -248,7 +248,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
 
     return (
       <div 
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+        className="fixed inset-0 z-50 backdrop-blur-sm bg-black/50  flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
         onClick={(e) => {
           e.stopPropagation();
           setIsDetailOpen(false);
@@ -561,7 +561,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                   <span className="text-slate-400 font-normal">({chore.estimatedMinutes}m)</span>
                 )}
                 {totalChecklistCount > 0 && (
-                  <span className="ml-auto text-[9px] font-bold text-indigo-600 bg-indigo-50/80 px-1.5 py-0.5 rounded-md border border-indigo-100/80">
+                  <span className={`ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-md border ${
+                    isGlassTheme(currentTheme) 
+                      ? 'bg-white/20 dark:bg-black/20 border-white/40 dark:border-white/10 text-slate-900 dark:text-slate-100 backdrop-blur-md shadow-glass' 
+                      : 'text-indigo-600 bg-indigo-50/80 border-indigo-100/80'
+                  }`}>
                     {completedChecklistCount}/{totalChecklistCount} ✓
                   </span>
                 )}
@@ -588,7 +592,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
               {/* Apple HIG Checkbox & State Action Button */}
               {status === 'approved' ? (
                 <div 
-                  className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-2xs shrink-0"
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shadow-2xs shrink-0 ${
+                    isGlassTheme(currentTheme)
+                      ? 'bg-emerald-500/80 text-white border-emerald-400/50 border backdrop-blur-md'
+                      : 'bg-emerald-500 text-white'
+                  }`}
                   title="Completed & Approved"
                 >
                   <Check className="w-4 h-4 stroke-[3]" />
@@ -608,7 +616,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                   </button>
                 ) : (
                   <div 
-                    className="w-7 h-7 rounded-lg bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shadow-2xs shrink-0"
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center shadow-2xs shrink-0 ${
+                      isGlassTheme(currentTheme)
+                        ? 'apple-glass-pill bg-amber-400/20 text-amber-200 border-amber-300/60 shadow-glass'
+                        : 'bg-amber-100 border border-amber-300 text-amber-700'
+                    }`}
                     title="Waiting for Mom's Review"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-600" />
@@ -620,7 +632,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                     e.stopPropagation();
                     handleChildSubmit();
                   }}
-                  className="w-7 h-7 rounded-lg border-2 border-rose-400 bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white flex items-center justify-center shadow-2xs active:scale-90 cursor-pointer shrink-0 transition-all"
+                  className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center shadow-2xs active:scale-90 cursor-pointer shrink-0 transition-all ${
+                    isGlassTheme(currentTheme)
+                      ? 'border-rose-400/50 bg-rose-500/20 hover:bg-rose-500/40 text-rose-100 hover:text-white backdrop-blur-md'
+                      : 'border-rose-400 bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white'
+                  }`}
                   title="Touch-up completed, submit for review"
                 >
                   <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -864,7 +880,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                     setIsExpanded(!isExpanded);
                   }}
                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer min-h-[36px] active:scale-95 ${
-                    completedChecklistCount === totalChecklistCount
+                    isGlassTheme(currentTheme)
+                      ? completedChecklistCount === totalChecklistCount
+                        ? 'bg-emerald-500/20 text-emerald-100 border-emerald-400/40 backdrop-blur-md shadow-glass'
+                        : 'bg-white/10 dark:bg-black/20 text-slate-800 dark:text-slate-200 border-white/30 dark:border-white/10 backdrop-blur-md shadow-glass hover:bg-white/20'
+                      : completedChecklistCount === totalChecklistCount
                       ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                       : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
                   }`}
@@ -899,7 +919,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                           };
                           onOpenInspect(chore, tempLog);
                         }}
-                        className="w-8 h-8 rounded-xl text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition-colors shrink-0 active:scale-90 cursor-pointer flex items-center justify-center shadow-2xs"
+                        className={`w-8 h-8 rounded-xl transition-colors shrink-0 active:scale-90 cursor-pointer flex items-center justify-center shadow-2xs ${
+                          isGlassTheme(currentTheme)
+                            ? 'apple-glass-pill text-amber-100 bg-amber-500/20 hover:bg-amber-500/40 border-amber-300/60'
+                            : 'text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200/80'
+                        }`}
                         title={t.inspectAndGrade}
                         aria-label="Inspect and Grade"
                       >
@@ -914,7 +938,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                           e.stopPropagation();
                           handleChildSubmit();
                         }}
-                        className="w-8 h-8 rounded-xl border-2 border-rose-400 bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white flex items-center justify-center shadow-2xs transition-all active:scale-90 cursor-pointer shrink-0"
+                        className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center shadow-2xs transition-all active:scale-90 cursor-pointer shrink-0 ${
+                          isGlassTheme(currentTheme)
+                            ? 'apple-glass-pill border-rose-400/60 bg-rose-500/20 hover:bg-rose-500/40 text-rose-100 hover:text-white'
+                            : 'border-rose-400 bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white'
+                        }`}
                         title="Touch-up completed, submit for review"
                         aria-label="Resubmit Chore"
                       >
@@ -927,7 +955,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                           e.stopPropagation();
                           handleChildSubmit();
                         }}
-                        className="w-8 h-8 rounded-xl border-2 border-slate-300 hover:border-emerald-500 bg-slate-50/60 hover:bg-emerald-500 text-slate-400 hover:text-white flex items-center justify-center shadow-2xs transition-all active:scale-90 cursor-pointer shrink-0 group"
+                        className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center shadow-2xs transition-all active:scale-90 cursor-pointer shrink-0 group ${
+                          isGlassTheme(currentTheme)
+                            ? 'border-white/40 dark:border-white/20 bg-white/10 dark:bg-black/20 hover:bg-emerald-500/80 hover:border-emerald-400/80 text-slate-800 dark:text-slate-300 backdrop-blur-md'
+                            : 'border-slate-300 hover:border-emerald-500 bg-slate-50/60 hover:bg-emerald-500 text-slate-400 hover:text-white'
+                        }`}
                         title="Mark as Done (or swipe right)"
                         aria-label="Mark Chore as Done"
                       >
@@ -971,7 +1003,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                     </div>
                   ) : (
                     <div 
-                      className="h-8 px-2.5 rounded-xl bg-amber-50 border border-amber-200/90 text-amber-800 text-[11px] font-bold flex items-center gap-1.5 shadow-2xs"
+                      className={`h-8 px-2.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 shadow-2xs ${
+                        isGlassTheme(currentTheme)
+                          ? 'apple-glass-pill bg-amber-400/20 border-amber-300/60 text-amber-200'
+                          : 'bg-amber-50 border border-amber-200/90 text-amber-800'
+                      }`}
                       title="Waiting for Mom's Review"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -984,7 +1020,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                 {status === 'approved' && (
                   <div className="flex items-center gap-1.5">
                     <div 
-                      className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-2xs shrink-0"
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-2xs shrink-0 ${
+                        isGlassTheme(currentTheme)
+                          ? 'bg-emerald-500/80 text-white border-emerald-400/50 border backdrop-blur-md'
+                          : 'bg-emerald-500 text-white'
+                      }`}
                       title="Completed & Approved"
                     >
                       <Check className="w-4 h-4 stroke-[3]" />

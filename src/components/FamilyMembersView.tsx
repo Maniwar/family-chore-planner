@@ -110,7 +110,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
             {/* Overlay Content */}
             <div className="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between text-white">
               <div className="flex items-center justify-between">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md text-[11px] font-bold text-rose-200 border border-white/15 shadow-sm">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40  text-[11px] font-bold text-rose-200 border border-white/15 shadow-sm">
                   <Home className="w-3.5 h-3.5 text-rose-400" />
                   <span>Our Household Hub</span>
                 </div>
@@ -121,7 +121,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                       soundFX.playPop();
                       onOpenHouseSettings();
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/90 hover:bg-white text-slate-900 shadow-md backdrop-blur-md transition-all active:scale-95 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/90 hover:bg-white text-slate-900 shadow-md  transition-all active:scale-95 cursor-pointer"
                   >
                     <Camera className="w-3.5 h-3.5 text-rose-600" />
                     <span>Edit Photo</span>
@@ -150,7 +150,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
 
             <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start sm:items-center gap-3.5">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-3xl sm:text-4xl shadow-inner shrink-0">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10  border border-white/20 flex items-center justify-center text-3xl sm:text-4xl shadow-inner shrink-0">
                   🏡
                 </div>
                 <div className="space-y-0.5">

@@ -91,7 +91,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200 ${isGlass ? 'bg-slate-900/15 backdrop-blur-md' : 'bg-slate-950/60 backdrop-blur-sm'}`}
+      className={`fixed inset-0 z-50 overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200 ${isGlass ? 'backdrop-blur-sm bg-slate-900/15 ' : 'bg-slate-950/60 '}`}
       onClick={handleDismiss}
     >
       {/* Chrome Layer: Modal Sheet Container */}
@@ -116,7 +116,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
         <div 
           className={`px-5 py-3.5 border-b flex items-center justify-between shrink-0 ${
             isGlass
-              ? 'border-white/40 bg-white/30 backdrop-blur-md'
+              ? 'border-white/40 bg-white/30 '
               : 'border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90'
           }`}
         >
@@ -150,7 +150,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
             }}
             className={`w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer shrink-0 z-20 shadow-2xs ${
               isGlass
-                ? 'bg-white/40 hover:bg-white/60 text-slate-900 border border-white/20 backdrop-blur-xs'
+                ? 'bg-white/40 hover:bg-white/60 text-slate-900 border border-white/20 '
                 : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700'
             }`}
             title="Close Settings"
@@ -203,7 +203,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
               }}
               className={`w-full box-border rounded-2xl p-3.5 text-left transition-all active:scale-[0.99] cursor-pointer flex items-center justify-between gap-3 shadow-2xs group border ${
                 isGlass
-                  ? 'border-emerald-300/80 bg-emerald-500/20 backdrop-blur-md hover:bg-emerald-500/30'
+                  ? 'border-emerald-300/80 bg-emerald-500/20  hover:bg-emerald-500/30'
                   : 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/30 dark:border-emerald-800'
               }`}
             >
@@ -236,7 +236,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 Family & Household
               </span>
               {isMomMode && (
-                <span className="text-[10px] font-black text-amber-900 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-300 shadow-2xs">
+                <span className={`text-[10px] font-black px-2.5 py-0.5 ${isGlassTheme(currentTheme) ? 'apple-glass-pill text-amber-900 dark:text-amber-200' : 'text-amber-900 bg-amber-100/90 rounded-full border border-amber-300 shadow-2xs'}`}>
                   Parent Mode Active
                 </span>
               )}
@@ -244,7 +244,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
 
             <div className={`rounded-2xl border overflow-hidden shadow-2xs ${
               isGlass
-                ? 'border-white/70 bg-white/45 backdrop-blur-md divide-y divide-white/40'
+                ? 'border-white/70 bg-white/45  divide-y divide-white/40'
                 : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800'
             }`}>
               
@@ -324,7 +324,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
 
             <div className={`rounded-2xl border overflow-hidden shadow-2xs ${
               isGlass
-                ? 'border-white/70 bg-white/45 backdrop-blur-md divide-y divide-white/40'
+                ? 'border-white/70 bg-white/45  divide-y divide-white/40'
                 : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800'
             }`}>
               
@@ -508,7 +508,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
 
             <div className={`rounded-2xl border p-3.5 sm:p-4 space-y-4 shadow-2xs ${
               isGlass
-                ? 'border-white/70 bg-white/45 backdrop-blur-md'
+                ? 'border-white/70 bg-white/45 '
                 : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
             }`}>
               
@@ -524,7 +524,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {(Object.keys(THEMES) as ThemePreset[]).map((tKey) => {
                     const th = THEMES[tKey];
                     const isSelected = currentTheme === tKey;
@@ -546,7 +546,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                           isSelected
                             ? `${th.primaryBg} ${th.primaryText} border-transparent font-black shadow-xs`
                             : isGlass
-                            ? 'bg-white/40 text-slate-900 border-white/20 hover:bg-white/60 font-bold backdrop-blur-xs'
+                            ? 'bg-white/40 text-slate-900 border-white/20 hover:bg-white/60 font-bold '
                             : 'bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold'
                         }`}
                       >
@@ -560,7 +560,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
 
                 {/* Glass & Ice Shader Status Callout */}
                 {isGlassTheme(currentTheme) && (
-                  <div className="mt-3 p-3 rounded-2xl bg-white/40 dark:bg-sky-950/40 border border-white/20 dark:border-sky-800 flex items-center justify-between gap-2.5 backdrop-blur-md">
+                  <div className="mt-3 p-3 rounded-2xl bg-white/40 dark:bg-sky-950/40 border border-white/20 dark:border-sky-800 flex items-center justify-between gap-2.5 ">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-8 h-8 rounded-xl bg-white/60 dark:bg-sky-900/60 text-sky-900 dark:text-sky-200 flex items-center justify-center text-base shrink-0 border border-white/20">
                         {currentTheme === 'crystal_ice' ? '❄️' : '🫧'}
@@ -634,7 +634,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                               ? 'bg-white/80 border-pink-500 ring-2 ring-pink-500/20 shadow-xs font-bold'
                               : 'bg-white dark:bg-slate-800 border-pink-500 ring-2 ring-pink-500/20 shadow-xs font-bold'
                             : isGlass
-                            ? 'bg-white/35 border-white/20 hover:bg-white/55 text-slate-900 backdrop-blur-xs'
+                            ? 'bg-white/35 border-white/20 hover:bg-white/55 text-slate-900 '
                             : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
@@ -678,7 +678,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 {/* Apple Segmented Control */}
                 <div className={`p-1 rounded-xl flex gap-1 border ${
                   isGlass
-                    ? 'bg-white/30 border-white/50 backdrop-blur-xs'
+                    ? 'bg-white/30 border-white/50 '
                     : 'bg-slate-100 dark:bg-slate-800 border-slate-200/80 dark:border-slate-700'
                 }`}>
                   {SUPPORTED_LANGUAGES.map((langOpt) => {
@@ -726,7 +726,13 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                     if (!isSoundEnabled) soundFX.playPop();
                   }}
                   className={`w-12 h-7 rounded-full p-0.5 transition-colors cursor-pointer min-h-[28px] shrink-0 ${
-                    isSoundEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+                    isGlass
+                      ? isSoundEnabled
+                        ? 'bg-emerald-500/30 border border-emerald-300/50 backdrop-blur-md shadow-[inset_0_1px_3px_rgba(0,0,0,0.2)]'
+                        : 'bg-white/10 border border-white/20'
+                      : isSoundEnabled 
+                        ? 'bg-emerald-500' 
+                        : 'bg-slate-300 dark:bg-slate-700'
                   }`}
                 >
                   <div
@@ -749,7 +755,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
 
             <div className={`rounded-2xl border overflow-hidden shadow-2xs ${
               isGlass
-                ? 'border-white/70 bg-white/45 backdrop-blur-md divide-y divide-white/40'
+                ? 'border-white/70 bg-white/45  divide-y divide-white/40'
                 : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800'
             }`}>
               

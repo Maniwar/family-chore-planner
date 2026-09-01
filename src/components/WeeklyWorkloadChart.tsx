@@ -397,7 +397,7 @@ export const WeeklyWorkloadChart: React.FC<WeeklyWorkloadChartProps> = ({
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
                       return (
-                        <div className="bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-xl text-xs space-y-1.5 border border-slate-700/80 min-w-[180px] z-50 animate-in fade-in">
+                        <div className="bg-slate-900/95  text-white p-3.5 rounded-2xl shadow-xl text-xs space-y-1.5 border border-slate-700/80 min-w-[180px] z-50 animate-in fade-in">
                           <div className="flex items-center justify-between border-b border-slate-700/80 pb-1 font-bold">
                             <span className="text-slate-100">{label}, {data.dateStr}</span>
                             {data.isToday && (
