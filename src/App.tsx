@@ -107,7 +107,25 @@ export default function App() {
     }
   });
 
-  const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
+    const [forceMobileUi, setForceMobileUi] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('family_chore_force_mobile') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleMobileUi = () => {
+    setForceMobileUi(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('family_chore_force_mobile', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     try {
       return (localStorage.getItem('family_chore_theme') as ThemePreset) || 'rose';
     } catch {
@@ -1597,6 +1615,7 @@ export default function App() {
       {/* Navigation Tabs Bar */}
       <Navigation
         currentView={currentView}
+        forceMobileUi={forceMobileUi}
         onSelectView={(v) => {
           soundFX.playPop();
           setCurrentView(v);
@@ -1620,7 +1639,7 @@ export default function App() {
       />
 
       {/* Primary Page Canvas */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 pb-28 sm:pb-8">
+      <main className={`flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 pb-28 ${forceMobileUi ? "sm:pb-28" : "sm:pb-8"}`}>
         {currentView === 'today' && (
           <DailyScheduleView
             currentDateStr={currentDateStr}

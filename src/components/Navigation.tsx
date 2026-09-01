@@ -29,6 +29,7 @@ interface NavigationProps {
   language?: SupportedLanguage;
   currentTheme?: ThemePreset;
   dimmed?: boolean;
+  forceMobileUi?: boolean;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -43,6 +44,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   language = 'en',
   currentTheme = 'rose',
   dimmed = false,
+  forceMobileUi = false,
 }) => {
   const t = getTranslation(language);
   const theme = THEMES[currentTheme] || THEMES.rose;
@@ -150,7 +152,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <>
       {/* Desktop Navigation Header Bar */}
-      <div className={`${theme.navBg} border-b ${theme.navBorder} no-print hidden md:block sticky top-[57px] sm:top-[65px] z-20 shadow-2xs transition-all duration-300 w-full ${dimmed ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+      <div className={`${theme.navBg} border-b ${theme.navBorder} no-print ${forceMobileUi ? 'hidden' : 'hidden md:block'} sticky top-[57px] sm:top-[65px] z-20 shadow-2xs transition-all duration-300 w-full ${dimmed ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
           <nav className="flex items-center space-x-1 sm:space-x-1.5 py-1.5 sm:py-2 overflow-x-auto scrollbar-none min-w-0" aria-label="Tabs">
             {desktopNavItems.map((item) => {
@@ -194,11 +196,11 @@ export const Navigation: React.FC<NavigationProps> = ({
       <nav 
         id="ios-bottom-tab-bar"
         aria-label="Bottom Navigation Bar"
-        className={`md:hidden fixed bottom-0 left-0 right-0 z-30 ${
+        className={`${forceMobileUi ? 'block' : 'md:hidden'} fixed bottom-0 left-0 right-0 z-30 ${
           isGlassTheme(currentTheme) ? 'apple-glass-header backdrop-blur-2xl bg-white/80' : theme.navBg
         } border-t ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.navBorder} shadow-lg px-2 pt-1 safe-area-pb select-none transition-all duration-200 ${dimmed ? 'opacity-30 pointer-events-none' : 'opacity-100 translate-y-0'}`}
       >
-        <div className="flex items-center justify-around h-12">
+        <div className="flex items-center justify-around h-12 max-w-md mx-auto">
           {iosMobileTabs.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
