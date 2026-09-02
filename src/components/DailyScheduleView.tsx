@@ -485,7 +485,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         </div>
 
         {/* Row 4: Horizontal Helper & Time Filter Bar with Smooth Scroll & Full Bleed */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mx-2 px-2 touch-pan-x">
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mx-2 px-2 touch-pan-x" onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
           {/* Quick Search & Filter Trigger */}
           <button
             onClick={() => setShowMobileFilters(!showMobileFilters)}
@@ -848,7 +848,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs" onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {/* All Helpers Chip */}
             <button
               id="daily-filter-all-helpers"
