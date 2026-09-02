@@ -473,25 +473,24 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
           <div 
             className={`relative rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-4 sm:p-5 shadow-2xl border space-y-3.5 animate-in slide-in-from-bottom duration-200 max-h-[90vh] overflow-y-auto safe-area-pb z-10 ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/30' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
             
-            {/* Top Drag Handle for Mobile */}
-            <div className="sm:hidden pt-1 pb-0.5 flex justify-center">
-              <div className={`w-12 h-1.5 rounded-full transition-colors ${isGlassTheme(currentTheme) ? 'bg-white/40' : 'bg-slate-300 dark:bg-slate-600'}`} />
+            <div className="shrink-0 border-b border-slate-200/50 dark:border-slate-800/50 pb-2 bg-white/10 dark:bg-black/10 rounded-t-3xl -mx-4 -mt-4 sm:mx-0 sm:mt-0 sm:bg-transparent sm:border-b-0 sm:pb-0 sm:hidden">
+              <BottomSheetGrabber onClose={() => setClaimModalReward(null)} variant={isGlassTheme(currentTheme) ? 'white' : 'default'} />
             </div>
-
+            
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
               <div>
                 <h3 className="text-base font-black text-slate-900 dark:text-white">Claim Reward</h3>
-                <p className={`text-xs ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} font-medium`}>Request redemption from family store</p>
+                <p className={`text-xs ${isGlassTheme(currentTheme) ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'} font-medium`}>Request redemption from family store</p>
               </div>
               <button 
                 onClick={() => setClaimModalReward(null)} 
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
+                className={`p-1.5 rounded-xl min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer ${isGlassTheme(currentTheme) ? 'text-slate-700 hover:bg-white/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800 text-center">
+            <div className={`p-3 rounded-2xl border text-center ${isGlassTheme(currentTheme) ? 'apple-glass-card border-amber-300/40' : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800'}`}>
               <span className="text-2xl mb-1 block">🎁</span>
               <h4 className="text-sm font-black text-amber-950 dark:text-amber-100">{claimModalReward.title}</h4>
               <p className="text-xs font-bold text-amber-800 dark:text-amber-300 mt-0.5">Cost: {claimModalReward.pointCost} Points</p>
@@ -516,9 +515,9 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
                       }}
                       className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer min-h-[44px] ${
                         !hasEnough 
-                          ? 'opacity-50 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-not-allowed'
+                          ? (isGlassTheme(currentTheme) ? 'opacity-50 apple-glass-input cursor-not-allowed' : 'opacity-50 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 cursor-not-allowed')
                           : isSelected
-                            ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-400 dark:border-amber-600 ring-2 ring-amber-400/20'
+                            ? (isGlassTheme(currentTheme) ? 'apple-glass-card border-amber-400/60 ring-2 ring-amber-400/20 bg-amber-500/10' : 'bg-amber-50 dark:bg-amber-950/60 border-amber-400 dark:border-amber-600 ring-2 ring-amber-400/20')
                             : (isGlassTheme(currentTheme) ? 'apple-glass-card border-white/40 text-slate-900' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750')
                       }`}
                     >
@@ -547,7 +546,7 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
                 placeholder="e.g. Can we do this on Friday night?"
                 value={claimNote}
                 onChange={(e) => setClaimNote(e.target.value)}
-                className={`w-full text-xs p-2.5 rounded-xl border font-medium focus:ring-2 focus:ring-rose-500 transition-all ${isGlassTheme(currentTheme) ? 'bg-white/40 border-white/40 focus:bg-white/60 text-slate-900 placeholder-slate-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
+                className={`w-full text-xs p-2.5 rounded-xl border font-medium focus:ring-2 focus:ring-rose-500 transition-all ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white'}`}
               />
             </div>
 
@@ -555,7 +554,7 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setClaimModalReward(null)}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold min-h-[40px] cursor-pointer ${isGlassTheme(currentTheme) ? 'text-slate-900 hover:bg-white/30' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold min-h-[40px] cursor-pointer ${isGlassTheme(currentTheme) ? 'apple-glass-button border-transparent hover:border-white/20 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
               >
                 Cancel
               </button>
@@ -707,7 +706,7 @@ function AddRewardModalComponent({ onClose, currentTheme, isGlassTheme, onSave }
             <button
               type="button"
               onClick={handleDismiss}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold min-h-[40px] cursor-pointer ${isGlassTheme(currentTheme) ? 'text-slate-900 hover:bg-white/30' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold min-h-[40px] cursor-pointer ${isGlassTheme(currentTheme) ? 'apple-glass-button border-transparent hover:border-white/20 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
             >
               Cancel
             </button>

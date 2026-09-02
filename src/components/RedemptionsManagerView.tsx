@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { RewardClaim, HouseholdMember, RewardItem } from '../types';
 import { Avatar } from './Avatar';
+import { BottomSheetGrabber } from './BottomSheetGrabber';
 import { soundFX } from '../utils/audio';
 import { formatDisplayDate, formatTimeDisplay } from '../utils/storage';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
@@ -769,29 +770,25 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
             className="fixed inset-0"
             onClick={() => setNoteModalClaim(null)}
           />
-          <div className="relative bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-in slide-in-from-bottom duration-200 z-10 max-h-[90vh] overflow-y-auto safe-area-pb">
+          <div className={`relative rounded-t-3xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 shadow-2xl border space-y-4 animate-in slide-in-from-bottom duration-200 z-10 max-h-[90vh] overflow-y-auto safe-area-pb ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/30' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
             
-            {/* iOS Drag Handle */}
-            <div className="sm:hidden pt-1 pb-0.5 flex justify-center">
-              <div className={`w-12 h-1.5 rounded-full transition-colors ${isGlassTheme(currentTheme) ? 'bg-white/40' : 'bg-slate-300 dark:bg-slate-600'}`} />
+            <div className="shrink-0 border-b border-slate-200/50 dark:border-slate-800/50 pb-2 bg-white/10 dark:bg-black/10 rounded-t-3xl -mx-4 -mt-4 sm:mx-0 sm:mt-0 sm:bg-transparent sm:border-b-0 sm:pb-0 sm:hidden">
+              <BottomSheetGrabber onClose={() => setNoteModalClaim(null)} variant={isGlassTheme(currentTheme) ? 'white' : 'default'} />
             </div>
-
+            
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
               <div>
-                <h3 className={`text-base font-black ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'}`}>
-                  {noteActionType === 'approve'
-                    ? 'Approve Reward Claim'
-                    : noteActionType === 'deliver'
+                <h3 className={`text-base font-black ${isGlassTheme(currentTheme) ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-white'}`}>
+                  {noteActionType === 'approve' 
+                    ? 'Approve Reward Claim' 
+                    : noteActionType === 'deliver' 
                     ? 'Confirm Reward Delivery'
-                    : 'Refund Points & Decline'}
+                    : 'Reject Reward Claim'}
                 </h3>
-                <p className={`text-xs ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} font-medium`}>
-                  {noteModalClaim.rewardTitle} • {noteModalClaim.memberName}
-                </p>
               </div>
               <button 
-                onClick={() => setNoteModalClaim(null)} 
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
+                onClick={() => setNoteModalClaim(null)}
+                className={`p-1.5 rounded-xl min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer ${isGlassTheme(currentTheme) ? 'text-slate-700 hover:bg-white/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -799,7 +796,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
 
             {/* Refund notice */}
             {noteActionType === 'reject' && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-2xl border border-rose-200 dark:border-rose-800 text-xs text-rose-900 dark:text-rose-200">
+              <div className={`p-3 rounded-2xl border text-xs ${isGlassTheme(currentTheme) ? 'apple-glass-card border-rose-300/40 text-rose-900 dark:text-rose-200' : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200'}`}>
                 <p className="font-bold flex items-center gap-1.5 mb-0.5">
                   <RotateCcw className="w-4 h-4 text-rose-600" />
                   <span>Refund {noteModalClaim.pointCost} Points</span>
@@ -833,7 +830,7 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setNoteModalClaim(null)}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[40px] cursor-pointer"
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold min-h-[40px] cursor-pointer ${isGlassTheme(currentTheme) ? 'apple-glass-button border-transparent hover:border-white/20 text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
               >
                 Cancel
               </button>
@@ -841,10 +838,12 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
               <button
                 type="button"
                 onClick={handleConfirmActionModal}
-                className={`px-5 py-2.5 rounded-xl text-xs font-black text-white shadow-2xs min-h-[40px] cursor-pointer active:scale-95 transition-all ${
+                className={`px-5 py-2.5 rounded-xl text-xs font-black shadow-2xs min-h-[40px] cursor-pointer active:scale-95 transition-all ${
+                  isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : (
                   noteActionType === 'reject'
-                    ? 'bg-rose-600 hover:bg-rose-700'
-                    : 'bg-emerald-600 hover:bg-emerald-700'
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  )
                 }`}
               >
                 {noteActionType === 'reject' ? 'Confirm Refund' : 'Confirm Action'}

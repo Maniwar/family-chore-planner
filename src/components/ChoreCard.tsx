@@ -24,6 +24,7 @@ import { formatTimeDisplay } from '../utils/storage';
 import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getTranslation, getCategoryTranslation } from '../utils/i18n';
 import { Avatar } from './Avatar';
+import { BottomSheetGrabber } from './BottomSheetGrabber';
 import { CategoryBadge, StarPointsBadge, BadgeStyle } from './CategoryBadge';
 import { calculateDaysLate, getPenaltyTierInfo } from '../utils/penaltyEngine';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
@@ -259,7 +260,9 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* iOS Grabber for Mobile */}
-          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mt-3 sm:hidden" />
+          <div className="shrink-0 border-b border-slate-200/50 dark:border-slate-800/50 pb-2 bg-white/10 dark:bg-black/10 rounded-t-3xl sm:hidden">
+            <BottomSheetGrabber onClose={() => setShowDetails(false)} variant={isGlassTheme(currentTheme) ? 'white' : 'default'} />
+          </div>
 
           {/* Modal Header */}
           <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
