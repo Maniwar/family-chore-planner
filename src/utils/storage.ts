@@ -140,10 +140,95 @@ export const saveLogs = (logs: ChoreAssignmentLog[]): void => {
   }
 };
 
+const LEGACY_REWARD_ID_MAP: Record<string, string> = {
+  'rew_3': 'rew_cash_15',
+  'rew_cash_10': 'rew_cash_15',
+  'rew_4': 'rew_ice_cream',
+};
+
+export const mergeRewardsWithDefaults = (existingRewards: RewardItem[]): RewardItem[] => {
+  if (!existingRewards || existingRewards.length === 0) return INITIAL_REWARDS;
+
+  const seenDefaultIds = new Set<string>();
+  const processedRewards: RewardItem[] = [];
+
+  for (const r of existingRewards) {
+    // 1. Direct ID match against latest catalog
+    let defaultMatch = INITIAL_REWARDS.find(d => d.id === r.id);
+
+    // 2. Check legacy ID alias map (e.g. rew_3 -> rew_cash_15, rew_4 -> rew_ice_cream)
+    if (!defaultMatch && LEGACY_REWARD_ID_MAP[r.id]) {
+      defaultMatch = INITIAL_REWARDS.find(d => d.id === LEGACY_REWARD_ID_MAP[r.id]);
+    }
+
+    // 3. Fallback fuzzy match for old cash allowance or default titles
+    if (!defaultMatch) {
+      const norm = (r.title || '').toLowerCase().trim();
+      if ((r.category === 'allowance' || norm.includes('cash') || norm.includes('allowance')) && (norm.includes('15') || norm.includes('10'))) {
+        defaultMatch = INITIAL_REWARDS.find(d => d.id === 'rew_cash_15');
+      } else if ((r.category === 'allowance' || norm.includes('cash') || norm.includes('allowance')) && norm.includes('25')) {
+        defaultMatch = INITIAL_REWARDS.find(d => d.id === 'rew_cash_25');
+      } else if ((r.category === 'allowance' || norm.includes('cash') || norm.includes('allowance')) && norm.includes('50')) {
+        defaultMatch = INITIAL_REWARDS.find(d => d.id === 'rew_cash_50');
+      } else if ((r.category === 'allowance' || norm.includes('cash') || norm.includes('allowance') || norm.includes('jackpot')) && norm.includes('100')) {
+        defaultMatch = INITIAL_REWARDS.find(d => d.id === 'rew_jackpot_100');
+      } else if (norm.includes('ice cream parlor') || norm.includes('double scoop')) {
+        defaultMatch = INITIAL_REWARDS.find(d => d.id === 'rew_ice_cream');
+      }
+    }
+
+    if (defaultMatch) {
+      // Prevent duplicate instances of the same canonical default reward
+      if (seenDefaultIds.has(defaultMatch.id)) {
+        continue;
+      }
+      seenDefaultIds.add(defaultMatch.id);
+
+      // Upgrade existing item to calibrated Game Theory properties
+      processedRewards.push({
+        ...r,
+        ...defaultMatch,
+        id: defaultMatch.id,
+        title: defaultMatch.title,
+        pointCost: defaultMatch.pointCost,
+        description: defaultMatch.description,
+        realWorldValue: defaultMatch.realWorldValue,
+        minLevel: defaultMatch.minLevel,
+        rarity: defaultMatch.rarity,
+        category: defaultMatch.category,
+        cosmeticId: defaultMatch.cosmeticId,
+        isJackpot: defaultMatch.isJackpot,
+        saverBonus: defaultMatch.saverBonus,
+      });
+    } else {
+      // Custom parent-created reward: preserve intact
+      processedRewards.push(r);
+    }
+  }
+
+  // Add any missing default catalog rewards
+  for (const d of INITIAL_REWARDS) {
+    if (!seenDefaultIds.has(d.id)) {
+      processedRewards.push(d);
+      seenDefaultIds.add(d.id);
+    }
+  }
+
+  return processedRewards;
+};
+
 export const loadStoredRewards = (): RewardItem[] => {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.REWARDS);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed: RewardItem[] = JSON.parse(saved);
+      const merged = mergeRewardsWithDefaults(parsed);
+      const mergedStr = JSON.stringify(merged);
+      if (mergedStr !== saved) {
+        localStorage.setItem(STORAGE_KEYS.REWARDS, mergedStr);
+      }
+      return merged;
+    }
   } catch (e) {
     console.error('Failed to load rewards', e);
   }

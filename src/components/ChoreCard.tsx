@@ -261,7 +261,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
         >
           {/* iOS Grabber for Mobile */}
           <div className="shrink-0 border-b border-slate-200/50 dark:border-slate-800/50 pb-2 bg-white/10 dark:bg-black/10 rounded-t-3xl sm:hidden">
-            <BottomSheetGrabber onClose={() => setShowDetails(false)} variant={isGlassTheme(currentTheme) ? 'white' : 'default'} />
+            <BottomSheetGrabber onClose={() => setIsDetailOpen(false)} variant={isGlassTheme(currentTheme) ? 'white' : 'default'} />
           </div>
 
           {/* Modal Header */}

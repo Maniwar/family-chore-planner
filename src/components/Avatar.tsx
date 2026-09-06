@@ -9,6 +9,7 @@ interface AvatarProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   className?: string;
   showBorder?: boolean;
+  cosmeticClass?: string; // Optional equipped cosmetic frame effect
 }
 
 const SIZE_MAP = {
@@ -52,6 +53,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   size = 'md',
   className = '',
   showBorder = true,
+  cosmeticClass = '',
 }) => {
   const [imageError, setImageError] = useState(false);
 
@@ -61,7 +63,7 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   const sizeConfig = SIZE_MAP[size] || SIZE_MAP.md;
 
-  const borderClass = showBorder ? 'border border-slate-200 shadow-2xs' : '';
+  const borderClass = cosmeticClass ? cosmeticClass : (showBorder ? 'border border-slate-200 shadow-2xs' : '');
 
   const hasValidPhoto = Boolean(photoUrl && typeof photoUrl === 'string' && photoUrl.trim().length > 0);
 

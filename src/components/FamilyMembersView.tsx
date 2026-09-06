@@ -25,6 +25,7 @@ import { getMemberEffectiveAge } from '../utils/age';
 import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
+import { getMemberProgression, COSMETIC_ITEMS } from '../utils/progression';
 
 interface FamilyMembersViewProps {
   members: HouseholdMember[];
@@ -37,6 +38,7 @@ interface FamilyMembersViewProps {
   onDeleteMember: (memberId: string) => void;
   onAdjustPoints: (memberId: string, amount: number, reason: string) => void;
   onOpenHouseSettings: () => void;
+  onOpenProgression?: (member: HouseholdMember) => void;
 }
 
 export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
@@ -50,6 +52,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
   onDeleteMember,
   onAdjustPoints,
   onOpenHouseSettings,
+  onOpenProgression,
 }) => {
   const theme = THEMES[currentTheme] || THEMES.rose;
   const [bonusMemberId, setBonusMemberId] = useState<string | null>(null);
@@ -227,6 +230,8 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
           const weeklyProgress = Math.min(100, Math.round((member.currentPoints / targetPts) * 100));
           const effectiveAge = getMemberEffectiveAge(member);
           const isBonusOpen = bonusMemberId === member.id;
+          const prog = getMemberProgression(member);
+          const equippedCosmetic = COSMETIC_ITEMS.find(c => c.id === member.equippedCosmeticId);
 
           return (
             <div
@@ -237,13 +242,19 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                 {/* Header: Photo / Avatar, Name, Role, Age & Mom Controls */}
                 <div className="flex items-start justify-between gap-2 mb-3.5">
                   <div className="flex items-center gap-3 min-w-0">
-                    <Avatar
-                      photoUrl={member.avatarPhotoUrl}
-                      emoji={member.avatarEmoji}
-                      name={member.name}
-                      size="lg"
-                      className="shadow-2xs shrink-0"
-                    />
+                    <div className="relative shrink-0">
+                      <Avatar
+                        photoUrl={member.avatarPhotoUrl}
+                        emoji={member.avatarEmoji}
+                        name={member.name}
+                        size="lg"
+                        cosmeticClass={equippedCosmetic?.cssClass}
+                        className="shadow-2xs shrink-0"
+                      />
+                      <span className="absolute -bottom-1 -right-1 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full shadow-xs border border-white">
+                        Lv.{prog.currentLevel.level}
+                      </span>
+                    </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="text-base font-bold text-slate-900 truncate">
@@ -259,6 +270,19 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                         <span className="inline-block px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-100">
                           {member.role === 'teen' ? 'Teen / Adult' : member.role === 'parent' ? 'Parent / Admin' : 'Kid Helper'}
                         </span>
+                        {onOpenProgression && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              soundFX.playPop();
+                              onOpenProgression(member);
+                            }}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition-colors cursor-pointer"
+                          >
+                            <span>{prog.currentLevel.title}</span>
+                            <Sparkles className="w-2.5 h-2.5 text-amber-600" />
+                          </button>
+                        )}
                         {member.birthDate && (
                           <span className="text-[11px] text-slate-400 flex items-center gap-1">
                             <Calendar className="w-3 h-3 text-slate-400" />

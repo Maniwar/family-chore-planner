@@ -20,7 +20,8 @@ import {
   Sun,
   Moon,
   Bed,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember, ChoreCategory, TimeOfDay, ViewMode } from '../types';
 import { ChoreCard } from './ChoreCard';
@@ -39,6 +40,7 @@ import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getTranslation, getCategoryTranslation } from '../utils/i18n';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { BadgeStyle } from './CategoryBadge';
+import { COSMETIC_ITEMS } from '../utils/progression';
 
 const ALL_CATEGORIES: ChoreCategory[] = [
   'Kitchen',
@@ -523,6 +525,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           {members.map((m) => {
             const isSelected = selectedMemberId === m.id;
             const count = chores.filter(c => c.assignedMemberId === m.id && isChoreScheduledForDate(c, currentDateStr)).length;
+            const cosmetic = COSMETIC_ITEMS.find(c => c.id === m.equippedCosmeticId);
             return (
               <button
                 key={m.id}
@@ -538,7 +541,14 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                     : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
                 }`}
               >
-                <Avatar photoUrl={m.avatarPhotoUrl} emoji={m.avatarEmoji} name={m.name} size="xs" showBorder={false} />
+                <Avatar 
+                  photoUrl={m.avatarPhotoUrl} 
+                  emoji={m.avatarEmoji} 
+                  name={m.name} 
+                  size="xs" 
+                  showBorder={false}
+                  cosmeticClass={cosmetic?.cssClass}
+                />
                 <span>{m.name.split(' ')[0]}</span>
                 <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                   isSelected ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-700'
@@ -591,21 +601,30 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         {showMobileFilters && (
           <div className={`p-3 rounded-2xl border space-y-2.5 shadow-xs animate-in slide-in-from-top-2 duration-150 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white border-slate-200'}`}>
             <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder={t.searchChoresPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50"
+                className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:outline-hidden focus:ring-2 focus:ring-sky-500/50"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-3 gap-1.5 text-xs">
               <select
                 value={selectedTimeFilter}
                 onChange={(e) => setSelectedTimeFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-semibold"
+                className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-[11px] font-semibold truncate"
               >
                 <option value="all">⏰ All Times</option>
                 <option value="morning">Morning</option>
@@ -617,12 +636,24 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               <select
                 value={selectedCategoryFilter}
                 onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-xs font-semibold"
+                className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-[11px] font-semibold truncate"
               >
-                <option value="all">🏠 All Categories</option>
+                <option value="all">🏠 Category</option>
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>{getCategoryTranslation(cat, language)}</option>
                 ))}
+              </select>
+
+              <select
+                value={selectedStatusFilter}
+                onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-[11px] font-semibold truncate"
+              >
+                <option value="all">📌 Status</option>
+                <option value="pending">Pending</option>
+                <option value="needs_review">Review</option>
+                <option value="approved">Approved</option>
+                <option value="needs_redo">Redo</option>
               </select>
             </div>
 
@@ -1071,29 +1102,58 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         />
       )}
 
-      {/* Scheduled Chores Prominent Glass Section Header Bar (Mobile & Desktop) */}
-      <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-dock p-3 sm:p-4 rounded-2xl border border-white/20' : 'bg-white/40 p-3 sm:p-4 rounded-2xl border border-slate-200/80'} flex flex-wrap items-center justify-between gap-3 shadow-2xs transition-all`}>
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <div className={`w-8 h-8 rounded-xl ${isGlassTheme(currentTheme) ? 'bg-white/40 text-sky-600 shadow-2xs border border-white/20' : 'bg-slate-100 text-slate-700'} flex items-center justify-center font-bold text-sm shrink-0`}>
-            📋
-          </div>
-          <div className="flex items-center gap-2 min-w-0">
-            <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-tight truncate">
-              {selectedMemberObj ? `${selectedMemberObj.name}'s Chores` : <><span className="hidden sm:inline">Scheduled Chores</span><span className="sm:hidden">Chores</span></>}
-            </h2>
-            <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full shrink-0 ${
-              isGlassTheme(currentTheme)
-                ? 'apple-glass-pill bg-white/20 text-sky-950 border border-white/20 shadow-2xs'
-                : 'bg-slate-200/80 text-slate-700'
-            }`}>
-              {filtered.length}
-            </span>
-          </div>
+      {/* Scheduled Chores Prominent Glass Section Header Bar (Single Unified Row) */}
+      <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-dock p-2 sm:p-3 rounded-2xl border border-white/20' : 'bg-white/40 p-2 sm:p-3 rounded-2xl border border-slate-200/80'} flex items-center justify-between gap-1.5 sm:gap-3 shadow-2xs transition-all`}>
+        {/* Left: Chores Title and Number Badge */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <span className={`text-xs sm:text-xs font-black min-w-[28px] h-7 sm:h-8 px-2 rounded-xl flex items-center justify-center shrink-0 ${
+            isGlassTheme(currentTheme)
+              ? 'apple-glass-pill bg-white/30 text-sky-950 border border-white/20 shadow-2xs font-extrabold'
+              : 'bg-slate-100 text-slate-800 border border-slate-200/80'
+          }`}
+          title={`${filtered.length} chores scheduled`}
+          >
+            {filtered.length}
+          </span>
+          <h2 className="text-xs sm:text-sm md:text-base font-black text-slate-900 tracking-tight truncate">
+            {selectedMemberObj ? `${selectedMemberObj.name}'s` : <><span className="hidden sm:inline">Scheduled Chores</span><span className="sm:hidden">Chores</span></>}
+          </h2>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 ml-auto">
+        {/* Center: Search Bar filling available space */}
+        <div className="relative flex-1 min-w-[90px]">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            placeholder={selectedMemberObj ? `Search ${selectedMemberObj.name}'s...` : "Search chores..."}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={`w-full pl-7 sm:pl-8 pr-6 sm:pr-7 py-1.5 text-xs rounded-xl font-medium min-h-[32px] sm:min-h-[34px] transition-all focus:outline-hidden focus:ring-2 focus:ring-sky-500/50 ${
+              isGlassTheme(currentTheme)
+                ? 'apple-glass-input bg-white/50 border-white/30 text-slate-900 placeholder:text-slate-500 shadow-2xs'
+                : 'bg-white/90 border border-slate-200/90 text-slate-900 placeholder:text-slate-400 shadow-2xs'
+            }`}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playPop();
+                setSearchQuery('');
+              }}
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer min-h-[24px] min-w-[24px] flex items-center justify-center rounded-lg active:scale-95"
+              title="Clear search"
+              aria-label="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Right: Layout Toggle (Desktop) & Add Chore Button */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Desktop/Tablet Layout Toggle */}
-          <div className={`hidden sm:flex items-center ${isGlassTheme(currentTheme) ? 'apple-glass-pill' : 'bg-slate-100 border-slate-200'} p-0.5 rounded-xl border shadow-2xs`}>
+          <div className={`hidden md:flex items-center ${isGlassTheme(currentTheme) ? 'apple-glass-pill' : 'bg-slate-100 border-slate-200'} p-0.5 rounded-xl border shadow-2xs`}>
             <button
               onClick={() => handleToggleViewMode('list')}
               className={`p-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1 cursor-pointer ${
@@ -1124,7 +1184,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             </button>
           </div>
 
-          {/* Mom Mode Add Chore Action - Contextually placed right above chores list */}
+          {/* Mom Mode Add Chore Action - Icon only on mobile to maximize search bar space */}
           {isMomMode && (
             <button
               id="contextual-add-chore-btn"
@@ -1132,13 +1192,14 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 soundFX.playPop();
                 onOpenNewChore();
               }}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black ${
+              className={`inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-black ${
                 isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : `${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover}`
-              } shadow-xs transition-all active:scale-95 cursor-pointer min-h-[36px]`}
-              title="Create New Chore"
+              } shadow-xs transition-all active:scale-95 cursor-pointer min-h-[32px] sm:min-h-[34px] min-w-[32px] sm:min-w-[34px]`}
+              title="Add New Chore"
+              aria-label="Add New Chore"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add Chore</span>
+              <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
+              <span className="hidden md:inline">Chore</span>
             </button>
           )}
         </div>
@@ -1148,28 +1209,47 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
       {filtered.length === 0 ? (
         <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-dashed border-slate-300'} p-8 sm:p-12 text-center`}>
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-slate-100/80 mx-auto flex items-center justify-center text-3xl mb-3">
-            🎉
+            {searchQuery.trim() ? '🔍' : '🎉'}
           </div>
           <h3 className="text-base font-bold text-slate-900 mb-1">
-            {t.noChoresFound}
+            {searchQuery.trim() ? `No chores matching "${searchQuery}"` : t.noChoresFound}
           </h3>
           <p className="text-xs text-slate-600 max-w-sm mx-auto mb-4">
-            {scheduledChores.length === 0 
+            {searchQuery.trim()
+              ? 'Try a different chore name, helper, or room category, or clear the search.'
+              : scheduledChores.length === 0 
               ? t.allChoresDoneSubtitle 
               : t.addCustomChore}
           </p>
-          {isMomMode && (
-            <button
-              onClick={() => {
-                soundFX.playPop();
-                onOpenNewChore();
-              }}
-              className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} transition-all shadow-xs cursor-pointer active:scale-95`}
-            >
-              <Plus className="w-4 h-4" />
-              <span>{t.newChore}</span>
-            </button>
-          )}
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {searchQuery.trim() && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  setSearchQuery('');
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer active:scale-95 ${
+                  isGlassTheme(currentTheme)
+                    ? 'apple-glass-button text-slate-800'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                }`}
+              >
+                Clear Search
+              </button>
+            )}
+            {isMomMode && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  onOpenNewChore();
+                }}
+                className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold ${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover} transition-all shadow-xs cursor-pointer active:scale-95`}
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t.newChore}</span>
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="space-y-6">

@@ -30,7 +30,8 @@ import {
   saveNudges,
   loadStoredDailyLayout,
   saveDailyLayout,
-  DEFAULT_PENALTY_SETTINGS
+  DEFAULT_PENALTY_SETTINGS,
+  mergeRewardsWithDefaults
 } from './utils/storage';
 import { HouseholdMember, Chore, ChoreAssignmentLog, RewardItem, RewardClaim, ViewMode, HouseholdInfo, HouseholdPenaltySettings, ChoreEvent, NudgeRecord } from './types';
 import { Header } from './components/Header';
@@ -53,11 +54,13 @@ import { GoogleCalendarView } from './components/GoogleCalendarView';
 import { ParentPinModal } from './components/ParentPinModal';
 import { HouseholdSyncModal } from './components/HouseholdSyncModal';
 import { QuickSettingsModal } from './components/QuickSettingsModal';
+import { ProgressionJourneyModal } from './components/ProgressionJourneyModal';
 import { BadgeStyle } from './components/CategoryBadge';
 import { GlassIceShaderBackground } from './components/GlassIceShaderBackground';
 import { soundFX } from './utils/audio';
 import { SupportedLanguage, getTranslation } from './utils/i18n';
 import { ThemePreset, THEMES, isGlassTheme } from './utils/theme';
+import { INITIAL_REWARDS } from './data/initialData';
 import { evaluateHouseholdStatus, calculateInspectionAward, calculateDaysLate } from './utils/penaltyEngine';
 import { isPinProtectionEnabled, isParentSessionUnlocked, setParentSessionUnlocked, syncParentPinFromCloud, getParentPin } from './utils/parentLock';
 import { 
@@ -222,6 +225,14 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     memberToEdit: null,
   });
 
+  const [progressionModalData, setProgressionModalData] = useState<{
+    isOpen: boolean;
+    selectedMemberId: string;
+  }>({
+    isOpen: false,
+    selectedMemberId: '',
+  });
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [dailyViewMode, setDailyViewMode] = useState<'list' | 'grid'>(() => loadStoredDailyLayout());
 
@@ -366,7 +377,12 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           }
           if (targetHh.chores && targetHh.chores.length > 0) setChores(targetHh.chores);
           if (targetHh.logs) setLogs(targetHh.logs);
-          if (targetHh.rewards && targetHh.rewards.length > 0) setRewards(targetHh.rewards);
+          const upgradedRewards = mergeRewardsWithDefaults(targetHh.rewards || []);
+          setRewards(upgradedRewards);
+          saveRewards(upgradedRewards);
+          if (targetHh.rewards && JSON.stringify(upgradedRewards) !== JSON.stringify(targetHh.rewards)) {
+            syncCompleteHouseholdToCloud(targetHh.id, { rewards: upgradedRewards }).catch(console.warn);
+          }
           if (targetHh.claims) setClaims(targetHh.claims);
           if (targetHh.penaltySettings) setPenaltySettings(targetHh.penaltySettings);
           if (targetHh.events) setEvents(targetHh.events);
@@ -393,7 +409,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             members: targetHh.members || members,
             chores: targetHh.chores || chores,
             logs: targetHh.logs || logs,
-            rewards: targetHh.rewards || rewards,
+            rewards: upgradedRewards,
             claims: targetHh.claims || claims,
             penaltySettings: targetHh.penaltySettings || penaltySettings,
             events: targetHh.events || events,
@@ -483,7 +499,16 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       }
       if (cloudHh.chores && cloudHh.chores.length > 0) setChores(cloudHh.chores);
       if (cloudHh.logs) setLogs(cloudHh.logs);
-      if (cloudHh.rewards && cloudHh.rewards.length > 0) setRewards(cloudHh.rewards);
+      let activeRewardsList = rewards;
+      if (cloudHh.rewards && cloudHh.rewards.length > 0) {
+        const mergedRewards = mergeRewardsWithDefaults(cloudHh.rewards);
+        activeRewardsList = mergedRewards;
+        setRewards(mergedRewards);
+        saveRewards(mergedRewards);
+        if (JSON.stringify(mergedRewards) !== JSON.stringify(cloudHh.rewards) && targetHhId) {
+          syncCompleteHouseholdToCloud(targetHhId, { rewards: mergedRewards }).catch(console.warn);
+        }
+      }
       if (cloudHh.claims) setClaims(cloudHh.claims);
       if (cloudHh.penaltySettings) setPenaltySettings(cloudHh.penaltySettings);
       if (cloudHh.events) setEvents(cloudHh.events);
@@ -510,7 +535,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         members: cloudHh.members,
         chores: cloudHh.chores,
         logs: cloudHh.logs,
-        rewards: cloudHh.rewards,
+        rewards: activeRewardsList,
         claims: cloudHh.claims,
         penaltySettings: cloudHh.penaltySettings,
         events: cloudHh.events,
@@ -1360,6 +1385,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
   };
 
   const handleApproveClaim = (claimId: string, parentNote?: string) => {
+    const targetClaim = claims.find(c => c.id === claimId);
     const updated = claims.map(c => {
       if (c.id === claimId) {
         return {
@@ -1372,6 +1398,29 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       return c;
     });
     setClaims(updated);
+
+    // If this reward is linked to an avatar cosmetic, unlock it for the member
+    let updatedMembersList = members;
+    if (targetClaim) {
+      const reward = rewards.find(r => r.id === targetClaim.rewardId);
+      if (reward?.category === 'cosmetic' || reward?.cosmeticId) {
+        const cosmeticIdToUnlock = reward.cosmeticId || (reward.id.startsWith('rew_cos_') ? reward.id.replace('rew_', '') : reward.id);
+        updatedMembersList = members.map(m => {
+          if (m.id === targetClaim.memberId) {
+            const unlocked = m.unlockedCosmeticIds || [];
+            const nextUnlocked = unlocked.includes(cosmeticIdToUnlock) ? unlocked : [...unlocked, cosmeticIdToUnlock];
+            return {
+              ...m,
+              unlockedCosmeticIds: nextUnlocked,
+              equippedCosmeticId: m.equippedCosmeticId || cosmeticIdToUnlock, // auto-equip if none equipped
+            };
+          }
+          return m;
+        });
+        setMembers(updatedMembersList);
+      }
+    }
+
     triggerConfettiCelebration();
     soundFX.playRewardCoin();
     showToast('Reward claim approved! 🎉 Ready to enjoy.');
@@ -1379,6 +1428,27 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     if (activeHousehold?.id) {
       syncCompleteHouseholdToCloud(activeHousehold.id, {
         claims: updated,
+        members: updatedMembersList,
+      }).catch(console.warn);
+    }
+  };
+
+  const handleEquipCosmetic = (memberId: string, cosmeticId: string) => {
+    const updated = members.map(m => {
+      if (m.id === memberId) {
+        return {
+          ...m,
+          equippedCosmeticId: cosmeticId || undefined,
+        };
+      }
+      return m;
+    });
+    setMembers(updated);
+    showToast(cosmeticId ? 'Avatar cosmetic equipped! ✨' : 'Avatar cosmetic unequipped.');
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        members: updated,
       }).catch(console.warn);
     }
   };
@@ -1473,6 +1543,18 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     }
   };
 
+  const handleUpdateReward = (updatedReward: RewardItem) => {
+    const updated = rewards.map(r => r.id === updatedReward.id ? updatedReward : r);
+    setRewards(updated);
+    showToast(`Reward "${updatedReward.title}" updated.`);
+
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        rewards: updated,
+      }).catch(console.warn);
+    }
+  };
+
   const handleDeleteReward = (rewardId: string) => {
     const updated = rewards.filter(r => r.id !== rewardId);
     setRewards(updated);
@@ -1481,6 +1563,18 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     if (activeHousehold?.id) {
       syncCompleteHouseholdToCloud(activeHousehold.id, {
         rewards: updated,
+      }).catch(console.warn);
+    }
+  };
+
+  const handleResetRewardsToDefault = () => {
+    soundFX.playPop();
+    setRewards(INITIAL_REWARDS);
+    saveRewards(INITIAL_REWARDS);
+    showToast('Catalog restored with all 23 Game Theory rewards! ⭐');
+    if (activeHousehold?.id) {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {
+        rewards: INITIAL_REWARDS,
       }).catch(console.warn);
     }
   };
@@ -1749,6 +1843,12 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             onDeleteMember={handleDeleteMember}
             onAdjustPoints={handleAdjustPoints}
             onOpenHouseSettings={() => setIsHouseSettingsModalOpen(true)}
+            onOpenProgression={(member) => {
+              setProgressionModalData({
+                isOpen: true,
+                selectedMemberId: member?.id || (selectedMemberId !== 'all' ? selectedMemberId : members[0]?.id || ''),
+              });
+            }}
           />
         )}
 
@@ -1764,8 +1864,16 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             onDeliverClaim={handleDeliverClaim}
             onRejectClaim={handleRejectClaim}
             onAddNewReward={handleAddNewReward}
+            onUpdateReward={handleUpdateReward}
             onDeleteReward={handleDeleteReward}
             onNavigateToRedemptions={() => setCurrentView('redemptions')}
+            onOpenProgression={() => {
+              setProgressionModalData({
+                isOpen: true,
+                selectedMemberId: selectedMemberId !== 'all' ? selectedMemberId : members[0]?.id || '',
+              });
+            }}
+            onResetRewardsToDefault={handleResetRewardsToDefault}
           />
         )}
 
@@ -1896,6 +2004,21 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         onHouseholdConnected={handleHouseholdConnected}
         onHouseholdDisconnected={handleHouseholdDisconnected}
         onShowToast={(msg) => showToast(msg)}
+      />
+
+      {/* Gamified Progression Journey & Cosmetics Locker Modal */}
+      <ProgressionJourneyModal
+        isOpen={progressionModalData.isOpen}
+        onClose={() => setProgressionModalData(prev => ({ ...prev, isOpen: false }))}
+        members={members}
+        selectedMemberId={progressionModalData.selectedMemberId || (selectedMemberId !== 'all' ? selectedMemberId : members[0]?.id || '')}
+        onSelectMember={(id) => setProgressionModalData(prev => ({ ...prev, selectedMemberId: id }))}
+        onEquipCosmetic={handleEquipCosmetic}
+        currentTheme={currentTheme}
+        onNavigateToRewards={() => {
+          setProgressionModalData(prev => ({ ...prev, isOpen: false }));
+          setCurrentView('rewards');
+        }}
       />
 
       {/* Quick Settings & Tools Modal */}

@@ -14,6 +14,9 @@ export interface HouseholdMember {
   starsCount: number;
   targetWeeklyPoints: number;
   streakDays: number;
+  equippedCosmeticId?: string; // Equipped avatar frame / cosmetic unlock
+  unlockedCosmeticIds?: string[]; // IDs of unlocked cosmetics
+  gemsCount?: number; // Premium gamification gems for in-app unlocks
 }
 
 export interface HouseholdInfo {
@@ -95,14 +98,22 @@ export interface ChoreAssignmentLog {
   qualityMultiplier?: number;
 }
 
+export type RewardRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'jackpot';
+
 export interface RewardItem {
   id: string;
   title: string;
   pointCost: number;
   icon: string;
-  category: 'treat' | 'allowance' | 'screentime' | 'activity' | 'privilege';
+  category: 'treat' | 'allowance' | 'screentime' | 'activity' | 'privilege' | 'cosmetic';
   description: string;
   allowedRoles?: MemberRole[];
+  rarity?: RewardRarity;
+  minLevel?: number; // Level lock from progression system
+  cosmeticId?: string; // If unlocks a cosmetic avatar frame/style
+  isJackpot?: boolean; // Highlighted grand prize
+  realWorldValue?: string; // e.g. "$25 Cash", "Theme Park Ticket"
+  saverBonus?: string; // e.g. "16% Saver Bonus (Save 400 pts!)"
 }
 
 export interface RewardClaim {
