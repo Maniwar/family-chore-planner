@@ -275,6 +275,17 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     prevHouseLevelRef.current = houseProg.currentLevel.level;
   }, [houseProg.currentLevel.level, houseProg.currentLevel.title]);
 
+  // One-time log audit: ensure premature future submissions or stale logs are purged
+  useEffect(() => {
+    const cleaned = sanitizeLogs(logs);
+    if (cleaned.length !== logs.length) {
+      setLogs(cleaned);
+      saveLogs(cleaned);
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+      syncCompleteHouseholdToCloud(targetHhId, { logs: cleaned }).catch(console.warn);
+    }
+  }, []);
+
   // Parent PIN Security States
   const [isParentPinModalOpen, setIsParentPinModalOpen] = useState<boolean>(false);
   const [pinModalTitle, setPinModalTitle] = useState<string>('Mom / Parent Mode Access');
@@ -712,7 +723,16 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     targetDate?: string,
     targetMemberId?: string
   ) => {
+    const todayDate = getTodayDateString();
     const effectiveDate = targetDate || currentDateStr;
+
+    // Disallow completing chores ahead of their scheduled date
+    if (effectiveDate > todayDate) {
+      soundFX.playPop();
+      showToast('Chores cannot be completed before their scheduled day.');
+      return;
+    }
+
     const existingIndex = logs.findIndex(l => 
       l.choreId === choreId && 
       l.date === effectiveDate && 
@@ -774,7 +794,16 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
   };
 
   const handleQuickApprove = (choreId: string, logId?: string, choreDate?: string, targetMemberId?: string) => {
+    const todayDate = getTodayDateString();
     const effectiveDate = choreDate || currentDateStr;
+
+    // Disallow approving chores ahead of their scheduled date
+    if (effectiveDate > todayDate) {
+      soundFX.playPop();
+      showToast('Chores cannot be approved before their scheduled day.');
+      return;
+    }
+
     const chore = chores.find(c => c.id === choreId);
     const targetLog = (logId ? logs.find(l => l.id === logId) : null) || 
       logs.find(l => l.choreId === choreId && l.date === effectiveDate && (!targetMemberId || l.memberId === targetMemberId));

@@ -131,7 +131,12 @@ export const sanitizeLogs = (logs: ChoreAssignmentLog[]): ChoreAssignmentLog[] =
     `log_${today}_chore_bed_layla_mem_layla`,
     `log_${today}_chore_kitchen_dining_table_mem_layla`,
   ]);
-  return logs.filter(l => !syntheticStaleIds.has(l.id));
+  return logs.filter(l => {
+    if (syntheticStaleIds.has(l.id)) return false;
+    // Chores cannot be completed or submitted for inspection before their scheduled date
+    if (l.date && l.date > today) return false;
+    return true;
+  });
 };
 
 export const loadStoredLogs = (): ChoreAssignmentLog[] => {

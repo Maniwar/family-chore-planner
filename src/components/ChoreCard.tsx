@@ -17,10 +17,11 @@ import {
   User,
   Info,
   Check,
-  RotateCcw
+  RotateCcw,
+  Lock
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
-import { formatTimeDisplay } from '../utils/storage';
+import { formatTimeDisplay, formatDisplayDate } from '../utils/storage';
 import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getTranslation, getCategoryTranslation } from '../utils/i18n';
 import { Avatar } from './Avatar';
@@ -38,6 +39,8 @@ interface ChoreCardProps {
   currentTheme?: ThemePreset;
   badgeStyle?: BadgeStyle;
   viewMode?: 'list' | 'grid';
+  scheduledDate?: string;
+  isFutureDate?: boolean;
   onMarkComplete: (choreId: string, note?: string, checklist?: { [key: number]: boolean }) => void;
   onOpenInspect: (chore: Chore, log: ChoreAssignmentLog) => void;
   onQuickApprove: (choreId: string, logId: string) => void;
@@ -54,6 +57,8 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
   currentTheme = 'rose',
   badgeStyle = 'pastel',
   viewMode = 'list',
+  scheduledDate,
+  isFutureDate = false,
   onMarkComplete,
   onOpenInspect,
   onQuickApprove,
@@ -81,13 +86,14 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
   const SWIPE_THRESHOLD = 75;
 
   const handleToggleChecklistItem = (index: number) => {
-    if (status === 'approved') return;
+    if (status === 'approved' || isFutureDate) return;
     soundFX.playPop();
     const updated = { ...checkedItems, [index]: !checkedItems[index] };
     setCheckedItems(updated);
   };
 
   const handleChildSubmit = () => {
+    if (isFutureDate) return;
     soundFX.playComplete();
     onMarkComplete(chore.id, kidNote, checkedItems);
     setIsDetailOpen(false);
@@ -95,7 +101,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
 
   // Touch Swipe Handlers
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (status === 'approved') return;
+    if (status === 'approved' || isFutureDate) return;
     const touch = e.touches[0];
     touchStartXRef.current = touch.clientX;
     touchStartYRef.current = touch.clientY;
@@ -461,7 +467,12 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
               Close
             </button>
 
-            {status === 'approved' ? (
+            {isFutureDate ? (
+              <div className="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-2 select-none min-h-[44px]">
+                <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+                <span>Locked • Unlocks on {scheduledDate ? formatDisplayDate(scheduledDate) : 'due date'}</span>
+              </div>
+            ) : status === 'approved' ? (
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-100/80 px-4 py-2.5 rounded-xl border border-emerald-200 min-h-[44px]">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>Awarded +{ (log?.pointsAwarded || chore.defaultPoints) + (log?.bonusPoints || 0) } {t.pts}</span>
@@ -630,7 +641,15 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
               ) : <div className="flex-1" />}
 
               {/* Apple HIG Checkbox & State Action Button */}
-              {status === 'approved' ? (
+              {isFutureDate ? (
+                <div
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 text-[10px] font-semibold select-none shadow-2xs"
+                  title={`Scheduled for ${scheduledDate ? formatDisplayDate(scheduledDate) : 'upcoming date'}. Unlocks on this date.`}
+                >
+                  <Lock className="w-3 h-3 text-slate-400" />
+                  <span>Scheduled</span>
+                </div>
+              ) : status === 'approved' ? (
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span 
                     className={`text-[10px] font-bold px-2 py-1 rounded-lg border shadow-2xs flex items-center gap-1 ${
@@ -993,8 +1012,18 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
 
               {/* Action State Controls - Apple HIG Tactile Controls */}
               <div className="flex items-center gap-2 ml-auto">
-                {/* PENDING / NEEDS REDO */}
-                {(status === 'pending' || status === 'needs_redo') && (
+                {isFutureDate ? (
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border border-slate-200/90 dark:border-slate-700 text-xs font-semibold select-none shadow-2xs"
+                    title={`Scheduled for ${scheduledDate ? formatDisplayDate(scheduledDate) : 'upcoming date'}. Unlocks on this date.`}
+                  >
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Scheduled</span>
+                  </div>
+                ) : (
+                  <>
+                    {/* PENDING / NEEDS REDO */}
+                    {(status === 'pending' || status === 'needs_redo') && (
                   <>
                     {isMomMode && (
                       <button
@@ -1155,7 +1184,9 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                     )}
                   </div>
                 )}
-              </div>
+              </>
+            )}
+          </div>
             </div>
           </div>
         </div>

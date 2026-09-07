@@ -10,11 +10,15 @@ import {
   Clock,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   Check,
   Eye,
   CheckSquare,
   Square,
-  ClipboardList
+  ClipboardList,
+  Camera,
+  MessageSquare,
+  Maximize2
 } from 'lucide-react';
 import { 
   Chore, 
@@ -23,12 +27,13 @@ import {
   ChoreAssignmentLog
 } from '../types';
 import { Avatar } from './Avatar';
-import { PersonStatusSummary } from '../utils/penaltyEngine';
+import { PersonStatusSummary, OverdueChoreItem } from '../utils/penaltyEngine';
 import { soundFX } from '../utils/audio';
 import { formatDisplayDate } from '../utils/storage';
 import { ThemeConfig, THEMES } from '../utils/theme';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
+import { CategoryBadge } from './CategoryBadge';
 
 const getGlassySeverityColor = (severityColor: string, isGlass: boolean) => {
   if (!isGlass) return severityColor;
@@ -84,6 +89,10 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
   const [expandedChoreIds, setExpandedChoreIds] = useState<Record<string, boolean>>({});
   // Track checklist check states for inline interactive checklists
   const [checkedItemsMap, setCheckedItemsMap] = useState<Record<string, Record<number, boolean>>>({});
+  // Dedicated Details & Proof modal state
+  const [detailModalItem, setDetailModalItem] = useState<OverdueChoreItem | null>(null);
+  // Full-screen proof photo viewer state
+  const [enlargedPhotoUrl, setEnlargedPhotoUrl] = useState<string | null>(null);
 
   const toggleChecklistExpansion = (choreId: string) => {
     soundFX.playPop();
@@ -274,11 +283,16 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                 const isExpanded = expandedChoreIds[item.chore.id] ?? false;
                 const checkedItems = checkedItemsMap[item.chore.id] || {};
                 const checkedCount = Object.values(checkedItems).filter(Boolean).length;
+                const hasProofOrFeedback = !!(item.log?.proofPhotoUrl || item.log?.completedNote || item.log?.feedbackNote);
 
                 return (
                   <div
                     key={`${item.chore.id}_${item.effectiveDueDate}_${idx}`}
-                    className={`rounded-2xl border p-4 shadow-2xs transition-all space-y-3 ${isGlassTheme(theme.id) ? "apple-glass-card border-white/20 hover:border-white/40" : "bg-white border-slate-200/90 hover:border-slate-300"}`}
+                    className={`rounded-2xl border p-4 shadow-xs transition-all space-y-3 ${
+                      isGlassTheme(theme.id) 
+                        ? "bg-white/95 dark:bg-slate-900/95 border-white/60 dark:border-slate-700/80 shadow-sm" 
+                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm"
+                    }`}
                   >
                     {/* Top Meta Header: Status Badge + Due Date on Left, Points on Right */}
                     <div className="flex items-center justify-between gap-2">
@@ -291,7 +305,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                           <span className="truncate">Due: {formattedDate}</span>
                         </span>
                       </div>
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-black border shrink-0 ${isGlassTheme(theme.id) ? 'apple-glass-card bg-amber-500/10 text-amber-950 border-amber-300/40 shadow-xs' : 'bg-amber-50 text-amber-900 border-amber-200/80'}`}>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-black border shrink-0 bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border-amber-200/80 dark:border-amber-800">
                         ⭐ {item.chore.defaultPoints} pts
                       </span>
                     </div>
@@ -299,47 +313,71 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                     {/* Chore Title (Clickable to expand checklist / details) */}
                     <div 
                       onClick={() => toggleChecklistExpansion(item.chore.id)}
-                      className="cursor-pointer group flex items-start justify-between gap-2"
+                      className="cursor-pointer group flex items-start justify-between gap-2 select-none"
                       title="Click to view checklist & instructions"
                     >
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm sm:text-base font-black text-slate-900 leading-snug break-words group-hover:text-rose-600 transition-colors">
+                        <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-snug break-words group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
                           {item.chore.title}
                         </h4>
                         {item.chore.description && (
-                          <p className="text-xs text-slate-500 font-medium line-clamp-1 mt-0.5">
+                          <p className={`text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 ${isExpanded ? '' : 'line-clamp-2'}`}>
                             {item.chore.description}
                           </p>
                         )}
                       </div>
-                      <div className="p-1 rounded-lg bg-slate-100 group-hover:bg-slate-200 text-slate-600 transition-colors shrink-0">
-                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors shrink-0">
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </div>
                     </div>
 
-                    {/* Penalty Tier Status & Next Worsening Forecast (Apple Inset Box) */}
-                    <div className={`p-3 rounded-xl border text-xs space-y-1.5 ${isGlassTheme(theme.id) ? 'bg-white/10 border-white/30 shadow-[inset_0_1px_3px_rgba(255,255,255,0.2)]' : 'bg-slate-50 border-slate-200/70'}`}>
+                    {/* Proof / Notes / Feedback Badges */}
+                    {hasProofOrFeedback && (
+                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                        {item.log?.proofPhotoUrl && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                            <Camera className="w-3 h-3" />
+                            <span>Photo Proof</span>
+                          </span>
+                        )}
+                        {item.log?.completedNote && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            <MessageSquare className="w-3 h-3" />
+                            <span>Note Attached</span>
+                          </span>
+                        )}
+                        {item.log?.feedbackNote && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                            <AlertCircle className="w-3 h-3" />
+                            <span>Mom Feedback</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Penalty Tier Status & Next Worsening Forecast */}
+                    <div className={`p-3 rounded-xl border text-xs space-y-1.5 ${isGlassTheme(theme.id) ? 'bg-white/10 border-white/30 shadow-[inset_0_1px_3px_rgba(255,255,255,0.2)]' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200/70 dark:border-slate-700'}`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`font-medium ${isGlassTheme(theme.id) ? 'text-slate-600' : 'text-slate-500'}`}>Penalty State:</span>
-                        <span className="font-black text-slate-900 text-right">{item.tierInfo.tierLabel}</span>
+                        <span className="font-medium text-slate-500 dark:text-slate-400">Penalty State:</span>
+                        <span className="font-black text-slate-900 dark:text-white text-right">{item.tierInfo.tierLabel}</span>
                       </div>
                       {item.tierInfo.nextWorseningNotice && (
-                        <div className={`flex items-start gap-1.5 pt-1.5 border-t text-[11px] font-semibold leading-tight ${isGlassTheme(theme.id) ? 'border-white/30 text-rose-700' : 'border-slate-200/60 text-rose-600'}`}>
-                          <AlertCircle className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isGlassTheme(theme.id) ? 'text-rose-600' : 'text-rose-500'}`} />
+                        <div className="flex items-start gap-1.5 pt-1.5 border-t border-slate-200/60 dark:border-slate-700 text-[11px] font-semibold leading-tight text-rose-600 dark:text-rose-400">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-500 dark:text-rose-400" />
                           <span>{item.tierInfo.nextWorseningNotice}</span>
                         </div>
                       )}
                     </div>
 
-                    {/* Expandable Quality Checklist for Kids and Reviewers */}
-                    {(isExpanded || !isMomMode) && choreChecklist.length > 0 && (
-                      <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-2">
+                    {/* Expandable Quality Checklist (Strictly controlled by isExpanded!) */}
+                    {isExpanded && choreChecklist.length > 0 && (
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2 animate-in fade-in duration-150">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-slate-700 flex items-center gap-1.5">
-                            <ClipboardList className="w-3.5 h-3.5 text-slate-500" />
+                          <span className="text-xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                            <ClipboardList className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                             <span>Quality Checklist</span>
                           </span>
-                          <span className="text-[11px] font-bold text-slate-500">
+                          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
                             {checkedCount}/{choreChecklist.length} completed
                           </span>
                         </div>
@@ -351,13 +389,13 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                                 key={cIdx}
                                 type="button"
                                 onClick={() => toggleChecklistItem(item.chore.id, cIdx)}
-                                className={`w-full text-left p-2 rounded-lg border text-xs font-medium flex items-start gap-2.5 transition-all cursor-pointer active:scale-[0.99] ${
+                                className={`w-full text-left p-2.5 rounded-lg border text-xs font-medium flex items-start gap-2.5 transition-all cursor-pointer min-h-[38px] active:scale-[0.99] ${
                                   isChecked 
-                                    ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900 line-through opacity-80' 
-                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 line-through opacity-85' 
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                                 }`}
                               >
-                                <span className={`mt-0.5 shrink-0 ${isChecked ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                <span className={`mt-0.5 shrink-0 ${isChecked ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
                                   {isChecked ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                                 </span>
                                 <span className="flex-1 leading-snug">{task}</span>
@@ -380,7 +418,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                               onQuickApprove(item.chore.id, item.log?.id, item.effectiveDueDate, member.id);
                             }
                           }}
-                          className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-all active:scale-98"
+                          className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-all active:scale-98 min-h-[40px]"
                           title={`Approve that ${member.name} completed this chore`}
                         >
                           <Check className="w-4 h-4 stroke-[3]" />
@@ -396,9 +434,9 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                                 soundFX.playPop();
                                 onOpenInspect(item.chore, item.log || null);
                               }}
-                              className="inline-flex items-center justify-center gap-1.5 py-2 px-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer min-h-[38px] active:scale-98 transition-all shadow-2xs whitespace-nowrap"
+                              className="inline-flex items-center justify-center gap-1.5 py-2 px-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:bg-slate-300 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold cursor-pointer min-h-[40px] active:scale-98 transition-all shadow-2xs whitespace-nowrap"
                             >
-                              <Eye className="w-3.5 h-3.5 text-slate-600" />
+                              <Eye className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                               <span>Inspect</span>
                             </button>
                           )}
@@ -409,9 +447,9 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                               soundFX.playPop();
                               setWaiveTarget({ ...item, member });
                             }}
-                            className={`inline-flex items-center justify-center gap-1.5 py-2 px-2 ${isGlassTheme(theme.id) ? 'apple-glass-button text-emerald-900 border-emerald-300/40' : 'bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border-emerald-300/80'} rounded-xl text-xs font-bold cursor-pointer min-h-[38px] active:scale-98 transition-all shadow-2xs whitespace-nowrap`}
+                            className="inline-flex items-center justify-center gap-1.5 py-2 px-2 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 active:bg-emerald-200 text-emerald-800 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-700 rounded-xl text-xs font-bold cursor-pointer min-h-[40px] active:scale-98 transition-all shadow-2xs whitespace-nowrap"
                           >
-                            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${isGlassTheme(theme.id) ? 'text-emerald-700' : 'text-emerald-600'}`} />
+                            <Sparkles className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                             <span>Waive</span>
                           </button>
 
@@ -421,10 +459,37 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                               soundFX.playPop();
                               setExtendTarget({ ...item, member });
                             }}
-                            className={`inline-flex items-center justify-center gap-1.5 py-2 px-2 ${isGlassTheme(theme.id) ? 'apple-glass-button text-indigo-900 border-indigo-300/40' : theme.badgeBg + ' hover:brightness-95 ' + theme.badgeText + ' border ' + theme.badgeBorder} rounded-xl text-xs font-bold cursor-pointer min-h-[38px] active:scale-98 transition-all shadow-2xs whitespace-nowrap`}
+                            className={`inline-flex items-center justify-center gap-1.5 py-2 px-2 ${theme.badgeBg} hover:brightness-95 ${theme.badgeText} border ${theme.badgeBorder} rounded-xl text-xs font-bold cursor-pointer min-h-[40px] active:scale-98 transition-all shadow-2xs whitespace-nowrap`}
                           >
-                            <CalendarPlus className={`w-3.5 h-3.5 shrink-0 ${isGlassTheme(theme.id) ? 'text-indigo-700' : ''}`} />
+                            <CalendarPlus className="w-3.5 h-3.5 shrink-0" />
                             <span>Extend</span>
+                          </button>
+                        </div>
+
+                        {/* Bottom Utility Row: View/Hide Checklist + Open Details & Proof */}
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                          {choreChecklist.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleChecklistExpansion(item.chore.id)}
+                              className="text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer min-h-[36px]"
+                            >
+                              <ClipboardList className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                              <span>{isExpanded ? 'Hide Checklist' : `View Checklist (${choreChecklist.length})`}</span>
+                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </button>
+                          ) : <div />}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              soundFX.playPop();
+                              setDetailModalItem(item);
+                            }}
+                            className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 active:scale-95 cursor-pointer min-h-[36px] transition-all"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Open Details & Proof</span>
                           </button>
                         </div>
                       </div>
@@ -444,35 +509,37 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                               );
                             }
                           }}
-                          className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all active:scale-98"
+                          className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all active:scale-98 min-h-[44px]"
                         >
                           <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
                           <span>I Did This! (Submit for Review) ✨</span>
                         </button>
 
-                        <div className="flex items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            onClick={() => toggleChecklistExpansion(item.chore.id)}
-                            className="text-xs font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1 py-1 cursor-pointer"
-                          >
-                            <ClipboardList className="w-3.5 h-3.5" />
-                            <span>{isExpanded ? 'Hide Checklist' : `View Checklist (${choreChecklist.length})`}</span>
-                          </button>
-
-                          {onOpenInspect && (
+                        {/* Interactive Options: View/Hide Checklist & Open Details & Proof */}
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          {choreChecklist.length > 0 ? (
                             <button
                               type="button"
-                              onClick={() => {
-                                soundFX.playPop();
-                                onOpenInspect(item.chore, item.log || null);
-                              }}
-                              className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 py-1 cursor-pointer"
+                              onClick={() => toggleChecklistExpansion(item.chore.id)}
+                              className="text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer min-h-[36px]"
                             >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>Open Details & Proof</span>
+                              <ClipboardList className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                              <span>{isExpanded ? 'Hide Checklist' : `View Checklist (${choreChecklist.length})`}</span>
+                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                             </button>
-                          )}
+                          ) : <div />}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              soundFX.playPop();
+                              setDetailModalItem(item);
+                            }}
+                            className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 active:scale-95 cursor-pointer min-h-[36px] transition-all"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Open Details & Proof</span>
+                          </button>
                         </div>
                       </div>
                     )}
@@ -483,6 +550,238 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
           )}
         </div>
       </div>
+
+      {/* ======================================================== */}
+      {/* DEDICATED CHORE DETAILS & PROOF SHEET (Z-[70]) */}
+      {/* ======================================================== */}
+      {detailModalItem && (
+        <div 
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setDetailModalItem(null)}
+        >
+          <div 
+            className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200 safe-area-pb"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-800/60">
+              <div className="flex items-center gap-2 min-w-0">
+                <CategoryBadge category={detailModalItem.chore.category} size="sm" />
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">
+                  Details & Proof
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailModalItem(null)}
+                className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center"
+                aria-label="Close details"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Details Body */}
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+              {/* Title & Points */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-snug break-words">
+                    {detailModalItem.chore.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Assigned to <span className="font-bold text-slate-700 dark:text-slate-200">{member.name}</span> • Due: {formatDisplayDate(detailModalItem.effectiveDueDate)}
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-black bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800 shrink-0">
+                  ⭐ {detailModalItem.chore.defaultPoints} pts
+                </span>
+              </div>
+
+              {/* Instructions / Description */}
+              {detailModalItem.chore.description && (
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 space-y-1">
+                  <span className="text-[11px] font-extrabold uppercase text-slate-400 dark:text-slate-500 block">
+                    Instructions & Description
+                  </span>
+                  <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                    {detailModalItem.chore.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Quality Criteria Checklist */}
+              {(detailModalItem.chore.qualityChecklist || []).length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <ClipboardList className="w-4 h-4 text-indigo-500" />
+                      <span>Quality Checklist Criteria</span>
+                    </span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      {Object.values(checkedItemsMap[detailModalItem.chore.id] || {}).filter(Boolean).length}/{(detailModalItem.chore.qualityChecklist || []).length} completed
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {(detailModalItem.chore.qualityChecklist || []).map((task, cIdx) => {
+                      const isChecked = !!(checkedItemsMap[detailModalItem.chore.id] || {})[cIdx];
+                      return (
+                        <button
+                          key={cIdx}
+                          type="button"
+                          onClick={() => toggleChecklistItem(detailModalItem.chore.id, cIdx)}
+                          className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm font-medium flex items-start gap-2.5 transition-all cursor-pointer min-h-[44px] active:scale-[0.99] ${
+                            isChecked
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 line-through opacity-85'
+                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                          }`}
+                        >
+                          <span className={`mt-0.5 shrink-0 ${isChecked ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                            {isChecked ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                          </span>
+                          <span className="flex-1 leading-snug">{task}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Photo Proof Display (if available) */}
+              {detailModalItem.log?.proofPhotoUrl && (
+                <div className="space-y-1.5">
+                  <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Submitted Photo Proof:</span>
+                  </span>
+                  <div 
+                    onClick={() => setEnlargedPhotoUrl(detailModalItem.log!.proofPhotoUrl!)}
+                    className="relative group rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 cursor-pointer aspect-video max-h-52 flex items-center justify-center"
+                  >
+                    <img 
+                      src={detailModalItem.log.proofPhotoUrl} 
+                      alt="Chore proof submission"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-1.5 text-xs font-bold">
+                      <Maximize2 className="w-4 h-4" />
+                      <span>Tap to Enlarge</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Child's Submission Note */}
+              {detailModalItem.log?.completedNote && (
+                <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800 space-y-1">
+                  <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{member.name}'s Note:</span>
+                  </span>
+                  <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200 italic leading-relaxed">
+                    "{detailModalItem.log.completedNote}"
+                  </p>
+                </div>
+              )}
+
+              {/* Mom's Review Feedback Note (e.g. Redo reason) */}
+              {detailModalItem.log?.feedbackNote && (
+                <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 rounded-2xl border border-rose-200 dark:border-rose-800 space-y-1">
+                  <span className="text-[11px] font-bold text-rose-900 dark:text-rose-300 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Mom's Review Feedback:</span>
+                  </span>
+                  <p className="text-xs sm:text-sm text-rose-800 dark:text-rose-200 italic leading-relaxed">
+                    "{detailModalItem.log.feedbackNote}"
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Actions for Detail Modal */}
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60">
+              {isMomMode ? (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onQuickApprove) {
+                        onQuickApprove(detailModalItem.chore.id, detailModalItem.log?.id, detailModalItem.effectiveDueDate, member.id);
+                      }
+                      setDetailModalItem(null);
+                    }}
+                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all active:scale-98 min-h-[44px]"
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>{member.name} Did This (Approve 5⭐)</span>
+                  </button>
+
+                  {onOpenInspect && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetChore = detailModalItem.chore;
+                        const targetLog = detailModalItem.log || null;
+                        setDetailModalItem(null);
+                        onOpenInspect(targetChore, targetLog);
+                      }}
+                      className="w-full py-2.5 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:bg-slate-300 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer min-h-[40px] transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                      <span>Inspect & Grade with Stars ⭐</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onMarkComplete) {
+                      onMarkComplete(
+                        detailModalItem.chore.id,
+                        undefined,
+                        checkedItemsMap[detailModalItem.chore.id] || {},
+                        detailModalItem.effectiveDueDate,
+                        member.id
+                      );
+                    }
+                    setDetailModalItem(null);
+                  }}
+                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all active:scale-98 min-h-[44px]"
+                >
+                  <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                  <span>I Did This! (Submit for Review) ✨</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* FULL-SCREEN PHOTO PROOF ENLARGEMENT VIEWER (Z-[85]) */}
+      {/* ======================================================== */}
+      {enlargedPhotoUrl && (
+        <div 
+          className="fixed inset-0 z-[85] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setEnlargedPhotoUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setEnlargedPhotoUrl(null)}
+            className="absolute top-4 right-4 p-2.5 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Close enlarged photo"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img 
+            src={enlargedPhotoUrl} 
+            alt="Submitted photo proof" 
+            className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 };

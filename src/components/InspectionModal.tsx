@@ -181,7 +181,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-50 overflow-y-auto ${
+      className={`fixed inset-0 z-[75] overflow-y-auto ${
         isGlass ? 'bg-slate-900/20 ' : 'bg-slate-900/60 dark:bg-black/75 '
       } flex items-end sm:items-center justify-center p-0 sm:p-4`}
       onClick={handleDismiss}

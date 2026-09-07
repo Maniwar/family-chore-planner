@@ -17,7 +17,7 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
-import { formatDisplayDate, formatTimeDisplay, getChoreAssigneeForDate } from '../utils/storage';
+import { formatDisplayDate, formatTimeDisplay, getChoreAssigneeForDate, getTodayDateString } from '../utils/storage';
 import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getCategoryShortDisplay } from '../utils/i18n';
 import { Avatar } from './Avatar';
@@ -77,8 +77,9 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
     }
   };
 
-  // Find all logs waiting for review
-  const pendingReviewLogs = logs.filter(l => l.status === 'needs_review');
+  // Find all logs waiting for review (exclude chores scheduled for future dates)
+  const todayDateStr = getTodayDateString();
+  const pendingReviewLogs = logs.filter(l => l.status === 'needs_review' && (!l.date || l.date <= todayDateStr));
 
   const pendingItems = pendingReviewLogs.map(log => {
     const chore = chores.find(c => String(c.id).trim() === String(log.choreId).trim()) ||
