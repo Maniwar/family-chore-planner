@@ -199,6 +199,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
 
   const completedChecklistCount = Object.values(checkedItems).filter(Boolean).length;
   const totalChecklistCount = chore.qualityChecklist.length;
+  const earnedPoints = (log?.pointsAwarded !== undefined ? log.pointsAwarded : chore.defaultPoints) + (log?.bonusPoints || 0);
 
   const isSwipeRightActive = dragOffset > 20;
   const isSwipeLeftActive = dragOffset < -20;
@@ -270,11 +271,19 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
               <div className="flex items-center gap-2 flex-wrap">
                 <CategoryBadge category={chore.category} size="md" style={badgeStyle} />
 
-                <StarPointsBadge points={chore.defaultPoints} suffix={t.pts} size="md" style={badgeStyle} />
+                {status === 'approved' ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/90 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                    <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600 dark:text-emerald-400" />
+                    <span>+{earnedPoints} {t.pts} Earned</span>
+                  </div>
+                ) : (
+                  <StarPointsBadge points={chore.defaultPoints} suffix={t.pts} size="md" style={badgeStyle} />
+                )}
 
                 {status === 'approved' ? (
-                  <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                    ✅ Done & Approved
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 shadow-2xs flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600 dark:text-emerald-400" />
+                    <span>Approved</span>
                   </span>
                 ) : status === 'needs_review' ? (
                   <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-amber-100 text-amber-800 border border-amber-200">
@@ -371,18 +380,18 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold uppercase tracking-wide text-slate-500 flex items-center gap-1.5">
                     <CheckSquare className="w-4 h-4 text-indigo-500" />
-                    <span>Quality Criteria Checklist ({completedChecklistCount}/{totalChecklistCount})</span>
+                    <span>{status === 'approved' ? `Verified Criteria (All ${totalChecklistCount}/${totalChecklistCount})` : `Quality Criteria Checklist (${completedChecklistCount}/${totalChecklistCount})`}</span>
                   </span>
-                  {completedChecklistCount === totalChecklistCount && (
-                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      All criteria met! 🎉
+                  {(status === 'approved' || completedChecklistCount === totalChecklistCount) && (
+                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                      {status === 'approved' ? 'Verified ✓' : 'All criteria met! 🎉'}
                     </span>
                   )}
                 </div>
 
                 <div className="space-y-1.5">
                   {chore.qualityChecklist.map((item, idx) => {
-                    const isChecked = !!checkedItems[idx];
+                    const isChecked = status === 'approved' || !!checkedItems[idx];
                     return (
                       <div
                         key={idx}
@@ -540,8 +549,8 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                   : 'border-amber-300 bg-amber-50/80 dark:bg-amber-950/30 text-slate-900 ring-1 ring-amber-300'
                 : status === 'approved'
                 ? isGlassTheme(currentTheme)
-                  ? 'border-emerald-400/80 ring-1 ring-emerald-400/50 shadow-[inset_0_0_20px_rgba(52,211,153,0.10)]'
-                  : 'border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/20'
+                  ? 'border-emerald-400/90 ring-1 ring-emerald-400/60 bg-emerald-500/20 shadow-[inset_0_0_24px_rgba(52,211,153,0.20),0_4px_16px_rgba(16,185,129,0.14)]'
+                  : 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/95 dark:bg-emerald-950/50 ring-1 ring-emerald-300/80 dark:ring-emerald-800/80 shadow-xs'
                 : status === 'needs_redo'
                 ? isGlassTheme(currentTheme)
                   ? 'border-rose-400/80 ring-1 ring-rose-400/50 shadow-[inset_0_0_20px_rgba(244,63,94,0.12)]'
@@ -556,7 +565,21 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
               <div className="flex items-center justify-between gap-1 mb-1.5">
                 <CategoryBadge category={chore.category} size="sm" style={badgeStyle} />
 
-                <StarPointsBadge points={chore.defaultPoints} size="sm" style={badgeStyle} />
+                {status === 'approved' ? (
+                  <div 
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-black tracking-wide border shadow-2xs transition-all ${
+                      isGlassTheme(currentTheme)
+                        ? 'bg-emerald-500/30 text-emerald-100 border-emerald-400/50 backdrop-blur-md shadow-glass'
+                        : 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/90 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                    }`}
+                    title={`${earnedPoints} ${t.pts} earned`}
+                  >
+                    <Check className="w-3 h-3 stroke-[3] text-emerald-600 dark:text-emerald-400" />
+                    <span>+{earnedPoints} {t.pts}</span>
+                  </div>
+                ) : (
+                  <StarPointsBadge points={chore.defaultPoints} size="sm" style={badgeStyle} />
+                )}
               </div>
 
               {/* Title */}
@@ -573,11 +596,15 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                 )}
                 {totalChecklistCount > 0 && (
                   <span className={`ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-md border ${
-                    isGlassTheme(currentTheme) 
+                    status === 'approved'
+                      ? isGlassTheme(currentTheme)
+                        ? 'bg-emerald-500/30 text-emerald-100 border-emerald-400/50 backdrop-blur-md shadow-glass'
+                        : 'text-emerald-800 dark:text-emerald-200 bg-emerald-100/90 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700'
+                      : isGlassTheme(currentTheme) 
                       ? 'bg-white/20 dark:bg-black/20 border-white/40 dark:border-white/10 text-slate-900 dark:text-slate-100 backdrop-blur-md shadow-glass' 
                       : 'text-indigo-600 bg-indigo-50/80 border-indigo-100/80'
                   }`}>
-                    {completedChecklistCount}/{totalChecklistCount} ✓
+                    {status === 'approved' ? 'Verified ✓' : `${completedChecklistCount}/${totalChecklistCount} ✓`}
                   </span>
                 )}
               </div>
@@ -604,26 +631,38 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
 
               {/* Apple HIG Checkbox & State Action Button */}
               {status === 'approved' ? (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isMomMode) {
-                      soundFX.playPop();
-                      onMarkComplete(chore.id);
-                    } else {
-                      setIsDetailOpen(true);
-                    }
-                  }}
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center shadow-2xs shrink-0 cursor-pointer active:scale-90 transition-transform ${
-                    isGlassTheme(currentTheme)
-                      ? 'bg-emerald-500/80 text-white border-emerald-400/50 border backdrop-blur-md'
-                      : 'bg-emerald-500 text-white'
-                  }`}
-                  title={isMomMode ? "Completed & Approved ✓ (Click to reopen/undo)" : "Completed & Approved"}
-                >
-                  <Check className="w-4 h-4 stroke-[3]" />
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span 
+                    className={`text-[10px] font-bold px-2 py-1 rounded-lg border shadow-2xs flex items-center gap-1 ${
+                      isGlassTheme(currentTheme)
+                        ? 'bg-emerald-500/30 text-emerald-100 border-emerald-400/50 backdrop-blur-md shadow-glass'
+                        : 'text-emerald-800 dark:text-emerald-200 bg-emerald-100/90 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700'
+                    }`}
+                  >
+                    <Check className="w-3 h-3 stroke-[3] text-emerald-600 dark:text-emerald-400" />
+                    <span>Approved</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isMomMode) {
+                        soundFX.playPop();
+                        onMarkComplete(chore.id);
+                      } else {
+                        setIsDetailOpen(true);
+                      }
+                    }}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center shadow-2xs shrink-0 cursor-pointer active:scale-90 transition-transform ${
+                      isGlassTheme(currentTheme)
+                        ? 'bg-emerald-500 text-white border-emerald-400/60 border backdrop-blur-md'
+                        : 'bg-emerald-600 text-white'
+                    }`}
+                    title={isMomMode ? "Completed & Approved ✓ (Click to reopen/undo)" : "Completed & Approved"}
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  </button>
+                </div>
               ) : status === 'needs_review' ? (
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
@@ -760,8 +799,8 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                 : 'border-amber-300 bg-amber-50/80 dark:bg-amber-950/30 ring-1 ring-amber-300'
               : status === 'approved'
               ? isGlassTheme(currentTheme)
-                ? 'border-emerald-400/80 ring-1 ring-emerald-400/50 shadow-[inset_0_0_20px_rgba(52,211,153,0.10)]'
-                : 'border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/20'
+                ? 'border-emerald-400/90 ring-1 ring-emerald-400/60 bg-emerald-500/20 shadow-[inset_0_0_24px_rgba(52,211,153,0.22),0_4px_20px_rgba(16,185,129,0.16)]'
+                : 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/95 dark:bg-emerald-950/50 ring-1 ring-emerald-300/80 dark:ring-emerald-800/80 shadow-xs'
               : status === 'needs_redo'
               ? isGlassTheme(currentTheme)
                 ? 'border-rose-400/80 ring-1 ring-rose-400/50 shadow-[inset_0_0_20px_rgba(244,63,94,0.12)]'
@@ -788,7 +827,21 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <StarPointsBadge points={chore.defaultPoints} suffix={t.pts} size="md" style={badgeStyle} />
+                  {status === 'approved' ? (
+                    <div 
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wide border shadow-2xs transition-all ${
+                        isGlassTheme(currentTheme)
+                          ? 'bg-emerald-500/30 text-emerald-100 border-emerald-400/50 backdrop-blur-md shadow-glass'
+                          : 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/90 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                      }`}
+                      title={`${earnedPoints} ${t.pts} earned and deposited`}
+                    >
+                      <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600 dark:text-emerald-400" />
+                      <span>+{earnedPoints} {t.pts} Earned</span>
+                    </div>
+                  ) : (
+                    <StarPointsBadge points={chore.defaultPoints} suffix={t.pts} size="md" style={badgeStyle} />
+                  )}
 
                   {assignee && (
                     <div 
@@ -865,7 +918,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                   onClick={(e) => e.stopPropagation()}
                 >
                   {chore.qualityChecklist.map((item, idx) => {
-                    const isChecked = !!checkedItems[idx];
+                    const isChecked = status === 'approved' || !!checkedItems[idx];
                     return (
                       <div 
                         key={idx}
@@ -915,7 +968,11 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                     setIsExpanded(!isExpanded);
                   }}
                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer min-h-[36px] active:scale-95 ${
-                    isGlassTheme(currentTheme)
+                    status === 'approved'
+                      ? isGlassTheme(currentTheme)
+                        ? 'bg-emerald-500/25 text-emerald-100 border-emerald-400/50 backdrop-blur-md shadow-glass'
+                        : 'bg-emerald-100/90 text-emerald-900 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-800'
+                      : isGlassTheme(currentTheme)
                       ? completedChecklistCount === totalChecklistCount
                         ? 'bg-emerald-500/20 text-emerald-100 border-emerald-400/40 backdrop-blur-md shadow-glass'
                         : 'bg-white/10 dark:bg-black/20 text-slate-800 dark:text-slate-200 border-white/30 dark:border-white/10 backdrop-blur-md shadow-glass hover:bg-white/20'
@@ -924,8 +981,8 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                       : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
                   }`}
                 >
-                  <CheckCircle2 className={`w-3 h-3 ${completedChecklistCount === totalChecklistCount ? 'text-emerald-600' : 'text-slate-400'}`} />
-                  <span>Checklist ({completedChecklistCount}/{totalChecklistCount})</span>
+                  <CheckCircle2 className={`w-3 h-3 ${status === 'approved' || completedChecklistCount === totalChecklistCount ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
+                  <span>{status === 'approved' ? `Verified ✓ (All ${totalChecklistCount}/${totalChecklistCount})` : `Checklist (${completedChecklistCount}/${totalChecklistCount})`}</span>
                   {isExpanded ? <ChevronUp className="w-3 h-3 ml-0.5" /> : <ChevronDown className="w-3 h-3 ml-0.5" />}
                 </button>
               ) : (
@@ -1053,7 +1110,17 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
 
                 {/* APPROVED */}
                 {status === 'approved' && (
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-2xs ${
+                        isGlassTheme(currentTheme)
+                          ? 'bg-emerald-500/30 text-emerald-100 border-emerald-400/60 backdrop-blur-md shadow-glass'
+                          : 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/90 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700'
+                      }`}
+                    >
+                      <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600 dark:text-emerald-400" />
+                      <span>Approved</span>
+                    </div>
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1067,8 +1134,8 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                       }}
                       className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-2xs shrink-0 cursor-pointer active:scale-90 transition-transform ${
                         isGlassTheme(currentTheme)
-                          ? 'bg-emerald-500/80 text-white border-emerald-400/50 border backdrop-blur-md'
-                          : 'bg-emerald-500 text-white'
+                          ? 'bg-emerald-500 text-white border-emerald-400/60 border shadow-md'
+                          : 'bg-emerald-600 text-white shadow-xs'
                       }`}
                       title={isMomMode ? "Completed & Approved ✓ (Click to reopen/undo)" : "Completed & Approved"}
                     >

@@ -6,6 +6,11 @@ import {
   PersonStatusType, 
   QualityGradeMultipliers 
 } from '../types';
+import { 
+  getChoreAssigneeForDate, 
+  isChoreScheduledForDate as isChoreScheduledForDateStorage, 
+  parseLocalDate 
+} from './storage';
 
 export const DEFAULT_PENALTY_SETTINGS: HouseholdPenaltySettings = {
   timezone: typeof Intl !== 'undefined' && Intl.DateTimeFormat ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles' : 'America/Los_Angeles',
@@ -102,12 +107,14 @@ export function calculateDaysLate(
   const now = new Date();
   let effectiveDueDateStr: string;
   let effTime = scheduledTime;
+  let completionDateStr: string | undefined = undefined;
 
   if (typeof choreOrDateStr === 'object' && choreOrDateStr !== null) {
     // Chore object was passed as 1st argument
     effTime = choreOrDateStr.scheduledTime || scheduledTime;
     if (typeof logOrExtendedDateStr === 'object' && logOrExtendedDateStr !== null) {
       effectiveDueDateStr = logOrExtendedDateStr.extendedDueDate || logOrExtendedDateStr.originalDueDate || logOrExtendedDateStr.date || now.toISOString().split('T')[0];
+      completionDateStr = logOrExtendedDateStr.completedAt;
     } else if (typeof logOrExtendedDateStr === 'string' && logOrExtendedDateStr) {
       effectiveDueDateStr = logOrExtendedDateStr;
     } else {
@@ -121,6 +128,7 @@ export function calculateDaysLate(
       extDate = logOrExtendedDateStr;
     } else if (typeof logOrExtendedDateStr === 'object' && logOrExtendedDateStr !== null) {
       extDate = logOrExtendedDateStr.extendedDueDate;
+      completionDateStr = logOrExtendedDateStr.completedAt;
     }
     effectiveDueDateStr = extDate || baseDate;
   }
@@ -130,6 +138,32 @@ export function calculateDaysLate(
   }
 
   const dueDate = parseDateInTimezone(effectiveDueDateStr, effTime);
+
+  // If shipDate is specified and the chore was due before penalty tracking started, it is not late
+  if (_shipDateStr) {
+    const shipDate = parseLocalDate(_shipDateStr);
+    if (!isNaN(shipDate.getTime()) && dueDate.getTime() < shipDate.getTime()) {
+      return 0;
+    }
+  }
+
+  // If the chore was already completed, evaluate lateness based on when it was completed
+  if (completionDateStr) {
+    const compDate = parseDateInTimezone(completionDateStr);
+    if (!isNaN(compDate.getTime())) {
+      if (compDate.getTime() <= dueDate.getTime()) {
+        return 0;
+      }
+      // Calculate calendar days between due date and completion date
+      const compParts = completionDateStr.includes('T') ? completionDateStr.split('T')[0].split('-').map(Number) : [compDate.getFullYear(), compDate.getMonth() + 1, compDate.getDate()];
+      const dueParts = effectiveDueDateStr.split('-').map(Number);
+      const dueMidnight = new Date(dueParts[0] || now.getFullYear(), (dueParts[1] || 1) - 1, dueParts[2] || now.getDate(), 0, 0, 0, 0);
+      const compMidnight = new Date(compParts[0] || compDate.getFullYear(), (compParts[1] || 1) - 1, compParts[2] || compDate.getDate(), 0, 0, 0, 0);
+      const diffMs = compMidnight.getTime() - dueMidnight.getTime();
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      return Math.max(0, diffDays);
+    }
+  }
 
   // If due date and time is in the future, 0 days late
   if (now.getTime() <= dueDate.getTime()) {
@@ -294,17 +328,7 @@ export function calculateInspectionAward(
  * Helper to determine if a chore was scheduled for a given date.
  */
 export function isChoreScheduledForDate(chore: Chore, dateStr: string): boolean {
-  if (!chore.isActive) return false;
-  const date = parseDateInTimezone(dateStr);
-  const dayOfWeek = date.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-
-  if (chore.frequency === 'daily') return true;
-  if (chore.frequency === 'weekdays') return dayOfWeek >= 1 && dayOfWeek <= 5;
-  if (chore.frequency === 'weekends') return dayOfWeek === 0 || dayOfWeek === 6;
-  if (chore.frequency === 'weekly' || chore.frequency === 'custom_days') {
-    return chore.scheduledDays ? chore.scheduledDays.includes(dayOfWeek) : false;
-  }
-  return false;
+  return isChoreScheduledForDateStorage(chore, dateStr);
 }
 
 /**
@@ -362,41 +386,48 @@ export function evaluateMemberStatusThisWeek(
   settings: HouseholdPenaltySettings = DEFAULT_PENALTY_SETTINGS,
   lookbackDays: number = 7
 ): PersonStatusSummary {
-  const memberChores = chores.filter(c => c.assignedMemberId === member.id && c.isActive);
   const todayStr = getRelativeDateStr(0);
 
   const overdueItems: OverdueChoreItem[] = [];
   let onTimeDoneCount = 0;
   let totalDueThisWeek = 0;
 
-  // Check the past 7 days (including today)
+  // Check the past lookback days (including today)
   for (let i = lookbackDays; i >= 0; i--) {
     const dateStr = getRelativeDateStr(-i);
     const isToday = i === 0;
 
-    for (const chore of memberChores) {
+    for (const chore of chores) {
+      if (!chore.isActive) continue;
       if (!isChoreScheduledForDate(chore, dateStr)) continue;
 
+      const assignedId = getChoreAssigneeForDate(chore, dateStr);
+      if (assignedId !== member.id) continue;
+
       totalDueThisWeek++;
-      const log = logs.find(l => l.choreId === chore.id && l.date === dateStr && l.memberId === member.id);
+      const log = logs.find(l => 
+        l.choreId === chore.id && 
+        (l.date === dateStr || (l.completedAt && l.completedAt.startsWith(dateStr))) && 
+        (!l.memberId || l.memberId === member.id)
+      );
 
       const isApproved = log?.status === 'approved';
       const isWaived = Boolean(log?.penaltyWaived);
       const isNeedsRedo = log?.status === 'needs_redo';
       const isCompletedWaiting = log?.status === 'needs_review';
-      const isPending = !log || log.status === 'pending';
 
-      if (isApproved || isWaived) {
-        // Checked and passed inspection or waived by parent
-        if ((log?.daysLate || 0) === 0 || isWaived) {
+      if (isApproved || isWaived || isCompletedWaiting) {
+        // Checked and passed inspection, waived by parent, or submitted awaiting inspection!
+        // These are NOT overdue chores.
+        if ((log?.daysLate || 0) === 0 || isWaived || isCompletedWaiting) {
           onTimeDoneCount++;
         }
         continue;
       }
 
       // If it's today and still pending, check if time has passed
-      if (isToday && !isNeedsRedo && !isCompletedWaiting) {
-        // Today's pending chores are not late until midnight / past due
+      if (isToday && !isNeedsRedo) {
+        // Today's pending chores are not late until scheduled time has passed
         const now = new Date();
         const dueDate = parseDateInTimezone(dateStr, chore.scheduledTime);
         if (now.getTime() <= dueDate.getTime()) {
@@ -410,8 +441,8 @@ export function evaluateMemberStatusThisWeek(
       const isMissed = Boolean(log?.isMissed);
 
       const daysLate = calculateDaysLate(
-        originalDueDate,
-        log?.extendedDueDate,
+        chore,
+        log || originalDueDate,
         chore.scheduledTime,
         settings.shipDate
       );
@@ -462,11 +493,18 @@ export function evaluateMemberStatusThisWeek(
     status = 'behind';
   }
 
+  const waitingReviewCount = logs.filter(l => 
+    l.memberId === member.id && 
+    l.status === 'needs_review'
+  ).length;
+
   let summaryLine = totalDueThisWeek === 0 ? 'No pending chores · All caught up! ⭐' : 'All chores on time & complete! ⭐';
   if (status === 'way_behind') {
     summaryLine = `${totalUnresolved} overdue · oldest ${oldestDaysLate}d late · ${pointsAtRisk} pts at risk`;
   } else if (status === 'behind') {
     summaryLine = `${totalUnresolved} behind · ${oldestDaysLate > 0 ? `${oldestDaysLate}d late · ` : ''}${pointsAtRisk} pts at risk`;
+  } else if (waitingReviewCount > 0) {
+    summaryLine = `All caught up! ${waitingReviewCount} chore${waitingReviewCount > 1 ? 's' : ''} awaiting review ✨`;
   }
 
   return {

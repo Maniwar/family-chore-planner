@@ -73,7 +73,7 @@ import {
   parseDateInTimezone,
   calculateDaysLate
 } from '../utils/penaltyEngine';
-import { getTodayDateString, parseLocalDate } from '../utils/storage';
+import { getTodayDateString, parseLocalDate, getChoreAssigneeForDate } from '../utils/storage';
 import { soundFX } from '../utils/audio';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { PersonStatusDrawer } from './PersonStatusDrawer';
@@ -377,16 +377,23 @@ export const StatusView: React.FC<StatusViewProps> = ({
       const isPast = dateStr < todayStr;
 
       members.forEach(member => {
-        const memberChores = chores.filter(c => c.assignedMemberId === member.id && c.isActive);
-
-        memberChores.forEach(chore => {
+        chores.forEach(chore => {
+          if (!chore.isActive) return;
           if (!isChoreScheduledForDate(chore, dateStr)) return;
 
-          const log = logs.find(l => l.choreId === chore.id && l.date === dateStr && l.memberId === member.id);
+          const assignedId = getChoreAssigneeForDate(chore, dateStr);
+          if (assignedId !== member.id) return;
+
+          const log = logs.find(l => 
+            l.choreId === chore.id && 
+            (l.date === dateStr || (l.completedAt && l.completedAt.startsWith(dateStr))) && 
+            (!l.memberId || l.memberId === member.id)
+          );
           const isApproved = log?.status === 'approved';
           const isWaived = Boolean(log?.penaltyWaived);
+          const isCompletedWaiting = log?.status === 'needs_review';
 
-          if (isApproved || isWaived) {
+          if (isApproved || isWaived || isCompletedWaiting) {
             return;
           }
 
@@ -394,14 +401,17 @@ export const StatusView: React.FC<StatusViewProps> = ({
           let daysLate = 0;
 
           if (isPast) {
-            isOverdue = true;
-            daysLate = calculateDaysLate(log?.originalDueDate || dateStr, log?.extendedDueDate, chore.scheduledTime, penaltySettings.shipDate);
-            if (daysLate === 0) daysLate = 1;
+            daysLate = calculateDaysLate(chore, log || dateStr, chore.scheduledTime, penaltySettings.shipDate);
+            if (daysLate > 0 || log?.status === 'needs_redo') {
+              isOverdue = true;
+            }
           } else if (isToday) {
             const dueDate = parseDateInTimezone(dateStr, chore.scheduledTime);
             if (now.getTime() > dueDate.getTime() || log?.status === 'needs_redo') {
-              isOverdue = true;
-              daysLate = calculateDaysLate(log?.originalDueDate || dateStr, log?.extendedDueDate, chore.scheduledTime, penaltySettings.shipDate);
+              daysLate = calculateDaysLate(chore, log || dateStr, chore.scheduledTime, penaltySettings.shipDate);
+              if (daysLate > 0 || log?.status === 'needs_redo') {
+                isOverdue = true;
+              }
             }
           }
 

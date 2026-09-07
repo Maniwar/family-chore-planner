@@ -893,11 +893,11 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           )}
         </div>
 
-        {/* Divider 2 */}
-        <div className={`border-t ${isGlassTheme(currentTheme) ? 'border-white/15' : 'border-slate-200/60'} my-2.5`} />
+        {/* Divider 2 - Desktop only */}
+        <div className={`border-t ${isGlassTheme(currentTheme) ? 'border-white/15' : 'border-slate-200/60'} my-2.5 hidden sm:block`} />
 
-        {/* LINE 3: Scheduled Chores, Search Bar, List/Compact Selector, and + Chore button */}
-        <div className="pt-0.5 flex items-center justify-between gap-3">
+        {/* LINE 3: Scheduled Chores, Search Bar, List/Compact Selector, and + Chore button (Desktop only - mobile uses dedicated dock bar below) */}
+        <div className="pt-0.5 hidden sm:flex items-center justify-between gap-3">
           {/* Left: Count Badge + Title + Search Bar right next to those words */}
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
             <span 
@@ -915,7 +915,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             </h2>
 
             {/* Search Bar placed directly next to the title */}
-            <div className="relative flex-1 max-w-xs md:max-w-sm lg:max-w-md min-w-[110px]">
+            <div className="relative flex-1 max-w-xs md:max-w-sm lg:max-w-md min-w-[80px]">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
@@ -961,7 +961,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 title="List View"
               >
                 <LayoutList className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-bold">List</span>
+                <span className="text-[11px] font-bold hidden md:inline">List</span>
               </button>
               <button
                 onClick={() => handleToggleViewMode('grid')}
@@ -975,7 +975,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 title="Compact Tiles View"
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-bold">Compact</span>
+                <span className="text-[11px] font-bold hidden md:inline">Compact</span>
               </button>
             </div>
 
@@ -994,7 +994,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 aria-label="Add New Chore"
               >
                 <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
-                <span>Chore</span>
+                <span className="hidden md:inline">Chore</span>
               </button>
             )}
           </div>
@@ -1039,17 +1039,66 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-7 pr-6 py-1 text-xs rounded-xl border border-slate-200/80 bg-white/70 focus:outline-hidden"
+            className={`w-full pl-7 pr-6 py-1 text-xs rounded-xl border transition-all ${
+              isGlassTheme(currentTheme)
+                ? 'apple-glass-input bg-white/70 border-white/20 text-slate-900 placeholder:text-slate-500 focus:bg-white'
+                : 'border-slate-200/80 bg-white/70 focus:outline-hidden'
+            }`}
           />
           {searchQuery && (
             <button
               type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+              onClick={() => {
+                soundFX.playPop();
+                setSearchQuery('');
+              }}
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer min-h-[20px] min-w-[20px] flex items-center justify-center rounded-md"
+              title="Clear search"
+              aria-label="Clear search"
             >
               <X className="w-3 h-3" />
             </button>
           )}
+        </div>
+
+        {/* Mobile View Mode Toggle (List vs Grid) */}
+        <div className={`flex items-center p-0.5 rounded-xl border shrink-0 ${
+          isGlassTheme(currentTheme) ? 'apple-glass-pill bg-white/30 border-white/20' : 'bg-slate-100 border-slate-200'
+        }`}>
+          <button
+            onClick={() => {
+              soundFX.playPop();
+              handleToggleViewMode('list');
+            }}
+            className={`p-1 rounded-lg transition-all min-h-[26px] min-w-[26px] flex items-center justify-center cursor-pointer ${
+              effectiveViewMode === 'list' 
+                ? isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill bg-white/50 text-slate-950 font-black shadow-xs'
+                  : 'bg-white text-slate-950 shadow-xs font-black' 
+                : 'text-slate-500 hover:text-slate-900'
+            }`}
+            title="List View"
+            aria-label="List View"
+          >
+            <LayoutList className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => {
+              soundFX.playPop();
+              handleToggleViewMode('grid');
+            }}
+            className={`p-1 rounded-lg transition-all min-h-[26px] min-w-[26px] flex items-center justify-center cursor-pointer ${
+              effectiveViewMode === 'grid' 
+                ? isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill bg-white/50 text-slate-950 font-black shadow-xs'
+                  : 'bg-white text-slate-950 shadow-xs font-black' 
+                : 'text-slate-500 hover:text-slate-900'
+            }`}
+            title="Compact Tiles View"
+            aria-label="Compact Tiles View"
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {/* Mobile Add Chore Button */}
