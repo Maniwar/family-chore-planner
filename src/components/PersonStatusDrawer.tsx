@@ -180,9 +180,13 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
           {overdueCount === 0 ? (
             <div className={`border ${theme.badgeBorder || 'border-emerald-200'} ${theme.badgeBg || 'bg-emerald-50'} rounded-2xl p-6 text-center space-y-1`}>
               <CheckCircle2 className={`w-8 h-8 ${theme.badgeText || 'text-emerald-600'} mx-auto mb-1`} />
-              <h4 className={`text-sm font-black ${theme.badgeText || 'text-emerald-900'}`}>All Caught Up!</h4>
-              <p className="text-xs font-medium text-slate-500">
-                {member.name} has no overdue chores or pending redo items.
+              <h4 className={`text-sm font-black ${theme.badgeText || 'text-emerald-900'}`}>
+                {activePersonSummary.pendingTodayCount === 0 ? 'All Caught Up! ⭐' : 'On Track! ✨'}
+              </h4>
+              <p className="text-xs font-medium text-slate-600 max-w-xs mx-auto">
+                {activePersonSummary.pendingTodayCount === 0
+                  ? `${member.name} has no overdue chores or pending redo items. Everything is complete!`
+                  : `${member.name} is on track with no overdue chores. ${activePersonSummary.pendingTodayCount} chore${activePersonSummary.pendingTodayCount > 1 ? 's' : ''} scheduled for today${activePersonSummary.waitingReviewCount > 0 ? ` (${activePersonSummary.waitingReviewCount} submitted awaiting review)` : ''}.`}
               </p>
             </div>
           ) : (

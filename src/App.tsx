@@ -32,7 +32,8 @@ import {
   saveDailyLayout,
   DEFAULT_PENALTY_SETTINGS,
   mergeRewardsWithDefaults,
-  getChoreAssigneeForDate
+  getChoreAssigneeForDate,
+  sanitizeLogs
 } from './utils/storage';
 import { HouseholdMember, Chore, ChoreAssignmentLog, RewardItem, RewardClaim, ViewMode, HouseholdInfo, HouseholdPenaltySettings, ChoreEvent, NudgeRecord } from './types';
 import { Header } from './components/Header';
@@ -418,8 +419,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             saveChores(targetHh.chores);
           }
           if (targetHh.logs) {
-            setLogs(targetHh.logs);
-            saveLogs(targetHh.logs);
+            const cleanedLogs = sanitizeLogs(targetHh.logs);
+            setLogs(cleanedLogs);
+            saveLogs(cleanedLogs);
           }
           const upgradedRewards = mergeRewardsWithDefaults(targetHh.rewards || []);
           setRewards(upgradedRewards);
@@ -553,8 +555,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         saveChores(cloudHh.chores);
       }
       if (cloudHh.logs) {
-        setLogs(cloudHh.logs);
-        saveLogs(cloudHh.logs);
+        const cleanedLogs = sanitizeLogs(cloudHh.logs);
+        setLogs(cleanedLogs);
+        saveLogs(cleanedLogs);
       }
       let activeRewardsList = rewards;
       if (cloudHh.rewards && cloudHh.rewards.length > 0) {

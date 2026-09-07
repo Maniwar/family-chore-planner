@@ -122,10 +122,29 @@ export const saveChores = (chores: Chore[]): void => {
   }
 };
 
+export const sanitizeLogs = (logs: ChoreAssignmentLog[]): ChoreAssignmentLog[] => {
+  if (!Array.isArray(logs)) return [];
+  const today = getTodayDateString();
+  const syntheticStaleIds = new Set([
+    `log_${today}_chore_kitchen_unload_dw_mem_layla`,
+    `log_${today}_chore_yard_water_mem_layla`,
+    `log_${today}_chore_bed_layla_mem_layla`,
+    `log_${today}_chore_kitchen_dining_table_mem_layla`,
+  ]);
+  return logs.filter(l => !syntheticStaleIds.has(l.id));
+};
+
 export const loadStoredLogs = (): ChoreAssignmentLog[] => {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.LOGS);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed: ChoreAssignmentLog[] = JSON.parse(saved);
+      const cleaned = sanitizeLogs(parsed);
+      if (cleaned.length !== parsed.length) {
+        saveLogs(cleaned);
+      }
+      return cleaned;
+    }
   } catch (e) {
     console.error('Failed to load logs from localStorage', e);
   }

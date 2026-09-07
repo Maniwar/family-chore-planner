@@ -367,6 +367,8 @@ export interface PersonStatusSummary {
   overdueItems: OverdueChoreItem[];
   onTimeDoneCount: number;
   totalDueThisWeek: number;
+  waitingReviewCount: number;
+  pendingTodayCount: number;
 }
 
 /**
@@ -498,13 +500,23 @@ export function evaluateMemberStatusThisWeek(
     l.status === 'needs_review'
   ).length;
 
+  const pendingTodayCount = Math.max(0, totalDueThisWeek - onTimeDoneCount - overdueCount - redoCount);
+
   let summaryLine = totalDueThisWeek === 0 ? 'No pending chores · All caught up! ⭐' : 'All chores on time & complete! ⭐';
   if (status === 'way_behind') {
     summaryLine = `${totalUnresolved} overdue · oldest ${oldestDaysLate}d late · ${pointsAtRisk} pts at risk`;
   } else if (status === 'behind') {
     summaryLine = `${totalUnresolved} behind · ${oldestDaysLate > 0 ? `${oldestDaysLate}d late · ` : ''}${pointsAtRisk} pts at risk`;
+  } else if (pendingTodayCount > 0) {
+    if (waitingReviewCount > 0) {
+      summaryLine = `${onTimeDoneCount}/${totalDueThisWeek} done · ${waitingReviewCount} awaiting review · ${pendingTodayCount} left today`;
+    } else if (onTimeDoneCount > 0) {
+      summaryLine = `${onTimeDoneCount}/${totalDueThisWeek} on time · ${pendingTodayCount} left today`;
+    } else {
+      summaryLine = `On track · ${pendingTodayCount} chore${pendingTodayCount > 1 ? 's' : ''} scheduled today`;
+    }
   } else if (waitingReviewCount > 0) {
-    summaryLine = `All caught up! ${waitingReviewCount} chore${waitingReviewCount > 1 ? 's' : ''} awaiting review ✨`;
+    summaryLine = `All done today! ${waitingReviewCount} chore${waitingReviewCount > 1 ? 's' : ''} awaiting review ✨`;
   }
 
   return {
@@ -519,6 +531,8 @@ export function evaluateMemberStatusThisWeek(
     overdueItems,
     onTimeDoneCount,
     totalDueThisWeek,
+    waitingReviewCount,
+    pendingTodayCount,
   };
 }
 
