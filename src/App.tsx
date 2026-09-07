@@ -105,7 +105,7 @@ export default function App() {
   const [currentDateStr, setCurrentDateStr] = useState<string>(getTodayDateString());
   const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
   const [currentView, setCurrentView] = useState<ViewMode>('today');
-  const [isMomMode, setIsMomMode] = useState<boolean>(true);
+  const [isMomMode, setIsMomMode] = useState<boolean>(false);
 
   // Localization & Theme states
   const [language, setLanguage] = useState<SupportedLanguage>(() => {
