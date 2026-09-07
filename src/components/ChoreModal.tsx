@@ -104,7 +104,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
       setFrequency(choreToEdit.frequency);
       setScheduledDays(choreToEdit.scheduledDays || [0, 1, 2, 3, 4, 5, 6]);
       setTimeOfDay(choreToEdit.timeOfDay || 'morning');
-      setScheduledTime(choreToEdit.scheduledTime || '08:00');
+      setScheduledTime(choreToEdit.timeOfDay === 'anytime' ? '' : (choreToEdit.scheduledTime || '08:00'));
       setDefaultPoints(choreToEdit.defaultPoints);
       setEstimatedMinutes(choreToEdit.estimatedMinutes || 15);
       setDifficulty(choreToEdit.difficulty || 'medium');
@@ -410,7 +410,7 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
       frequency: assignmentMode === 'by_day' ? 'custom_days' : frequency,
       scheduledDays: effectiveScheduledDays,
       timeOfDay,
-      scheduledTime,
+      scheduledTime: timeOfDay === 'anytime' ? '' : scheduledTime,
       defaultPoints: Number(defaultPoints) || 10,
       estimatedMinutes: Number(estimatedMinutes) || 15,
       difficulty,
@@ -586,7 +586,15 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
                   </label>
                   <select
                     value={timeOfDay}
-                    onChange={(e) => setTimeOfDay(e.target.value as TimeOfDay)}
+                    onChange={(e) => {
+                      const newTime = e.target.value as TimeOfDay;
+                      setTimeOfDay(newTime);
+                      if (newTime === 'anytime') {
+                        setScheduledTime('');
+                      } else if (!scheduledTime) {
+                        setScheduledTime(newTime === 'morning' ? '08:00' : newTime === 'afternoon' ? '15:00' : newTime === 'evening' ? '18:00' : '20:00');
+                      }
+                    }}
                     className={`w-full text-xs font-semibold p-2.5 rounded-xl border focus:ring-2 focus:ring-rose-500 min-h-[44px] ${isGlassTheme(currentTheme) ? 'apple-glass-input' : 'border-slate-200 bg-white'}`}
                   >
                     <option value="morning">🌅 Morning (Before School)</option>

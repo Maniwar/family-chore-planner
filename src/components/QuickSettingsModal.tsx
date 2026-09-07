@@ -15,7 +15,9 @@ import {
   RotateCcw, 
   ChevronRight, 
   ListTodo, 
-  Gift 
+  Gift,
+  Award,
+  Crown
 } from 'lucide-react';
 import { SupportedLanguage, SUPPORTED_LANGUAGES } from '../utils/i18n';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
@@ -45,6 +47,8 @@ interface QuickSettingsModalProps {
   onOpenAIAssign?: () => void;
   onOpenRedemptions?: () => void;
   onOpenHouseSettings?: () => void;
+  onOpenPointManager?: (memberId?: string) => void;
+  onOpenCosmeticsManager?: (memberId?: string) => void;
   onResetDemo?: () => void;
   isMomMode?: boolean;
 }
@@ -69,6 +73,8 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
   onOpenAIAssign,
   onOpenRedemptions,
   onOpenHouseSettings,
+  onOpenPointManager,
+  onOpenCosmeticsManager,
   onResetDemo,
   isMomMode = true,
 }) => {
@@ -488,6 +494,80 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                     </p>
                     <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium truncate">
                       View full household chores on Google Calendar
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
+                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                </div>
+              </button>
+
+              {/* Row 6: Edit Points & House EXP Manager */}
+              <button
+                id="settings-edit-points-btn"
+                onClick={() => {
+                  soundFX.playPop();
+                  onClose();
+                  if (onOpenPointManager) onOpenPointManager();
+                }}
+                className={`w-full p-3.5 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer min-h-[52px] group ${
+                  isGlass
+                    ? 'hover:bg-white/40 active:bg-white/60'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 active:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 shadow-2xs border border-amber-200 dark:border-amber-800">
+                    <Award className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs sm:text-sm font-bold text-slate-950 dark:text-white truncate">
+                        Points, EXP & House Level
+                      </p>
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-400/30">
+                        Admin
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium truncate">
+                      Edit points balances, lifetime EXP, 5-star counts & level milestones
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
+                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                </div>
+              </button>
+
+              {/* Row 7: Avatar Cosmetics & Visual Adjustments */}
+              <button
+                id="settings-cosmetics-adjustments-btn"
+                onClick={() => {
+                  soundFX.playPop();
+                  onClose();
+                  if (onOpenCosmeticsManager) onOpenCosmeticsManager();
+                }}
+                className={`w-full p-3.5 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer min-h-[52px] group ${
+                  isGlass
+                    ? 'hover:bg-white/40 active:bg-white/60'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 active:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0 shadow-2xs border border-purple-200 dark:border-purple-800">
+                    <Crown className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs sm:text-sm font-bold text-slate-950 dark:text-white truncate">
+                        Cosmetic Adjustments & Frames
+                      </p>
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-400/30">
+                        Visuals
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium truncate">
+                      Equip avatar crowns, dragon wings, auras & cosmetic effects
                     </p>
                   </div>
                 </div>

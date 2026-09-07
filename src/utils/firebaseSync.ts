@@ -40,6 +40,7 @@ export interface CloudHousehold {
   penaltySettings?: any;
   events?: any[];
   nudges?: any[];
+  customHouseXp?: number;
   createdAt: string;
   updatedAt: string;
   version?: number;
@@ -342,6 +343,7 @@ export async function syncCompleteHouseholdToCloud(
     penaltySettings?: any;
     events?: any[];
     nudges?: any[];
+    customHouseXp?: number;
   }
 ): Promise<void> {
   const now = new Date().toISOString();

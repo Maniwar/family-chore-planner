@@ -200,6 +200,8 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                   photoUrl={m.avatarPhotoUrl}
                   emoji={m.avatarEmoji}
                   name={m.name}
+                  memberId={m.id}
+                  cosmeticId={m.equippedCosmeticId}
                   size="xs"
                   showBorder={false}
                 />
@@ -406,6 +408,8 @@ export const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
                               photoUrl={assignee.avatarPhotoUrl}
                               emoji={assignee.avatarEmoji}
                               name={assignee.name}
+                              memberId={assignee.id}
+                              cosmeticId={assignee.equippedCosmeticId}
                               size="sm"
                             />
                           )}

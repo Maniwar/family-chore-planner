@@ -33,7 +33,8 @@ import {
   Music,
   ShoppingBag,
   Heart,
-  Smile
+  Smile,
+  Users
 } from 'lucide-react';
 import { RewardItem, RewardClaim, HouseholdMember } from '../types';
 import { Avatar } from './Avatar';
@@ -337,64 +338,164 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
         </div>
       </div>
 
-      {/* 2. Sleek Family Points Balance Strip */}
-      <div className={`rounded-2xl sm:rounded-3xl p-3 sm:p-4 shadow-2xs border ${
+      {/* 2. Deluxe Family Member Showcase & Points Hub (User Request: Nice Big Tiles with Glowing Cosmetics & Points) */}
+      <div className={`rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm border transition-all ${
         isGlass 
-          ? 'apple-glass-card border-white/20 text-slate-900 dark:text-white' 
+          ? 'apple-glass-card border-white/25 text-slate-900 dark:text-white' 
           : `${theme.heroBannerBg} ${theme.heroBannerText} ${theme.heroBannerBorder} ${theme.heroBannerGlow}`
       }`}>
-        <div className="flex items-center justify-between mb-2 px-1">
-          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider opacity-85">
-            Family Points Balance
-          </span>
-          <span className="text-[10px] sm:text-[11px] font-medium opacity-90 truncate max-w-[200px]">
-            {selectedFilterMemberId === 'all' 
-              ? 'Tap a helper to filter store affordability' 
-              : `Viewing for: ${activeMember?.name}`}
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5 px-1">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-black uppercase tracking-wider opacity-90 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+                <span>Family Points Showcase</span>
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white backdrop-blur-xs">
+                Tap helper to filter store
+              </span>
+            </div>
+            <p className="text-xs font-medium opacity-85 mt-0.5">
+              {selectedFilterMemberId === 'all'
+                ? 'Showing rewards for all family helpers. Tap any card below to view custom affordability!'
+                : `Currently highlighting store items affordable for ${activeMember?.name || 'Helper'}`}
+            </p>
+          </div>
+
+          {selectedFilterMemberId !== 'all' && (
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                setSelectedFilterMemberId('all');
+              }}
+              className="self-start sm:self-auto px-3 py-1.5 rounded-xl text-xs font-black bg-white text-slate-900 shadow-xs hover:bg-slate-100 transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
+            >
+              <Users className="w-3.5 h-3.5 text-blue-600" />
+              <span>Show All Kids</span>
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 -mx-0.5 px-0.5">
+        {/* Big Interactive Family Tiles Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 pt-1">
+          {/* 1. All Helpers Master Tile */}
           <button
+            type="button"
             onClick={() => {
               soundFX.playPop();
               setSelectedFilterMemberId('all');
             }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer min-h-[44px] touch-target active:scale-95 border ${
+            className={`group relative flex flex-col items-center text-center p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border transition-all duration-300 cursor-pointer min-h-[160px] justify-between ${
               selectedFilterMemberId === 'all'
-                ? 'bg-white text-slate-900 border-white shadow-xs font-black'
-                : isGlass 
-                  ? 'bg-white/30 text-slate-800 dark:text-white border-white/40 hover:bg-white/40' 
-                  : 'bg-white/15 text-white border-white/20 hover:bg-white/25'
+                ? 'bg-white text-slate-900 border-white shadow-lg ring-4 ring-white/30 scale-[1.02]'
+                : isGlass
+                  ? 'bg-white/25 hover:bg-white/35 text-slate-900 dark:text-white border-white/30 hover:border-white/50'
+                  : 'bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/35'
             }`}
           >
-            <span>👨‍👩‍👧‍👦 All Kids</span>
+            {/* Top Indicator */}
+            <div className="w-full flex items-center justify-between text-[10px] font-black uppercase tracking-wider opacity-80 mb-2">
+              <span>Overview</span>
+              <span className="px-1.5 py-0.5 rounded-md bg-black/15">All</span>
+            </div>
+
+            {/* Emblem Centerpiece */}
+            <div className="my-1.5 relative">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-amber-400 via-rose-400 to-indigo-500 flex items-center justify-center text-2xl sm:text-3xl shadow-md group-hover:scale-105 transition-transform">
+                👨‍👩‍👧‍👦
+              </div>
+            </div>
+
+            {/* Title & Stats */}
+            <div className="w-full mt-1">
+              <div className="text-xs sm:text-sm font-black truncate">All Helpers</div>
+              <div className={`mt-1.5 px-2 py-1 rounded-xl text-[11px] font-black flex items-center justify-center gap-1 ${
+                selectedFilterMemberId === 'all'
+                  ? `${theme.primaryBg} ${theme.primaryText}`
+                  : 'bg-black/25 text-white'
+              }`}>
+                <Gift className="w-3 h-3 text-amber-300" />
+                <span>{rewards.length} Rewards</span>
+              </div>
+            </div>
           </button>
 
+          {/* 2. Individual Family Member Tiles (Deluxe Size with Cosmetic Effects & Points) */}
           {members.filter(m => m.role !== 'parent').map((member) => {
             const isSelected = selectedFilterMemberId === member.id;
+            const affordableCount = rewards.filter(r => r.pointCost <= member.currentPoints).length;
+            const roleTitle = member.role === 'teen' ? 'Teen' : 'Helper';
+
             return (
               <button
                 key={member.id}
+                type="button"
                 onClick={() => {
                   soundFX.playPop();
                   setSelectedFilterMemberId(isSelected ? 'all' : member.id);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer min-h-[44px] touch-target active:scale-95 border ${
+                className={`group relative flex flex-col items-center text-center p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border transition-all duration-300 cursor-pointer min-h-[160px] justify-between overflow-visible ${
                   isSelected
-                    ? 'bg-white text-slate-900 border-white shadow-xs font-black scale-[1.02]'
-                    : isGlass 
-                      ? 'bg-white/30 text-slate-800 dark:text-white border-white/40 hover:bg-white/40' 
-                      : 'bg-white/15 text-white border-white/20 hover:bg-white/25'
+                    ? 'bg-white text-slate-900 border-amber-300 shadow-xl ring-4 ring-amber-400/40 scale-[1.02]'
+                    : isGlass
+                      ? 'bg-white/25 hover:bg-white/35 text-slate-900 dark:text-white border-white/30 hover:border-white/50'
+                      : 'bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/35'
                 }`}
               >
-                <Avatar photoUrl={member.avatarPhotoUrl} emoji={member.avatarEmoji} name={member.name} size="xs" showBorder={false} />
-                <span className="truncate max-w-[85px]">{member.name.split(' ')[0]}</span>
-                <span className={`px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-black ${
-                  isSelected ? `${theme.primaryBg} ${theme.primaryText}` : 'bg-black/20 text-white'
-                }`}>
-                  ⭐ {member.currentPoints}
-                </span>
+                {/* Active Shopper Badge or Role Header */}
+                <div className="w-full flex items-center justify-between text-[10px] font-black uppercase tracking-wider mb-2">
+                  <span className={`truncate max-w-[70px] ${isSelected ? 'text-amber-800 font-black' : 'opacity-85'}`}>
+                    {member.age ? `Age ${member.age}` : roleTitle}
+                  </span>
+                  {isSelected ? (
+                    <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[9px] font-black tracking-tight animate-pulse flex items-center gap-0.5 shadow-2xs">
+                      Active
+                    </span>
+                  ) : member.streakDays && member.streakDays > 0 ? (
+                    <span className="px-1.5 py-0.5 rounded-md bg-black/20 text-amber-300 text-[10px] font-bold">
+                      🔥 {member.streakDays}d
+                    </span>
+                  ) : null}
+                </div>
+
+                {/* Big Avatar Centerpiece with Spacious Margin for Wings & Crowns */}
+                <div className="my-1.5 relative flex items-center justify-center p-2">
+                  <Avatar
+                    member={member}
+                    photoUrl={member.avatarPhotoUrl}
+                    emoji={member.avatarEmoji}
+                    name={member.name}
+                    size="xl"
+                    showBorder={false}
+                    className="transform transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+
+                {/* Member Name & Points Hub */}
+                <div className="w-full mt-1 space-y-1">
+                  <div className="text-xs sm:text-sm font-black truncate max-w-full">
+                    {member.name.split(' ')[0]}
+                  </div>
+
+                  {/* Deluxe Points Badge */}
+                  <div className={`px-2.5 py-1 rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-1 transition-all ${
+                    isSelected
+                      ? 'bg-amber-400 text-amber-950 ring-1 ring-amber-500/50'
+                      : 'bg-black/30 text-amber-300 border border-white/10'
+                  }`}>
+                    <Star className="w-3.5 h-3.5 fill-current text-amber-400" />
+                    <span>{member.currentPoints} pts</span>
+                  </div>
+
+                  {/* Affordability micro-label */}
+                  <div className={`text-[10px] font-bold truncate ${
+                    isSelected ? 'text-slate-600' : 'opacity-80'
+                  }`}>
+                    {affordableCount > 0 
+                      ? `${affordableCount} reward${affordableCount === 1 ? '' : 's'} ready` 
+                      : 'Saving points'}
+                  </div>
+                </div>
               </button>
             );
           })}
@@ -1071,8 +1172,8 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
                             : (isGlass ? 'apple-glass-card border-white/40 text-slate-900 dark:text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750')
                       }`}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Avatar photoUrl={m.avatarPhotoUrl} emoji={m.avatarEmoji} name={m.name} size="xs" showBorder={false} />
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Avatar member={m} photoUrl={m.avatarPhotoUrl} emoji={m.avatarEmoji} name={m.name} size="sm" showBorder={false} />
                         <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{m.name}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">

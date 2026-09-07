@@ -31,7 +31,8 @@ import {
   loadStoredDailyLayout,
   saveDailyLayout,
   DEFAULT_PENALTY_SETTINGS,
-  mergeRewardsWithDefaults
+  mergeRewardsWithDefaults,
+  getChoreAssigneeForDate
 } from './utils/storage';
 import { HouseholdMember, Chore, ChoreAssignmentLog, RewardItem, RewardClaim, ViewMode, HouseholdInfo, HouseholdPenaltySettings, ChoreEvent, NudgeRecord } from './types';
 import { Header } from './components/Header';
@@ -55,13 +56,17 @@ import { ParentPinModal } from './components/ParentPinModal';
 import { HouseholdSyncModal } from './components/HouseholdSyncModal';
 import { QuickSettingsModal } from './components/QuickSettingsModal';
 import { ProgressionJourneyModal } from './components/ProgressionJourneyModal';
+import { PointManagerModal } from './components/PointManagerModal';
+import { CosmeticsManagerModal } from './components/CosmeticsManagerModal';
+import { HouseEvolutionModal } from './components/HouseEvolutionModal';
+import { calculateHouseProgression } from './utils/houseProgression';
 import { BadgeStyle } from './components/CategoryBadge';
 import { GlassIceShaderBackground } from './components/GlassIceShaderBackground';
 import { soundFX } from './utils/audio';
 import { SupportedLanguage, getTranslation } from './utils/i18n';
 import { ThemePreset, THEMES, isGlassTheme } from './utils/theme';
 import { INITIAL_REWARDS } from './data/initialData';
-import { evaluateHouseholdStatus, calculateInspectionAward, calculateDaysLate } from './utils/penaltyEngine';
+import { evaluateHouseholdStatus, calculateInspectionAward, calculateDaysLate, getISOWeekNumber } from './utils/penaltyEngine';
 import { isPinProtectionEnabled, isParentSessionUnlocked, setParentSessionUnlocked, syncParentPinFromCloud, getParentPin } from './utils/parentLock';
 import { 
   CloudHousehold, 
@@ -233,8 +238,41 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     selectedMemberId: '',
   });
 
+  const [pointManagerModalData, setPointManagerModalData] = useState<{
+    isOpen: boolean;
+    initialMemberId?: string;
+  }>({
+    isOpen: false,
+    initialMemberId: undefined,
+  });
+
+  const [cosmeticsModalData, setCosmeticsModalData] = useState<{
+    isOpen: boolean;
+    initialMemberId?: string;
+  }>({
+    isOpen: false,
+    initialMemberId: undefined,
+  });
+
+  const [isHouseEvolutionOpen, setIsHouseEvolutionOpen] = useState<boolean>(false);
+  const [highlightMemberIdForHouse, setHighlightMemberIdForHouse] = useState<string | undefined>(undefined);
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [dailyViewMode, setDailyViewMode] = useState<'list' | 'grid'>(() => loadStoredDailyLayout());
+
+  // Automatic House Level Up detection: when members level up and house levels up automatically
+  const houseProg = calculateHouseProgression(members, householdInfo);
+  const prevHouseLevelRef = useRef<number>(houseProg.currentLevel.level);
+
+  useEffect(() => {
+    if (houseProg.currentLevel.level > prevHouseLevelRef.current) {
+      soundFX.playFanfare();
+      triggerBigCelebration();
+      showToast(`🏰 EPIC HOUSE LEVEL UP! Our home is now Level ${houseProg.currentLevel.level}: ${houseProg.currentLevel.title}! 🎉`);
+      setIsHouseEvolutionOpen(true);
+    }
+    prevHouseLevelRef.current = houseProg.currentLevel.level;
+  }, [houseProg.currentLevel.level, houseProg.currentLevel.title]);
 
   // Parent PIN Security States
   const [isParentPinModalOpen, setIsParentPinModalOpen] = useState<boolean>(false);
@@ -375,8 +413,14 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
               });
             });
           }
-          if (targetHh.chores && targetHh.chores.length > 0) setChores(targetHh.chores);
-          if (targetHh.logs) setLogs(targetHh.logs);
+          if (targetHh.chores && targetHh.chores.length > 0) {
+            setChores(targetHh.chores);
+            saveChores(targetHh.chores);
+          }
+          if (targetHh.logs) {
+            setLogs(targetHh.logs);
+            saveLogs(targetHh.logs);
+          }
           const upgradedRewards = mergeRewardsWithDefaults(targetHh.rewards || []);
           setRewards(upgradedRewards);
           saveRewards(upgradedRewards);
@@ -388,15 +432,20 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           if (targetHh.events) setEvents(targetHh.events);
           if (targetHh.nudges) setNudges(targetHh.nudges);
 
-          setHouseholdInfo(prev => ({
-            ...prev,
-            familyName: targetHh!.familyName || prev.familyName,
-            houseAddressOrMotto: targetHh!.houseAddressOrMotto || prev.houseAddressOrMotto,
-            housePhotoUrl: targetHh!.housePhotoUrl || prev.housePhotoUrl,
-            householdCode: targetHh!.householdCode,
-            householdId: targetHh!.id,
-            isCloudSynced: true,
-          }));
+          setHouseholdInfo(prev => {
+            const next = {
+              ...prev,
+              familyName: targetHh!.familyName || prev.familyName,
+              houseAddressOrMotto: targetHh!.houseAddressOrMotto || prev.houseAddressOrMotto,
+              housePhotoUrl: targetHh!.housePhotoUrl || prev.housePhotoUrl,
+              householdCode: targetHh!.householdCode,
+              householdId: targetHh!.id,
+              customHouseXp: targetHh!.customHouseXp !== undefined ? targetHh!.customHouseXp : prev.customHouseXp,
+              isCloudSynced: true,
+            };
+            saveHouseholdInfo(next);
+            return next;
+          });
 
           // Set hash baseline so debounced effect does not push identical copy
           lastSyncedHashRef.current = JSON.stringify({
@@ -414,6 +463,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             penaltySettings: targetHh.penaltySettings || penaltySettings,
             events: targetHh.events || events,
             nudges: targetHh.nudges || nudges,
+            customHouseXp: targetHh.customHouseXp,
           });
 
           isCloudHydratedRef.current = true;
@@ -454,6 +504,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       penaltySettings,
       events,
       nudges,
+      customHouseXp: householdInfo.customHouseXp,
     };
 
     const currentHash = JSON.stringify(dataPayload);
@@ -497,8 +548,14 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           });
         });
       }
-      if (cloudHh.chores && cloudHh.chores.length > 0) setChores(cloudHh.chores);
-      if (cloudHh.logs) setLogs(cloudHh.logs);
+      if (cloudHh.chores && cloudHh.chores.length > 0) {
+        setChores(cloudHh.chores);
+        saveChores(cloudHh.chores);
+      }
+      if (cloudHh.logs) {
+        setLogs(cloudHh.logs);
+        saveLogs(cloudHh.logs);
+      }
       let activeRewardsList = rewards;
       if (cloudHh.rewards && cloudHh.rewards.length > 0) {
         const mergedRewards = mergeRewardsWithDefaults(cloudHh.rewards);
@@ -514,15 +571,20 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       if (cloudHh.events) setEvents(cloudHh.events);
       if (cloudHh.nudges) setNudges(cloudHh.nudges);
 
-      setHouseholdInfo(prev => ({
-        ...prev,
-        familyName: cloudHh.familyName || prev.familyName,
-        houseAddressOrMotto: cloudHh.houseAddressOrMotto || prev.houseAddressOrMotto,
-        housePhotoUrl: cloudHh.housePhotoUrl || prev.housePhotoUrl,
-        householdCode: cloudHh.householdCode,
-        householdId: cloudHh.id,
-        isCloudSynced: true,
-      }));
+      setHouseholdInfo(prev => {
+        const next = {
+          ...prev,
+          familyName: cloudHh.familyName || prev.familyName,
+          houseAddressOrMotto: cloudHh.houseAddressOrMotto || prev.houseAddressOrMotto,
+          housePhotoUrl: cloudHh.housePhotoUrl || prev.housePhotoUrl,
+          householdCode: cloudHh.householdCode,
+          householdId: cloudHh.id,
+          customHouseXp: cloudHh.customHouseXp !== undefined ? cloudHh.customHouseXp : prev.customHouseXp,
+          isCloudSynced: true,
+        };
+        saveHouseholdInfo(next);
+        return next;
+      });
 
       // Update hash so we don't reflect this remote update back to the server
       lastSyncedHashRef.current = JSON.stringify({
@@ -540,6 +602,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         penaltySettings: cloudHh.penaltySettings,
         events: cloudHh.events,
         nudges: cloudHh.nudges,
+        customHouseXp: cloudHh.customHouseXp,
       });
 
       setTimeout(() => {
@@ -594,78 +657,105 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
   const pendingRewardCount = claims.filter(c => c.status === 'pending').length;
 
   // Handlers
+  const handleUndoApprove = (choreId: string, logId?: string) => {
+    const targetLog = logs.find(l => l.id === logId) || logs.find(l => l.choreId === choreId && l.date === currentDateStr);
+    if (!targetLog) return;
+    const pointsDeducted = (targetLog.pointsAwarded || 0) + (targetLog.bonusPoints || 0);
+
+    const updatedLogs = logs.map(l => {
+      if (l.id === targetLog.id) {
+        return {
+          ...l,
+          status: 'pending' as const,
+          completedAt: undefined,
+          reviewedAt: undefined,
+          qualityScore: undefined,
+          pointsAwarded: undefined,
+          bonusPoints: undefined,
+        };
+      }
+      return l;
+    });
+
+    const updatedMembers = members.map(m => {
+      if (m.id === targetLog.memberId) {
+        return {
+          ...m,
+          currentPoints: Math.max(0, m.currentPoints - pointsDeducted),
+          lifetimePoints: Math.max(0, m.lifetimePoints - pointsDeducted),
+          starsCount: Math.max(0, (m.starsCount || 1) - 1),
+        };
+      }
+      return m;
+    });
+
+    setLogs(updatedLogs);
+    saveLogs(updatedLogs);
+    setMembers(updatedMembers);
+    saveMembers(updatedMembers);
+    showToast('Chore reset to pending');
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      logs: updatedLogs,
+      members: updatedMembers,
+    }).catch(console.warn);
+  };
+
   const handleMarkComplete = (choreId: string, notes?: string, checklist?: { [key: number]: boolean }) => {
     const existingIndex = logs.findIndex(l => l.choreId === choreId && l.date === currentDateStr);
     const chore = chores.find(c => c.id === choreId);
     if (!chore) return;
 
+    // If already approved, clicking uncompletes/reopens
+    if (existingIndex >= 0 && logs[existingIndex].status === 'approved') {
+      handleUndoApprove(choreId, logs[existingIndex].id);
+      return;
+    }
+
     soundFX.playComplete();
 
-    if (existingIndex >= 0) {
-      const updated = [...logs];
-      updated[existingIndex] = {
-        ...updated[existingIndex],
-        status: isMomMode ? 'approved' : 'needs_review',
-        completedAt: new Date().toISOString(),
-        qualityScore: isMomMode ? 5 : undefined,
-        pointsAwarded: isMomMode ? chore.defaultPoints : undefined,
-        completedNote: notes || updated[existingIndex].completedNote,
-        checklistStatus: checklist || updated[existingIndex].checklistStatus,
-      };
-      setLogs(updated);
+    const effectiveAssigneeId = getChoreAssigneeForDate(chore, currentDateStr) || 
+      (chore.assignedMemberId && chore.assignedMemberId !== 'unassigned' ? chore.assignedMemberId : undefined) || 
+      members.find(m => m.role !== 'parent')?.id || 
+      members[0]?.id || 
+      'unassigned';
 
-      if (isMomMode) {
-        setMembers(prev => prev.map(m => {
-          if (m.id === chore.assignedMemberId) {
-            return {
-              ...m,
-              currentPoints: m.currentPoints + chore.defaultPoints,
-              lifetimePoints: m.lifetimePoints + chore.defaultPoints,
-              starsCount: m.starsCount + 1,
-            };
-          }
-          return m;
-        }));
-        triggerConfettiCelebration();
-        soundFX.playRewardCoin();
-        showToast(`Chore verified & ${chore.defaultPoints} points awarded to helper!`);
-      } else {
-        showToast('Chore submitted for inspection! Mom has been notified.');
-      }
+    let updatedLogs: ChoreAssignmentLog[];
+
+    if (existingIndex >= 0) {
+      updatedLogs = [...logs];
+      updatedLogs[existingIndex] = {
+        ...updatedLogs[existingIndex],
+        memberId: effectiveAssigneeId,
+        status: 'needs_review',
+        completedAt: new Date().toISOString(),
+        completedNote: notes || updatedLogs[existingIndex].completedNote,
+        checklistStatus: checklist || updatedLogs[existingIndex].checklistStatus,
+      };
+      showToast('Chore marked done! Ready for Mom to inspect in Status tab ✨');
     } else {
       const newLog: ChoreAssignmentLog = {
         id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         choreId,
-        memberId: chore.assignedMemberId || 'unassigned',
+        memberId: effectiveAssigneeId,
         date: currentDateStr,
-        status: isMomMode ? 'approved' : 'needs_review',
+        status: 'needs_review',
         completedAt: new Date().toISOString(),
-        qualityScore: isMomMode ? 5 : undefined,
-        pointsAwarded: isMomMode ? chore.defaultPoints : undefined,
         completedNote: notes,
         checklistStatus: checklist,
       };
-      setLogs([...logs, newLog]);
-
-      if (isMomMode) {
-        setMembers(prev => prev.map(m => {
-          if (m.id === chore.assignedMemberId) {
-            return {
-              ...m,
-              currentPoints: m.currentPoints + chore.defaultPoints,
-              lifetimePoints: m.lifetimePoints + chore.defaultPoints,
-              starsCount: m.starsCount + 1,
-            };
-          }
-          return m;
-        }));
-        triggerConfettiCelebration();
-        soundFX.playRewardCoin();
-        showToast(`Chore verified & ${chore.defaultPoints} points awarded!`);
-      } else {
-        showToast('Chore marked done! Mom will inspect and award stars soon.');
-      }
+      updatedLogs = [...logs, newLog];
+      showToast('Chore marked done! Ready for Mom to inspect in Status tab ✨');
     }
+
+    setLogs(updatedLogs);
+    saveLogs(updatedLogs);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      logs: updatedLogs,
+    }).catch(console.warn);
   };
 
   const handleQuickApprove = (choreId: string, logId: string) => {
@@ -673,8 +763,11 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     const chore = chores.find(c => c.id === choreId);
     const pointsToAward = chore ? chore.defaultPoints : 10;
 
+    let updatedLogs: ChoreAssignmentLog[];
+    let updatedMembers = members;
+
     if (targetLog) {
-      setLogs(prev => prev.map(l => {
+      updatedLogs = logs.map(l => {
         if (l.id === targetLog.id) {
           return {
             ...l,
@@ -686,9 +779,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           };
         }
         return l;
-      }));
+      });
 
-      setMembers(prev => prev.map(m => {
+      updatedMembers = members.map(m => {
         if (m.id === targetLog.memberId) {
           return {
             ...m,
@@ -698,7 +791,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           };
         }
         return m;
-      }));
+      });
     } else if (chore) {
       const newLog: ChoreAssignmentLog = {
         id: `log_${Date.now()}`,
@@ -711,9 +804,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         qualityScore: 5,
         pointsAwarded: pointsToAward,
       };
-      setLogs(prev => [...prev, newLog]);
+      updatedLogs = [...logs, newLog];
 
-      setMembers(prev => prev.map(m => {
+      updatedMembers = members.map(m => {
         if (m.id === chore.assignedMemberId) {
           return {
             ...m,
@@ -723,8 +816,21 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           };
         }
         return m;
-      }));
+      });
+    } else {
+      return;
     }
+
+    setLogs(updatedLogs);
+    saveLogs(updatedLogs);
+    setMembers(updatedMembers);
+    saveMembers(updatedMembers);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      logs: updatedLogs,
+      members: updatedMembers,
+    }).catch(console.warn);
 
     triggerConfettiCelebration();
     soundFX.playRewardCoin();
@@ -758,9 +864,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       return l;
     });
 
-    setLogs(updatedLogs);
-
-    setMembers(prev => prev.map(m => {
+    const updatedMembers = members.map(m => {
       const added = pointsAwardedMap[m.id] || 0;
       if (added > 0) {
         return {
@@ -771,7 +875,18 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         };
       }
       return m;
-    }));
+    });
+
+    setLogs(updatedLogs);
+    saveLogs(updatedLogs);
+    setMembers(updatedMembers);
+    saveMembers(updatedMembers);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      logs: updatedLogs,
+      members: updatedMembers,
+    }).catch(console.warn);
 
     triggerBigCelebration();
     soundFX.playRewardCoin();
@@ -799,7 +914,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     if (!inspectModalData.chore) return;
     const { chore, log } = inspectModalData;
     const memberId = chore.assignedMemberId || log?.memberId || 'unassigned';
-    const daysLate = calculateDaysLate(chore, log, currentDateStr, penaltySettings);
+    const choreDate = log?.date || log?.originalDueDate || currentDateStr;
+    const daysLate = calculateDaysLate(choreDate, log?.extendedDueDate, chore.scheduledTime, penaltySettings.shipDate);
     
     // Calculate effective award points factoring in lateness and quality multipliers
     const awardResult = calculateInspectionAward(
@@ -813,8 +929,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     const newStatus = isRedo ? 'needs_redo' : 'approved';
     const finalPointsAwarded = isRedo ? 0 : awardResult.finalPoints + (bonusPoints || 0);
 
+    let updatedLogs: ChoreAssignmentLog[];
     if (log) {
-      setLogs(prev => prev.map(l => {
+      updatedLogs = logs.map(l => {
         if (l.id === log.id) {
           return {
             ...l,
@@ -830,7 +947,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           };
         }
         return l;
-      }));
+      });
     } else {
       const newLog: ChoreAssignmentLog = {
         id: logId,
@@ -848,11 +965,14 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         reviewedAt: new Date().toISOString(),
         daysLate: daysLate,
       };
-      setLogs(prev => [...prev, newLog]);
+      updatedLogs = [...logs, newLog];
     }
+    setLogs(updatedLogs);
+    saveLogs(updatedLogs);
 
+    let updatedMembers = members;
     if (!isRedo && finalPointsAwarded > 0) {
-      setMembers(prev => prev.map(m => {
+      updatedMembers = members.map(m => {
         if (m.id === memberId) {
           return {
             ...m,
@@ -862,7 +982,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           };
         }
         return m;
-      }));
+      });
+      setMembers(updatedMembers);
+      saveMembers(updatedMembers);
 
       if (score === 5) {
         triggerBigCelebration();
@@ -873,6 +995,23 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       showToast(`Approved! Awarded ${grade} (${score}⭐) and ${finalPointsAwarded} points.`);
     } else if (isRedo) {
       soundFX.playPop();
+      // If the log was previously approved with points, safely reverse them
+      const prevPoints = (log?.pointsAwarded || 0) + (log?.bonusPoints || 0);
+      if (prevPoints > 0) {
+        updatedMembers = members.map(m => {
+          if (m.id === memberId) {
+            return {
+              ...m,
+              currentPoints: Math.max(0, m.currentPoints - prevPoints),
+              lifetimePoints: Math.max(0, m.lifetimePoints - prevPoints),
+            };
+          }
+          return m;
+        });
+        setMembers(updatedMembers);
+        saveMembers(updatedMembers);
+      }
+
       const member = members.find(m => m.id === memberId);
       const redoEvent: ChoreEvent = {
         id: `evt_redo_${Date.now()}`,
@@ -883,15 +1022,32 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         choreId: chore.id,
         choreTitle: chore.title || 'Chore',
         reason: feedbackNote ? `Quality Redo: "${feedbackNote}"` : 'Needs Redo / Quality correction requested during parent inspection',
-        weekNumber: 35,
-        year: 2026,
+        weekNumber: getISOWeekNumber(new Date()),
+        year: new Date().getFullYear(),
         createdAt: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
       };
-      setEvents(prev => [redoEvent, ...prev]);
+      const updatedEvents = [redoEvent, ...events];
+      setEvents(updatedEvents);
+      saveEvents(updatedEvents);
       showToast(`Chore marked for Redo. Feedback left for helper.`);
+
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+      syncCompleteHouseholdToCloud(targetHhId, {
+        logs: updatedLogs,
+        members: updatedMembers,
+        events: updatedEvents,
+      }).catch(console.warn);
     } else {
       soundFX.playPop();
       showToast(`Approved! ${finalPointsAwarded} points awarded.`);
+
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+      syncCompleteHouseholdToCloud(targetHhId, {
+        logs: updatedLogs,
+        members: updatedMembers,
+        events: events,
+      }).catch(console.warn);
     }
 
     setInspectModalData({ isOpen: false, chore: null, log: null });
@@ -931,15 +1087,17 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       choreTitle,
       reason: `Nudge reminder: "${message}"`,
       createdAt: now,
-      weekNumber: 35,
-      year: 2026,
+      timestamp: now,
+      weekNumber: getISOWeekNumber(new Date()),
+      year: new Date().getFullYear(),
     };
 
     const updatedNudges = [newNudge, ...nudges];
     const updatedEvents = [newEvent, ...events];
-
     setNudges(updatedNudges);
+    saveNudges(updatedNudges);
     setEvents(updatedEvents);
+    saveEvents(updatedEvents);
     showToast(`Nudge delivered to ${memberName}! 🔔`);
 
     // Call server endpoint
@@ -1014,13 +1172,16 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       choreTitle: chore?.title || 'Chore',
       reason: `Waiver granted for ${targetDate}: ${reason}`,
       createdAt: now,
-      weekNumber: 35,
-      year: 2026,
+      timestamp: now,
+      weekNumber: getISOWeekNumber(new Date()),
+      year: new Date().getFullYear(),
     };
 
     const updatedEvents = [newEvent, ...events];
     setLogs(updatedLogs);
+    saveLogs(updatedLogs);
     setEvents(updatedEvents);
+    saveEvents(updatedEvents);
     showToast(`Penalty waived for ${member?.name || 'Helper'} on ${chore?.title || 'task'}! ⭐`);
 
     if (activeHousehold?.id) {
@@ -1088,13 +1249,16 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       memberName: firstMember?.name || 'Household',
       reason: `Batch waiver granted for ${itemsToWaive.length} overdue task(s): ${reason}`,
       createdAt: now,
-      weekNumber: 35,
-      year: 2026,
+      timestamp: now,
+      weekNumber: getISOWeekNumber(new Date()),
+      year: new Date().getFullYear(),
     };
 
     const updatedEvents = [newEvent, ...events];
     setLogs(finalLogs);
+    saveLogs(finalLogs);
     setEvents(updatedEvents);
+    saveEvents(updatedEvents);
     triggerConfettiCelebration();
     soundFX.playStarChime(5);
     showToast(`Waived ${itemsToWaive.length} overdue task(s)! ⭐`);
@@ -1162,13 +1326,16 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       choreTitle: chore?.title || 'Chore',
       reason: `Due date for ${targetDate} extended to ${newDueDate}: ${reason}`,
       createdAt: now,
-      weekNumber: 35,
-      year: 2026,
+      timestamp: now,
+      weekNumber: getISOWeekNumber(new Date()),
+      year: new Date().getFullYear(),
     };
 
     const updatedEvents = [newEvent, ...events];
     setLogs(updatedLogs);
+    saveLogs(updatedLogs);
     setEvents(updatedEvents);
+    saveEvents(updatedEvents);
     showToast(`Due date extended to ${newDueDate}! 📅`);
 
     if (activeHousehold?.id) {
@@ -1226,15 +1393,25 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
 
   const handleSaveChore = (savedChore: Chore) => {
     const index = chores.findIndex(c => c.id === savedChore.id);
+    let updated: Chore[];
     if (index >= 0) {
-      const updated = [...chores];
+      updated = [...chores];
       updated[index] = savedChore;
       setChores(updated);
+      saveChores(updated);
       showToast(`Chore "${savedChore.title}" updated successfully.`);
     } else {
-      setChores([...chores, savedChore]);
+      updated = [...chores, savedChore];
+      setChores(updated);
+      saveChores(updated);
       showToast(`New chore "${savedChore.title}" added.`);
     }
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      chores: updated,
+      logs,
+    }).catch(console.warn);
   };
 
   const handleBatchAddChores = (newChores: (Omit<Chore, 'id'> & { id?: string })[]) => {
@@ -1244,24 +1421,48 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       isActive: c.isActive !== undefined ? c.isActive : true,
       qualityChecklist: c.qualityChecklist || [],
     }));
-    setChores(prev => [...prev, ...choresWithIds]);
+    const updated = [...chores, ...choresWithIds];
+    setChores(updated);
+    saveChores(updated);
     soundFX.playRewardCoin();
     triggerConfettiCelebration();
     showToast(`Added ${choresWithIds.length} new chore template(s) to Library! ✨`);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      chores: updated,
+      logs,
+    }).catch(console.warn);
   };
 
   const handleDeleteChore = (choreId: string) => {
-    setChores(prev => prev.filter(c => c.id !== choreId));
+    const updated = chores.filter(c => c.id !== choreId);
+    setChores(updated);
+    saveChores(updated);
     showToast('Chore deleted.');
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      chores: updated,
+      logs,
+    }).catch(console.warn);
   };
 
   const handleToggleChoreActive = (choreId: string) => {
-    setChores(prev => prev.map(c => {
+    const updated = chores.map(c => {
       if (c.id === choreId) {
         return { ...c, isActive: !c.isActive };
       }
       return c;
-    }));
+    });
+    setChores(updated);
+    saveChores(updated);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      chores: updated,
+      logs,
+    }).catch(console.warn);
   };
 
   const handleSaveMember = (memberData: Omit<HouseholdMember, 'id' | 'currentPoints' | 'lifetimePoints' | 'starsCount' | 'streakDays'> & { id?: string }) => {
@@ -1329,13 +1530,224 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       return m;
     });
     setMembers(updated);
+    saveMembers(updated);
     soundFX.playRewardCoin();
     showToast(`Points adjusted: ${delta > 0 ? '+' : ''}${delta} pts (${reason}).`);
+
+    // Record audit event
+    const member = members.find(m => m.id === memberId);
+    const beforePoints = member?.currentPoints || 0;
+    const afterPoints = Math.max(0, beforePoints + delta);
+    const realDelta = afterPoints - beforePoints;
+
+    const newEvent: ChoreEvent = {
+      id: `evt_pt_adj_${Date.now()}`,
+      householdId: activeHousehold?.id || 'default',
+      type: 'point_adjustment',
+      memberId,
+      memberName: member?.name || 'Helper',
+      pointsBefore: beforePoints,
+      pointsAfter: afterPoints,
+      pointsDelta: realDelta,
+      reason: reason || (delta > 0 ? `Point bonus (+${delta} pts)` : `Point deduction (${delta} pts)`),
+      weekNumber: getISOWeekNumber(new Date()),
+      year: new Date().getFullYear(),
+      createdAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+    };
+    const updatedEvents = [newEvent, ...events];
+    setEvents(updatedEvents);
 
     if (activeHousehold?.id) {
       syncCompleteHouseholdToCloud(activeHousehold.id, {
         members: updated,
+        events: updatedEvents,
       }).catch(console.warn);
+    }
+  };
+
+  const handleSetMemberPoints = (memberId: string, newCurrentPoints: number, newLifetimePoints?: number, reason?: string) => {
+    const member = members.find(m => m.id === memberId);
+    const beforePoints = member?.currentPoints || 0;
+    const safeTargetPoints = Math.max(0, newCurrentPoints);
+    const delta = safeTargetPoints - beforePoints;
+
+    const updated = members.map(m => {
+      if (m.id === memberId) {
+        return {
+          ...m,
+          currentPoints: safeTargetPoints,
+          lifetimePoints: newLifetimePoints !== undefined ? Math.max(0, newLifetimePoints) : Math.max(m.lifetimePoints, safeTargetPoints),
+        };
+      }
+      return m;
+    });
+    setMembers(updated);
+    saveMembers(updated);
+    soundFX.playRewardCoin();
+    showToast(`Points updated (${reason || 'Point adjustment'}).`);
+
+    // Record audit event - always record even if setting to 0 or same value
+    const newEvent: ChoreEvent = {
+      id: `evt_pt_set_${Date.now()}`,
+      householdId: activeHousehold?.id || 'default',
+      type: 'point_adjustment',
+      memberId,
+      memberName: member?.name || 'Helper',
+      pointsBefore: beforePoints,
+      pointsAfter: safeTargetPoints,
+      pointsDelta: delta,
+      reason: reason || (safeTargetPoints === 0 ? 'Reset balance to 0 pts' : `Manual balance set to ${safeTargetPoints} pts`),
+      weekNumber: getISOWeekNumber(new Date()),
+      year: new Date().getFullYear(),
+      createdAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+    };
+    const updatedEvents = [newEvent, ...events];
+    setEvents(updatedEvents);
+    saveEvents(updatedEvents);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      members: updated,
+      events: updatedEvents,
+    }).catch(console.warn);
+  };
+
+  const handleResetAllSeedPoints = () => {
+    const updated = members.map(m => ({
+      ...m,
+      currentPoints: 0,
+      lifetimePoints: 0,
+    }));
+    setMembers(updated);
+    saveMembers(updated);
+    soundFX.playPop();
+    showToast('All family points reset to zero.');
+
+    const newEvent: ChoreEvent = {
+      id: `evt_reset_zero_${Date.now()}`,
+      householdId: activeHousehold?.id || 'default',
+      type: 'point_adjustment',
+      memberId: 'all',
+      memberName: 'All Family',
+      pointsBefore: members.reduce((sum, m) => sum + (m.currentPoints || 0), 0),
+      pointsAfter: 0,
+      pointsDelta: -members.reduce((sum, m) => sum + (m.currentPoints || 0), 0),
+      reason: 'Family-wide reset: All member balances set to 0 pts',
+      weekNumber: getISOWeekNumber(new Date()),
+      year: new Date().getFullYear(),
+      createdAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+    };
+    const updatedEvents = [newEvent, ...events];
+    setEvents(updatedEvents);
+    saveEvents(updatedEvents);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      members: updated,
+      events: updatedEvents,
+    }).catch(console.warn);
+  };
+
+  const handleResetAllToVerifiedPoints = () => {
+    let totalBefore = 0;
+    let totalAfter = 0;
+    const updated = members.map(m => {
+      totalBefore += (m.currentPoints || 0);
+      // Calculate net chores earned
+      const completedLogs = logs.filter(l => l.memberId === m.id && (l.status === 'approved' || (l as any).status === 'completed'));
+      let chorePoints = 0;
+      completedLogs.forEach(l => {
+        const chore = chores.find(c => c.id === l.choreId);
+        chorePoints += (l.pointsAwarded !== undefined ? l.pointsAwarded : (chore?.defaultPoints || 10)) + (l.bonusPoints || 0);
+      });
+      const memberClaims = claims.filter(c => c.memberId === m.id && c.status !== 'rejected');
+      const spentPoints = memberClaims.reduce((sum, c) => sum + (c.pointCost || 0), 0);
+      const verifiedBalance = Math.max(0, chorePoints - spentPoints);
+      totalAfter += verifiedBalance;
+      return {
+        ...m,
+        currentPoints: verifiedBalance,
+      };
+    });
+    setMembers(updated);
+    saveMembers(updated);
+    soundFX.playStarChime(5);
+    showToast('All family points synchronized to verified chore earnings!');
+
+    const newEvent: ChoreEvent = {
+      id: `evt_reset_verified_${Date.now()}`,
+      householdId: activeHousehold?.id || 'default',
+      type: 'point_adjustment',
+      memberId: 'all',
+      memberName: 'All Family',
+      pointsBefore: totalBefore,
+      pointsAfter: totalAfter,
+      pointsDelta: totalAfter - totalBefore,
+      reason: 'Family-wide sync: All member balances set to verified chore earnings',
+      weekNumber: getISOWeekNumber(new Date()),
+      year: new Date().getFullYear(),
+      createdAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+    };
+    const updatedEvents = [newEvent, ...events];
+    setEvents(updatedEvents);
+    saveEvents(updatedEvents);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      members: updated,
+      events: updatedEvents,
+    }).catch(console.warn);
+  };
+
+  const handleSetHouseXp = (newHouseXp: number, resetHelpersLifetimeXp?: boolean) => {
+    const safeXp = Math.max(0, Math.round(newHouseXp));
+    const updatedHhInfo: HouseholdInfo = {
+      ...householdInfo,
+      customHouseXp: safeXp,
+    };
+    setHouseholdInfo(updatedHhInfo);
+    saveHouseholdInfo(updatedHhInfo);
+
+    let updatedMembers = members;
+    if (resetHelpersLifetimeXp) {
+      const helperMembers = members.filter(x => x.role !== 'parent');
+      const helperCount = Math.max(1, helperMembers.length);
+      const perHelperLifetime = Math.round(safeXp / helperCount);
+      updatedMembers = members.map(m => ({
+        ...m,
+        lifetimePoints: m.role === 'parent' ? 0 : perHelperLifetime,
+      }));
+      setMembers(updatedMembers);
+      saveMembers(updatedMembers);
+    }
+
+    soundFX.playStarChime(5);
+    triggerConfettiCelebration();
+    showToast(`House XP set to ${safeXp.toLocaleString()} XP! 🏡✨`);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      customHouseXp: safeXp,
+      members: updatedMembers,
+      familyName: updatedHhInfo.familyName,
+      houseAddressOrMotto: updatedHhInfo.houseAddressOrMotto,
+      housePhotoUrl: updatedHhInfo.housePhotoUrl,
+    }).catch(console.warn);
+  };
+
+  const handleOpenPointManager = (memberId?: string) => {
+    if (!isMomMode) {
+      requestParentAuth(
+        () => setPointManagerModalData({ isOpen: true, initialMemberId: memberId }),
+        'Point Manager Security',
+        'Enter Parent PIN to view and edit family points.'
+      );
+    } else {
+      setPointManagerModalData({ isOpen: true, initialMemberId: memberId });
     }
   };
 
@@ -1652,6 +2064,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         householdInfo={householdInfo}
         onOpenCloudSync={() => setIsCloudSyncModalOpen(true)}
         onOpenQuickSettings={() => setIsQuickSettingsOpen(true)}
+        onOpenHouseEvolution={() => {
+          setHighlightMemberIdForHouse(undefined);
+          setIsHouseEvolutionOpen(true);
+        }}
         onOpenHouseSettings={() => {
           if (!isMomMode) {
             requestParentAuth(
@@ -1771,6 +2187,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             members={members}
             chores={chores}
             logs={logs}
+            claims={claims}
             penaltySettings={penaltySettings}
             events={events}
             nudges={nudges}
@@ -1782,6 +2199,11 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             onBatchWaivePenalties={handleBatchWaivePenalties}
             onUpdatePenaltySettings={handleUpdatePenaltySettings}
             onNavigateToInspection={() => setCurrentView('inspection')}
+            onOpenPointManager={handleOpenPointManager}
+            onEquipCosmetic={handleEquipCosmetic}
+            onQuickApprove={handleQuickApprove}
+            onOpenInspect={(chore, log) => handleOpenInspect(chore, log)}
+            onUndoApprove={handleUndoApprove}
           />
         )}
 
@@ -1842,12 +2264,17 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             onEditMember={(member) => setMemberModalData({ isOpen: true, memberToEdit: member })}
             onDeleteMember={handleDeleteMember}
             onAdjustPoints={handleAdjustPoints}
+            onOpenPointManager={handleOpenPointManager}
             onOpenHouseSettings={() => setIsHouseSettingsModalOpen(true)}
             onOpenProgression={(member) => {
               setProgressionModalData({
                 isOpen: true,
                 selectedMemberId: member?.id || (selectedMemberId !== 'all' ? selectedMemberId : members[0]?.id || ''),
               });
+            }}
+            onOpenHouseEvolution={(memberId) => {
+              setHighlightMemberIdForHouse(memberId);
+              setIsHouseEvolutionOpen(true);
             }}
           />
         )}
@@ -2011,6 +2438,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         isOpen={progressionModalData.isOpen}
         onClose={() => setProgressionModalData(prev => ({ ...prev, isOpen: false }))}
         members={members}
+        householdInfo={householdInfo}
         selectedMemberId={progressionModalData.selectedMemberId || (selectedMemberId !== 'all' ? selectedMemberId : members[0]?.id || '')}
         onSelectMember={(id) => setProgressionModalData(prev => ({ ...prev, selectedMemberId: id }))}
         onEquipCosmetic={handleEquipCosmetic}
@@ -2019,6 +2447,53 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           setProgressionModalData(prev => ({ ...prev, isOpen: false }));
           setCurrentView('rewards');
         }}
+        onOpenHouseEvolution={() => {
+          setHighlightMemberIdForHouse(progressionModalData.selectedMemberId);
+          setIsHouseEvolutionOpen(true);
+        }}
+      />
+
+      {/* House Evolution & Epic Level Up Modal */}
+      <HouseEvolutionModal
+        isOpen={isHouseEvolutionOpen}
+        onClose={() => {
+          setIsHouseEvolutionOpen(false);
+          setHighlightMemberIdForHouse(undefined);
+        }}
+        members={members}
+        householdInfo={householdInfo}
+        currentTheme={currentTheme}
+        highlightMemberId={highlightMemberIdForHouse}
+      />
+
+      {/* Point Manager & Auditor Modal */}
+      <PointManagerModal
+        isOpen={pointManagerModalData.isOpen}
+        onClose={() => setPointManagerModalData({ isOpen: false, initialMemberId: undefined })}
+        members={members}
+        chores={chores}
+        logs={logs}
+        claims={claims}
+        events={events}
+        householdInfo={householdInfo}
+        currentTheme={currentTheme}
+        initialMemberId={pointManagerModalData.initialMemberId}
+        onSetMemberPoints={handleSetMemberPoints}
+        onAdjustPoints={handleAdjustPoints}
+        onResetAllSeedPoints={handleResetAllSeedPoints}
+        onResetAllToVerified={handleResetAllToVerifiedPoints}
+        onSetHouseXp={handleSetHouseXp}
+      />
+
+      {/* Cosmetics & Visual Effects Modal */}
+      <CosmeticsManagerModal
+        isOpen={cosmeticsModalData.isOpen}
+        onClose={() => setCosmeticsModalData({ isOpen: false, initialMemberId: undefined })}
+        members={members}
+        selectedMemberId={cosmeticsModalData.initialMemberId}
+        onEquipCosmetic={handleEquipCosmetic}
+        currentTheme={currentTheme}
+        isMomMode={isMomMode}
       />
 
       {/* Quick Settings & Tools Modal */}
@@ -2091,6 +2566,20 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           } else {
             setIsHouseSettingsModalOpen(true);
           }
+        }}
+        onOpenPointManager={() => {
+          if (!isMomMode) {
+            requestParentAuth(
+              () => setPointManagerModalData({ isOpen: true }),
+              'Points & EXP Security',
+              'Enter Parent PIN to adjust points, EXP, and House Level.'
+            );
+          } else {
+            setPointManagerModalData({ isOpen: true });
+          }
+        }}
+        onOpenCosmeticsManager={() => {
+          setCosmeticsModalData({ isOpen: true });
         }}
         onResetDemo={handleResetDemo}
         isMomMode={isMomMode}

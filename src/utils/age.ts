@@ -10,14 +10,34 @@ import { HouseholdMember } from '../types';
  * Calculates dynamic age in full years from a birth date string (YYYY-MM-DD)
  * relative to a given reference date (defaults to today).
  */
-export function calculateAge(birthDateStr?: string, referenceDate: string | Date = new Date()): number {
+export function calculateAge(birthDateStr?: any, referenceDate: string | Date = new Date()): number {
   if (!birthDateStr) return 0;
+
+  let str = '';
+  if (typeof birthDateStr === 'string') {
+    str = birthDateStr.trim();
+  } else if (birthDateStr instanceof Date) {
+    if (isNaN(birthDateStr.getTime())) return 0;
+    str = birthDateStr.toISOString().split('T')[0];
+  } else if (typeof birthDateStr === 'number' && !isNaN(birthDateStr)) {
+    const d = new Date(birthDateStr);
+    if (isNaN(d.getTime())) return 0;
+    str = d.toISOString().split('T')[0];
+  } else if (typeof birthDateStr === 'object' && birthDateStr !== null) {
+    const candidate = birthDateStr.birthDate || birthDateStr.date;
+    str = typeof candidate === 'string' ? candidate.trim() : '';
+  }
+
+  if (!str) return 0;
+  if (str.includes('T')) {
+    str = str.split('T')[0];
+  }
   
   const refDate = typeof referenceDate === 'string' 
     ? new Date(referenceDate.length === 10 ? `${referenceDate}T12:00:00` : referenceDate) 
     : referenceDate;
   
-  const parts = birthDateStr.split('-');
+  const parts = str.split('-');
   if (parts.length < 3) return 0;
   
   const birthYear = parseInt(parts[0], 10);

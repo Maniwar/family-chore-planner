@@ -335,7 +335,15 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                 </span>
                 {assignee ? (
                   <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-                    <Avatar photoUrl={assignee.avatarPhotoUrl} emoji={assignee.avatarEmoji} name={assignee.name} size="xs" showBorder={false} />
+                    <Avatar 
+                      photoUrl={assignee.avatarPhotoUrl} 
+                      emoji={assignee.avatarEmoji} 
+                      name={assignee.name} 
+                      memberId={assignee.id}
+                      cosmeticId={assignee.equippedCosmeticId}
+                      size="xs" 
+                      showBorder={false} 
+                    />
                     <span className="truncate">{assignee.name}</span>
                   </div>
                 ) : (
@@ -583,6 +591,8 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                     photoUrl={assignee.avatarPhotoUrl}
                     emoji={assignee.avatarEmoji}
                     name={assignee.name}
+                    memberId={assignee.id}
+                    cosmeticId={assignee.equippedCosmeticId}
                     size="sm"
                     showBorder={false}
                   />
@@ -594,41 +604,61 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
 
               {/* Apple HIG Checkbox & State Action Button */}
               {status === 'approved' ? (
-                <div 
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center shadow-2xs shrink-0 ${
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isMomMode) {
+                      soundFX.playPop();
+                      onMarkComplete(chore.id);
+                    } else {
+                      setIsDetailOpen(true);
+                    }
+                  }}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shadow-2xs shrink-0 cursor-pointer active:scale-90 transition-transform ${
                     isGlassTheme(currentTheme)
                       ? 'bg-emerald-500/80 text-white border-emerald-400/50 border backdrop-blur-md'
                       : 'bg-emerald-500 text-white'
                   }`}
-                  title="Completed & Approved"
+                  title={isMomMode ? "Completed & Approved ✓ (Click to reopen/undo)" : "Completed & Approved"}
                 >
                   <Check className="w-4 h-4 stroke-[3]" />
-                </div>
+                </button>
               ) : status === 'needs_review' ? (
-                isMomMode ? (
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      soundFX.playStarChime(5);
-                      if (log) onQuickApprove(chore.id, log.id);
+                      soundFX.playPop();
+                      setIsDetailOpen(true);
                     }}
-                    className="w-7 h-7 rounded-lg bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center shadow-2xs active:scale-90 cursor-pointer shrink-0 transition-transform"
-                    title="Quick Approve 5⭐"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-white" />
-                  </button>
-                ) : (
-                  <div 
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shadow-2xs shrink-0 ${
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center shadow-2xs shrink-0 cursor-pointer active:scale-90 transition-transform relative ${
                       isGlassTheme(currentTheme)
-                        ? 'apple-glass-pill bg-amber-400/20 text-amber-200 border-amber-300/60 shadow-glass'
-                        : 'bg-amber-100 border border-amber-300 text-amber-700'
+                        ? 'bg-emerald-500/80 text-white border-emerald-400/50 border backdrop-blur-md'
+                        : 'bg-emerald-500 text-white'
                     }`}
-                    title="Waiting for Mom's Review"
+                    title="Done! Awaiting inspection in Status tab (Click to view details)"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                  </div>
-                )
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-white animate-pulse" />
+                  </button>
+
+                  {isMomMode && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        soundFX.playStarChime(5);
+                        if (log) onQuickApprove(chore.id, log.id);
+                      }}
+                      className="w-7 h-7 rounded-lg bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center shadow-2xs active:scale-90 cursor-pointer shrink-0 transition-transform"
+                      title="Quick Approve 5⭐"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-white" />
+                    </button>
+                  )}
+                </div>
               ) : status === 'needs_redo' ? (
                 <button
                   onClick={(e) => {
@@ -769,6 +799,8 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                         photoUrl={assignee.avatarPhotoUrl}
                         emoji={assignee.avatarEmoji}
                         name={assignee.name}
+                        memberId={assignee.id}
+                        cosmeticId={assignee.equippedCosmeticId}
                         size="sm"
                         showBorder={false}
                       />
@@ -1022,16 +1054,26 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
                 {/* APPROVED */}
                 {status === 'approved' && (
                   <div className="flex items-center gap-1.5">
-                    <div 
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-2xs shrink-0 ${
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isMomMode) {
+                          soundFX.playPop();
+                          onMarkComplete(chore.id);
+                        } else {
+                          setIsDetailOpen(true);
+                        }
+                      }}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-2xs shrink-0 cursor-pointer active:scale-90 transition-transform ${
                         isGlassTheme(currentTheme)
                           ? 'bg-emerald-500/80 text-white border-emerald-400/50 border backdrop-blur-md'
                           : 'bg-emerald-500 text-white'
                       }`}
-                      title="Completed & Approved"
+                      title={isMomMode ? "Completed & Approved ✓ (Click to reopen/undo)" : "Completed & Approved"}
                     >
                       <Check className="w-4 h-4 stroke-[3]" />
-                    </div>
+                    </button>
                     {isMomMode && log && (
                       <button
                         onClick={(e) => {

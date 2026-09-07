@@ -9,13 +9,17 @@ import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
 
-interface MemberModalProps {
+export interface MemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   memberToEdit: HouseholdMember | null;
   currentTheme?: ThemePreset;
   onSaveMember: (
-    memberData: Omit<HouseholdMember, 'id' | 'currentPoints' | 'lifetimePoints' | 'starsCount' | 'streakDays'> & { id?: string }
+    memberData: Omit<HouseholdMember, 'id' | 'starsCount' | 'streakDays'> & { 
+      id?: string;
+      currentPoints?: number;
+      lifetimePoints?: number;
+    }
   ) => void;
 }
 
@@ -42,6 +46,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   const [avatarEmoji, setAvatarEmoji] = useState('👦');
   const [avatarPhotoUrl, setAvatarPhotoUrl] = useState<string | undefined>(undefined);
   const [targetWeeklyPoints, setTargetWeeklyPoints] = useState<number>(100);
+  const [currentPoints, setCurrentPoints] = useState<number>(0);
+  const [lifetimePoints, setLifetimePoints] = useState<number>(0);
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -59,6 +65,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setAvatarEmoji(memberToEdit.avatarEmoji || '👦');
       setAvatarPhotoUrl(memberToEdit.avatarPhotoUrl);
       setTargetWeeklyPoints(memberToEdit.targetWeeklyPoints || 100);
+      setCurrentPoints(memberToEdit.currentPoints ?? 0);
+      setLifetimePoints(memberToEdit.lifetimePoints ?? 0);
     } else {
       setName('');
       setRole('child');
@@ -68,6 +76,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setAvatarEmoji('🧒');
       setAvatarPhotoUrl(undefined);
       setTargetWeeklyPoints(80);
+      setCurrentPoints(0);
+      setLifetimePoints(0);
     }
     setUploadError(null);
   }, [memberToEdit]);
@@ -128,6 +138,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       avatarEmoji,
       avatarPhotoUrl: avatarPhotoUrl || undefined,
       targetWeeklyPoints: Number(targetWeeklyPoints) || 100,
+      currentPoints: Number(currentPoints) || 0,
+      lifetimePoints: Number(lifetimePoints) || 0,
     });
     onClose();
   };
@@ -343,22 +355,45 @@ export const MemberModal: React.FC<MemberModalProps> = ({
             🌱 Ages calculate dynamically from birth dates as calendar years progress.
           </p>
 
-          {/* Weekly Target Points */}
-          <div>
-            <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600'}`}>
-              Weekly Target Points Goal
-            </label>
-            <input
-              type="number"
-              min="10"
-              max="500"
-              value={targetWeeklyPoints}
-              onChange={(e) => setTargetWeeklyPoints(Number(e.target.value))}
-              className={`w-full text-xs p-2.5 rounded-xl border font-bold focus:ring-2 ${theme.accentRing} ${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : 'border-slate-300 text-amber-900 bg-white placeholder:text-slate-400'}`}
-            />
-            <p className="text-[11px] text-slate-400 mt-1">
-              Target for earning full weekly allowance or goal rewards.
-            </p>
+          {/* Weekly Target Points & Current Points Balance */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600'}`}>
+                Weekly Target Goal
+              </label>
+              <input
+                type="number"
+                min="10"
+                max="500"
+                value={targetWeeklyPoints}
+                onChange={(e) => setTargetWeeklyPoints(Number(e.target.value))}
+                className={`w-full text-xs p-2.5 rounded-xl border font-bold focus:ring-2 ${theme.accentRing} ${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : 'border-slate-300 text-amber-900 bg-white placeholder:text-slate-400'}`}
+              />
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                Target points for weekly allowances.
+              </p>
+            </div>
+
+            <div>
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600'}`}>
+                Current Points Balance ⭐
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="99999"
+                value={currentPoints}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setCurrentPoints(val);
+                  if (val > lifetimePoints) setLifetimePoints(val);
+                }}
+                className={`w-full text-xs p-2.5 rounded-xl border font-black focus:ring-2 ${theme.accentRing} ${isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : 'border-amber-300 text-amber-950 bg-amber-50/50'}`}
+              />
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                Available to spend on rewards.
+              </p>
+            </div>
           </div>
 
           {/* Buttons */}

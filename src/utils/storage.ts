@@ -12,9 +12,9 @@ import {
 } from '../types';
 import { INITIAL_MEMBERS, INITIAL_CHORES, generateSampleLogs, INITIAL_REWARDS, INITIAL_CLAIMS, getTodayDateString } from '../data/initialData';
 import { calculateAge } from './age';
-import { DEFAULT_PENALTY_SETTINGS } from './penaltyEngine';
+import { DEFAULT_PENALTY_SETTINGS, getISOWeekNumber } from './penaltyEngine';
 
-export { getTodayDateString, DEFAULT_PENALTY_SETTINGS };
+export { getTodayDateString, DEFAULT_PENALTY_SETTINGS, getISOWeekNumber };
 
 const STORAGE_KEYS = {
   MEMBERS: 'family_chores_members_v2',
@@ -281,6 +281,13 @@ export const savePenaltySettings = (settings: HouseholdPenaltySettings): void =>
 
 export const generateSampleEvents = (): ChoreEvent[] => {
   const now = Date.now();
+  const currentDate = new Date();
+  const thisWeekNum = getISOWeekNumber(currentDate);
+  const lastWeekDate = new Date(now - 7 * 24 * 3600 * 1000);
+  const lastWeekNum = getISOWeekNumber(lastWeekDate);
+  const currentYear = currentDate.getFullYear();
+  const tomorrowDateStr = new Date(now + 24 * 3600 * 1000).toISOString().split('T')[0];
+
   return [
     {
       id: 'evt_w1',
@@ -291,8 +298,8 @@ export const generateSampleEvents = (): ChoreEvent[] => {
       choreId: 'chore_kitchen_unload_dw',
       choreTitle: 'Unload & Load Dishwasher & Handwash Delicate Items',
       reason: 'Doctor appointment and extra homework',
-      weekNumber: 35,
-      year: 2026,
+      weekNumber: thisWeekNum,
+      year: currentYear,
       createdAt: new Date(now - 10 * 3600 * 1000).toISOString(),
     },
     {
@@ -304,8 +311,8 @@ export const generateSampleEvents = (): ChoreEvent[] => {
       choreId: 'chore_living_pillows_throws',
       choreTitle: 'Fluff Couch Pillows, Fold Throws & Clear Coffee Table',
       reason: 'Parent waived backlog for weekend family trip',
-      weekNumber: 35,
-      year: 2026,
+      weekNumber: thisWeekNum,
+      year: currentYear,
       createdAt: new Date(now - 22 * 3600 * 1000).toISOString(),
     },
     {
@@ -317,8 +324,8 @@ export const generateSampleEvents = (): ChoreEvent[] => {
       choreId: 'chore_dining_set_table',
       choreTitle: 'Set Table for Family Meals & Clear Table Afterward',
       reason: 'Sick with flu on Wednesday',
-      weekNumber: 34,
-      year: 2026,
+      weekNumber: lastWeekNum,
+      year: currentYear,
       createdAt: new Date(now - 4 * 24 * 3600 * 1000).toISOString(),
     },
     {
@@ -330,8 +337,8 @@ export const generateSampleEvents = (): ChoreEvent[] => {
       choreId: 'chore_bath_toilets',
       choreTitle: 'Deep Clean & Sanitize Bathroom Sinks, Toilets & Mirrors',
       reason: 'College entrance practice exam weekend',
-      weekNumber: 34,
-      year: 2026,
+      weekNumber: lastWeekNum,
+      year: currentYear,
       createdAt: new Date(now - 6 * 24 * 3600 * 1000).toISOString(),
     },
     {
@@ -347,8 +354,8 @@ export const generateSampleEvents = (): ChoreEvent[] => {
       pointsDelta: -5,
       reason: '3 days late lateness deduction (25%)',
       tier: 3,
-      weekNumber: 35,
-      year: 2026,
+      weekNumber: thisWeekNum,
+      year: currentYear,
       createdAt: new Date(now - 36 * 3600 * 1000).toISOString(),
     },
     {
@@ -360,8 +367,8 @@ export const generateSampleEvents = (): ChoreEvent[] => {
       choreId: 'chore_bath_tub_shower',
       choreTitle: 'Scrub Bathtub, Shower Walls & Chrome Fixtures',
       reason: 'Mom: Please wrap this up before dinner tonight!',
-      weekNumber: 35,
-      year: 2026,
+      weekNumber: thisWeekNum,
+      year: currentYear,
       createdAt: new Date(now - 12 * 3600 * 1000).toISOString(),
     },
     {
@@ -373,9 +380,9 @@ export const generateSampleEvents = (): ChoreEvent[] => {
       choreId: 'chore_kitchen_pots_pans',
       choreTitle: 'Handwash Big Pots, Pans & Baking Sheets',
       reason: 'Extended by 1 day for exam study',
-      extendedToDate: '2026-08-30',
-      weekNumber: 35,
-      year: 2026,
+      extendedToDate: tomorrowDateStr,
+      weekNumber: thisWeekNum,
+      year: currentYear,
       createdAt: new Date(now - 48 * 3600 * 1000).toISOString(),
     },
   ];
@@ -463,13 +470,60 @@ export const resetAllToDemo = (): {
 };
 
 // Date helpers
-export const parseLocalDate = (dateStr: string): Date => {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day, 12, 0, 0);
+export const parseLocalDate = (dateVal: any): Date => {
+  const now = new Date();
+  if (!dateVal) return now;
+  if (dateVal instanceof Date) {
+    return isNaN(dateVal.getTime()) ? now : dateVal;
+  }
+  let str = '';
+  if (typeof dateVal === 'string') {
+    str = dateVal.trim();
+  } else if (typeof dateVal === 'number' && !isNaN(dateVal)) {
+    const d = new Date(dateVal);
+    return isNaN(d.getTime()) ? now : d;
+  } else if (typeof dateVal === 'object' && dateVal !== null) {
+    const candidate = dateVal.date || dateVal.originalDueDate || dateVal.extendedDueDate || dateVal.completedAt || dateVal.createdAt || dateVal.timestamp;
+    if (candidate instanceof Date) return isNaN(candidate.getTime()) ? now : candidate;
+    str = typeof candidate === 'string' ? candidate.trim() : (candidate ? String(candidate).trim() : '');
+  } else {
+    str = String(dateVal).trim();
+  }
+  if (!str) return now;
+  if (str.includes('T')) {
+    str = str.split('T')[0];
+  }
+  const parts = str.split('-').map(Number);
+  const year = !isNaN(parts[0]) && parts[0] > 1900 ? parts[0] : now.getFullYear();
+  const month = !isNaN(parts[1]) && parts[1] >= 1 ? parts[1] - 1 : now.getMonth();
+  const day = !isNaN(parts[2]) && parts[2] >= 1 ? parts[2] : now.getDate();
+  return new Date(year, month, day, 12, 0, 0);
 };
 
-export const formatDisplayDate = (dateStr: string): string => {
-  const date = parseLocalDate(dateStr);
+export const formatDisplayDate = (dateStr: any): string => {
+  if (!dateStr) return '';
+  let str = '';
+  if (typeof dateStr === 'string') {
+    str = dateStr.trim();
+  } else if (dateStr instanceof Date) {
+    if (isNaN(dateStr.getTime())) return '';
+    str = dateStr.toISOString().split('T')[0];
+  } else if (typeof dateStr === 'number') {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    str = d.toISOString().split('T')[0];
+  } else if (typeof dateStr === 'object' && dateStr !== null) {
+    const candidate = dateStr.date || dateStr.originalDueDate || dateStr.extendedDueDate || dateStr.completedAt;
+    str = typeof candidate === 'string' ? candidate.trim() : (candidate ? String(candidate).trim() : '');
+  } else {
+    str = String(dateStr).trim();
+  }
+  if (!str) return '';
+  if (str.includes('T')) {
+    str = str.split('T')[0];
+  }
+  const date = parseLocalDate(str);
+  if (isNaN(date.getTime())) return 'Recent';
   const today = getTodayDateString();
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
@@ -481,15 +535,19 @@ export const formatDisplayDate = (dateStr: string): string => {
 
   const options: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' };
   const formatted = date.toLocaleDateString(undefined, options);
+  if (formatted === 'Invalid Date') return 'Recent';
 
-  if (dateStr === today) return `Today, ${formatted}`;
-  if (dateStr === yesterdayStr) return `Yesterday, ${formatted}`;
-  if (dateStr === tomorrowStr) return `Tomorrow, ${formatted}`;
+  if (str === today) return `Today, ${formatted}`;
+  if (str === yesterdayStr) return `Yesterday, ${formatted}`;
+  if (str === tomorrowStr) return `Tomorrow, ${formatted}`;
   return formatted;
 };
 
 export const formatTimeDisplay = (timeStr?: string, timeOfDay?: string): string => {
-  if (timeStr && timeStr.includes(':')) {
+  if (timeOfDay === 'anytime') {
+    return 'Anytime';
+  }
+  if (timeStr && timeStr.includes(':') && timeOfDay !== 'anytime') {
     const [hours, minutes] = timeStr.split(':').map(Number);
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const h12 = hours % 12 || 12;
@@ -501,6 +559,7 @@ export const formatTimeDisplay = (timeStr?: string, timeOfDay?: string): string 
       case 'afternoon': return 'Afternoon (by 2pm)';
       case 'evening': return 'Evening (by 6pm)';
       case 'bedtime': return 'Bedtime (by 8pm)';
+      case 'anytime': return 'Anytime';
       default: return 'Flexible time';
     }
   }

@@ -110,7 +110,6 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showWorkloadChart, setShowWorkloadChart] = useState<boolean>(false);
-  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
   const [internalViewMode, setInternalViewMode] = useState<'list' | 'grid'>(() => loadStoredDailyLayout());
 
   const effectiveViewMode = propViewMode !== undefined ? propViewMode : internalViewMode;
@@ -486,202 +485,6 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
           )}
         </div>
 
-        {/* Row 4: Horizontal Helper & Time Filter Bar with Smooth Scroll & Full Bleed */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mx-2 px-2 touch-pan-x" onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
-          {/* Quick Search & Filter Trigger */}
-          <button
-            onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer min-h-[32px] shrink-0 active:scale-95 shadow-2xs ${
-              activeFilterCount > 0 || showMobileFilters
-                ? (isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-indigo-600 text-white border-indigo-600 shadow-xs')
-                : isGlassTheme(currentTheme)
-                ? 'bg-white/40 border-white/20 text-slate-800 hover:bg-white'
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-            title="Search and Filters"
-          >
-            <Filter className="w-3 h-3" />
-            <span>{activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filter'}</span>
-          </button>
-
-          {/* All Helpers Chip */}
-          <button
-            onClick={() => {
-              soundFX.playPop();
-              if (onSelectMember) onSelectMember('all');
-            }}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border shadow-2xs ${
-              selectedMemberId === 'all'
-                ? `${theme.primaryBg} ${theme.primaryText} border-transparent font-black`
-                : isGlassTheme(currentTheme)
-                ? 'bg-white/40 text-slate-800 hover:bg-white border-white/20'
-                : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
-            }`}
-          >
-            <Home className="w-3 h-3" />
-            <span>All ({chores.filter(c => isChoreScheduledForDate(c, currentDateStr)).length})</span>
-          </button>
-
-          {members.map((m) => {
-            const isSelected = selectedMemberId === m.id;
-            const count = chores.filter(c => c.assignedMemberId === m.id && isChoreScheduledForDate(c, currentDateStr)).length;
-            const cosmetic = COSMETIC_ITEMS.find(c => c.id === m.equippedCosmeticId);
-            return (
-              <button
-                key={m.id}
-                onClick={() => {
-                  soundFX.playPop();
-                  if (onSelectMember) onSelectMember(m.id);
-                }}
-                className={`px-2.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border shadow-2xs ${
-                  isSelected
-                    ? `${theme.primaryBg} ${theme.primaryText} border-transparent font-black`
-                    : isGlassTheme(currentTheme)
-                    ? 'bg-white/40 hover:bg-white text-slate-800 border-white/20'
-                    : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
-                }`}
-              >
-                <Avatar 
-                  photoUrl={m.avatarPhotoUrl} 
-                  emoji={m.avatarEmoji} 
-                  name={m.name} 
-                  size="xs" 
-                  showBorder={false}
-                  cosmeticClass={cosmetic?.cssClass}
-                />
-                <span>{m.name.split(' ')[0]}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                  isSelected ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-700'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-
-          {/* Time-of-Day Quick Pills */}
-          {[
-            { id: 'morning', label: 'Morning', icon: Sunrise },
-            { id: 'afternoon', label: 'Afternoon', icon: Sun },
-            { id: 'evening', label: 'Evening', icon: Moon },
-            { id: 'bedtime', label: 'Bedtime', icon: Bed },
-          ].map((timeTab) => {
-            const Icon = timeTab.icon;
-            const isSelected = selectedTimeFilter === timeTab.id;
-            const count = choresWithLogs.filter(c => c.chore.timeOfDay === timeTab.id).length;
-            if (count === 0 && selectedTimeFilter !== timeTab.id) return null;
-            return (
-              <button
-                key={timeTab.id}
-                onClick={() => {
-                  soundFX.playPop();
-                  setSelectedTimeFilter(isSelected ? 'all' : timeTab.id);
-                }}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer min-h-[32px] active:scale-95 border ${
-                  isSelected
-                    ? 'bg-amber-500 text-white border-amber-500 shadow-2xs font-bold'
-                    : isGlassTheme(currentTheme)
-                    ? 'bg-white/30 hover:bg-white/40 text-slate-600 border-white/20  shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)]'
-                    : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
-                }`}
-              >
-                <Icon className="w-3 h-3" />
-                <span>{timeTab.label}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                  isSelected ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-500'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Expandable Search & Filters Drawer for Mobile */}
-        {showMobileFilters && (
-          <div className={`p-3 rounded-2xl border space-y-2.5 shadow-xs animate-in slide-in-from-top-2 duration-150 ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white border-slate-200'}`}>
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                placeholder={t.searchChoresPlaceholder}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:outline-hidden focus:ring-2 focus:ring-sky-500/50"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-3 gap-1.5 text-xs">
-              <select
-                value={selectedTimeFilter}
-                onChange={(e) => setSelectedTimeFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-[11px] font-semibold truncate"
-              >
-                <option value="all">⏰ All Times</option>
-                <option value="morning">Morning</option>
-                <option value="afternoon">Afternoon</option>
-                <option value="evening">Evening</option>
-                <option value="bedtime">Bedtime</option>
-              </select>
-
-              <select
-                value={selectedCategoryFilter}
-                onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-[11px] font-semibold truncate"
-              >
-                <option value="all">🏠 Category</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>{getCategoryTranslation(cat, language)}</option>
-                ))}
-              </select>
-
-              <select
-                value={selectedStatusFilter}
-                onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 p-2 rounded-xl text-[11px] font-semibold truncate"
-              >
-                <option value="all">📌 Status</option>
-                <option value="pending">Pending</option>
-                <option value="needs_review">Review</option>
-                <option value="approved">Approved</option>
-                <option value="needs_redo">Redo</option>
-              </select>
-            </div>
-
-            <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-              {activeFilterCount > 0 ? (
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedTimeFilter('all');
-                    setSelectedCategoryFilter('all');
-                    setSelectedStatusFilter('all');
-                  }}
-                  className="text-xs font-bold text-rose-600 p-1 cursor-pointer"
-                >
-                  Reset All Filters
-                </button>
-              ) : <div />}
-
-              <button
-                onClick={() => setShowMobileFilters(false)}
-                className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg cursor-pointer"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Actionable Redo Notification for Helpers */}
         {redoCount > 0 && (
           <div className="bg-rose-50 border border-rose-200 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs text-rose-900 shadow-2xs">
@@ -858,28 +661,31 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         )}
       </div>
 
-      {/* Desktop Contextual Helper Filter Chips */}
-      {onSelectMember && (
-        <div className={`hidden sm:block ${isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.cardBorder} p-3 sm:p-4 shadow-xs space-y-2`}>
-          <div className="flex items-center justify-between">
-            <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${isGlassTheme(currentTheme) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500'}`}>
-              <Users className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Filter Chores by Helper</span>
-            </span>
-            {selectedMemberId !== 'all' && (
-              <button
-                onClick={() => {
-                  soundFX.playPop();
-                  onSelectMember('all');
-                }}
-                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors p-1 cursor-pointer"
-              >
-                Clear (Show All)
-              </button>
-            )}
-          </div>
+      {/* Unified 3-Line Command & Filter Panel (Line 1: Helper filter, Line 2: All times through Google Calendar, Line 3: Scheduled Chores, Search, List/Compact, + Chore) */}
+      <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.cardBorder} p-3 sm:p-4 shadow-xs transition-colors duration-200`}>
+        {/* LINE 1: Filter Chores by Helper */}
+        {onSelectMember && (
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none text-xs pb-2 pt-0.5" onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-1.5 shrink-0 pr-2 border-r border-slate-200/80 dark:border-white/15">
+              <Users className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <span className={`text-[11px] font-bold uppercase tracking-wider whitespace-nowrap ${isGlassTheme(currentTheme) ? 'text-slate-700 dark:text-slate-300' : 'text-slate-600'}`}>
+                <span className="hidden lg:inline">Filter Chores by Helper:</span>
+                <span className="lg:hidden">Helper:</span>
+              </span>
+              {selectedMemberId !== 'all' && (
+                <button
+                  onClick={() => {
+                    soundFX.playPop();
+                    onSelectMember('all');
+                  }}
+                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors p-0.5 cursor-pointer underline ml-0.5"
+                  title="Show all helpers"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs" onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
             {/* All Helpers Chip */}
             <button
               id="daily-filter-all-helpers"
@@ -887,10 +693,10 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                 soundFX.playPop();
                 onSelectMember('all');
               }}
-              className={`px-3 py-2 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 border ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 border ${
                 selectedMemberId === 'all'
                   ? isGlassTheme(currentTheme)
-                    ? (isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-sky-500 text-white border-white/20 shadow-md font-black')
+                    ? 'apple-glass-button-primary'
                     : 'bg-slate-900 text-white shadow-xs border-transparent'
                   : isGlassTheme(currentTheme)
                   ? 'apple-glass-pill text-slate-800'
@@ -918,10 +724,10 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                     soundFX.playPop();
                     onSelectMember(m.id);
                   }}
-                  className={`px-3 py-2 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-2 shrink-0 cursor-pointer active:scale-95 border ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap flex items-center gap-1.5 sm:gap-2 shrink-0 cursor-pointer active:scale-95 border ${
                     isSelected
                       ? isGlassTheme(currentTheme)
-                        ? (isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-sky-500 text-white border-white/20 shadow-md font-black')
+                        ? 'apple-glass-button-primary'
                         : `${theme.primaryBg} text-white shadow-xs border-transparent`
                       : isGlassTheme(currentTheme)
                       ? 'apple-glass-pill text-slate-800'
@@ -932,10 +738,12 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                     photoUrl={m.avatarPhotoUrl}
                     emoji={m.avatarEmoji}
                     name={m.name}
+                    memberId={m.id}
+                    cosmeticId={m.equippedCosmeticId}
                     size="xs"
                     showBorder={false}
                   />
-                  <span className="truncate max-w-[100px]">{m.name}</span>
+                  <span className="truncate max-w-[100px] sm:max-w-[110px]">{m.name}</span>
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
                     isSelected ? 'bg-black/20 text-white' : 'bg-slate-200/80 text-slate-700'
                   }`}>
@@ -945,143 +753,248 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
               );
             })}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Desktop Filter and Search Bar */}
-      <div className={`hidden sm:block ${isGlassTheme(currentTheme) ? 'apple-glass-card' : theme.cardBg} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : theme.cardBorder} p-3 sm:p-4 space-y-3 shadow-xs transition-colors duration-200`}>
-        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
-          {/* Search box */}
-          <div className="relative w-full lg:w-64 xl:w-80 shrink-0">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder={t.searchChoresPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-9 pr-3 py-2.5 text-xs rounded-xl border ${
-                isGlassTheme(currentTheme)
-                  ? 'apple-glass-input bg-white/70 border-white/20 text-slate-900 placeholder:text-slate-500'
-                  : `border-slate-200 focus:outline-hidden focus:ring-2 ${theme.accentRing} bg-slate-50/50`
-              }`}
-            />
-          </div>
+        {/* Divider 1 */}
+        <div className={`border-t ${isGlassTheme(currentTheme) ? 'border-white/15' : 'border-slate-200/60'} my-2`} />
 
-          {/* Quick Filter Bar */}
-          <div className="flex items-center gap-2 flex-wrap text-xs">
-            {/* Time Filter */}
-            <select
-              value={selectedTimeFilter}
-              onChange={(e) => {
-                soundFX.playPop();
-                setSelectedTimeFilter(e.target.value);
-              }}
-              className={`${
-                isGlassTheme(currentTheme)
-                  ? 'apple-glass-pill bg-white/20 border-white/20 text-slate-900 shadow-2xs font-bold'
-                  : 'bg-slate-50 border border-slate-200 text-slate-700'
-              } py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border`}
-            >
-              <option value="all">⏰ {t.filterAllTimes}</option>
-              <option value="morning">{t.todMorning}</option>
-              <option value="afternoon">{t.todAfternoon}</option>
-              <option value="evening">{t.todEvening}</option>
-              <option value="bedtime">{t.todBedtime}</option>
-            </select>
+        {/* LINE 2: All Times through Google Calendar buttons (Single clean row) */}
+        <div className="py-0.5 flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none text-xs flex-nowrap" onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+          {/* Time Filter */}
+          <select
+            value={selectedTimeFilter}
+            onChange={(e) => {
+              soundFX.playPop();
+              setSelectedTimeFilter(e.target.value);
+            }}
+            className={`${
+              isGlassTheme(currentTheme)
+                ? 'apple-glass-pill bg-white/30 border-white/25 text-slate-900 shadow-2xs font-bold'
+                : 'bg-slate-50 border border-slate-200 text-slate-700'
+            } py-1.5 sm:py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border shrink-0`}
+          >
+            <option value="all">⏰ {t.filterAllTimes}</option>
+            <option value="morning">{t.todMorning}</option>
+            <option value="afternoon">{t.todAfternoon}</option>
+            <option value="evening">{t.todEvening}</option>
+            <option value="bedtime">{t.todBedtime}</option>
+          </select>
 
-            {/* Category Filter */}
-            <select
-              value={selectedCategoryFilter}
-              onChange={(e) => {
-                soundFX.playPop();
-                setSelectedCategoryFilter(e.target.value);
-              }}
-              className={`${
-                isGlassTheme(currentTheme)
-                  ? 'apple-glass-pill bg-white/20 border-white/20 text-slate-900 shadow-2xs font-bold'
-                  : 'bg-slate-50 border border-slate-200 text-slate-700'
-              } py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border`}
-            >
-              <option value="all">🏠 {t.filterAllCategories}</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>{getCategoryTranslation(cat, language)}</option>
-              ))}
-            </select>
+          {/* Category Filter */}
+          <select
+            value={selectedCategoryFilter}
+            onChange={(e) => {
+              soundFX.playPop();
+              setSelectedCategoryFilter(e.target.value);
+            }}
+            className={`${
+              isGlassTheme(currentTheme)
+                ? 'apple-glass-pill bg-white/30 border-white/25 text-slate-900 shadow-2xs font-bold'
+                : 'bg-slate-50 border border-slate-200 text-slate-700'
+            } py-1.5 sm:py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border shrink-0`}
+          >
+            <option value="all">🏠 {t.filterAllCategories}</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>{getCategoryTranslation(cat, language)}</option>
+            ))}
+          </select>
 
-            {/* Status Filter */}
-            <select
-              value={selectedStatusFilter}
-              onChange={(e) => {
-                soundFX.playPop();
-                setSelectedStatusFilter(e.target.value);
-              }}
-              className={`${
-                isGlassTheme(currentTheme)
-                  ? 'apple-glass-pill bg-white/20 border-white/20 text-slate-900 shadow-2xs font-bold'
-                  : 'bg-slate-50 border border-slate-200 text-slate-700'
-              } py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border`}
-            >
-              <option value="all">📌 {t.filterAllStatuses}</option>
-              <option value="pending">Pending</option>
-              <option value="needs_review">Awaiting Inspection</option>
-              <option value="approved">Approved & Graded</option>
-              <option value="needs_redo">Needs Redo</option>
-            </select>
+          {/* Status Filter */}
+          <select
+            value={selectedStatusFilter}
+            onChange={(e) => {
+              soundFX.playPop();
+              setSelectedStatusFilter(e.target.value);
+            }}
+            className={`${
+              isGlassTheme(currentTheme)
+                ? 'apple-glass-pill bg-white/30 border-white/25 text-slate-900 shadow-2xs font-bold'
+                : 'bg-slate-50 border border-slate-200 text-slate-700'
+            } py-1.5 sm:py-2 px-2.5 rounded-xl text-xs font-semibold cursor-pointer border shrink-0`}
+          >
+            <option value="all">📌 {t.filterAllStatuses}</option>
+            <option value="pending">Pending</option>
+            <option value="needs_review">Awaiting Inspection</option>
+            <option value="approved">Approved & Graded</option>
+            <option value="needs_redo">Needs Redo</option>
+          </select>
 
-            {/* Workload Balance Chart Toggle */}
+          {/* Workload Balance Chart Toggle */}
+          <button
+            onClick={() => {
+              soundFX.playPop();
+              setShowWorkloadChart(!showWorkloadChart);
+            }}
+            className={`px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 border cursor-pointer active:scale-95 ${
+              showWorkloadChart
+                ? isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                : isGlassTheme(currentTheme)
+                ? 'apple-glass-button text-slate-800'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+            }`}
+            title="Toggle Weekly Workload Balance Chart"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>{t.workloadChart}</span>
+          </button>
+
+          {/* AI Auto-Assign Shortcut (Mom Mode Only) */}
+          {isMomMode && onOpenAIAssign && (
             <button
               onClick={() => {
                 soundFX.playPop();
-                setShowWorkloadChart(!showWorkloadChart);
+                onOpenAIAssign();
               }}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 border cursor-pointer active:scale-95 ${
-                showWorkloadChart
-                  ? (isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-indigo-600 text-white border-indigo-600 shadow-xs')
-                  : isGlassTheme(currentTheme)
+              className={`px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold ${
+                isGlassTheme(currentTheme)
+                  ? 'apple-glass-button-primary'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+              } shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95`}
+              title="AI Auto-Assign Chores"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>{t.aiAutoAssign}</span>
+            </button>
+          )}
+
+          {/* Google Calendar Shortcut */}
+          {onOpenGoogleCalendar && (
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                onOpenGoogleCalendar();
+              }}
+              className={`px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold ${
+                isGlassTheme(currentTheme)
                   ? 'apple-glass-button text-slate-800'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-              }`}
-              title="Toggle Weekly Workload Balance Chart"
+              } border transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95`}
+              title="Google Calendar Sync"
             >
-              <BarChart3 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t.workloadChart}</span>
+              <span>📅</span>
+              <span>{t.googleCalendar}</span>
             </button>
+          )}
 
-            {/* AI Auto-Assign Shortcut (Mom Mode Only) */}
-            {isMomMode && onOpenAIAssign && (
-              <button
-                onClick={() => {
-                  soundFX.playPop();
-                  onOpenAIAssign();
-                }}
-                className={`px-3 py-2 rounded-xl text-xs font-bold ${
+          {/* Reset Active Filters Pill (if any dropdown filter active) */}
+          {(selectedTimeFilter !== 'all' || selectedCategoryFilter !== 'all' || selectedStatusFilter !== 'all') && (
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                setSelectedTimeFilter('all');
+                setSelectedCategoryFilter('all');
+                setSelectedStatusFilter('all');
+              }}
+              className="ml-auto text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer shrink-0"
+              title="Reset dropdown filters"
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
+
+        {/* Divider 2 */}
+        <div className={`border-t ${isGlassTheme(currentTheme) ? 'border-white/15' : 'border-slate-200/60'} my-2.5`} />
+
+        {/* LINE 3: Scheduled Chores, Search Bar, List/Compact Selector, and + Chore button */}
+        <div className="pt-0.5 flex items-center justify-between gap-3">
+          {/* Left: Count Badge + Title + Search Bar right next to those words */}
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <span 
+              className={`text-xs font-black min-w-[28px] h-8 px-2 rounded-xl flex items-center justify-center shrink-0 ${
+                isGlassTheme(currentTheme)
+                  ? 'apple-glass-pill bg-white/30 text-sky-950 border border-white/20 shadow-2xs font-extrabold'
+                  : 'bg-slate-100 text-slate-800 border border-slate-200/80'
+              }`}
+              title={`${filtered.length} chores scheduled`}
+            >
+              {filtered.length}
+            </span>
+            <h2 className="text-sm md:text-base font-black text-slate-900 tracking-tight whitespace-nowrap shrink-0">
+              {selectedMemberObj ? `${selectedMemberObj.name}'s Chores` : 'Scheduled Chores'}
+            </h2>
+
+            {/* Search Bar placed directly next to the title */}
+            <div className="relative flex-1 max-w-xs md:max-w-sm lg:max-w-md min-w-[110px]">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder={t.searchChoresPlaceholder || "Search chore title or room..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full pl-8.5 pr-7 py-1.5 sm:py-2 text-xs rounded-xl border transition-all ${
                   isGlassTheme(currentTheme)
-                    ? 'apple-glass-button-primary'
-                    : (isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : 'bg-indigo-600 hover:bg-indigo-700 text-white')
-                } shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95`}
-                title="AI Auto-Assign Chores"
+                    ? 'apple-glass-input bg-white/70 border-white/20 text-slate-900 placeholder:text-slate-500 focus:bg-white'
+                    : `border-slate-200 focus:outline-hidden focus:ring-2 ${theme.accentRing} bg-slate-50/70 focus:bg-white`
+                }`}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFX.playPop();
+                    setSearchQuery('');
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer min-h-[22px] min-w-[22px] flex items-center justify-center rounded-lg active:scale-95"
+                  title="Clear search"
+                  aria-label="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Layout Toggle & + Chore Button */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Desktop/Tablet Layout Toggle */}
+            <div className={`flex items-center ${isGlassTheme(currentTheme) ? 'apple-glass-pill' : 'bg-slate-100 border-slate-200'} p-0.5 rounded-xl border shadow-2xs`}>
+              <button
+                onClick={() => handleToggleViewMode('list')}
+                className={`px-2.5 py-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                  effectiveViewMode === 'list' 
+                    ? isGlassTheme(currentTheme)
+                      ? 'apple-glass-pill bg-white/30 text-slate-950 font-black shadow-xs border-white/20'
+                      : 'bg-white text-slate-900 shadow-2xs' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                title="List View"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span className="hidden sm:inline">{t.aiAutoAssign}</span>
+                <LayoutList className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-bold">List</span>
               </button>
-            )}
-
-            {/* Google Calendar Shortcut */}
-            {onOpenGoogleCalendar && (
               <button
+                onClick={() => handleToggleViewMode('grid')}
+                className={`px-2.5 py-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                  effectiveViewMode === 'grid' 
+                    ? isGlassTheme(currentTheme)
+                      ? 'apple-glass-pill bg-white/30 text-slate-950 font-black shadow-xs border-white/20'
+                      : 'bg-white text-slate-900 shadow-2xs' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                title="Compact Tiles View"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-bold">Compact</span>
+              </button>
+            </div>
+
+            {/* Mom Mode Add Chore Action */}
+            {isMomMode && (
+              <button
+                id="contextual-add-chore-btn"
                 onClick={() => {
                   soundFX.playPop();
-                  onOpenGoogleCalendar();
+                  onOpenNewChore();
                 }}
-                className={`px-3 py-2 rounded-xl text-xs font-bold ${
-                  isGlassTheme(currentTheme)
-                    ? 'apple-glass-button text-slate-800'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                } border transition-colors flex items-center gap-1 shrink-0 cursor-pointer active:scale-95`}
-                title="Google Calendar Sync"
+                className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black ${
+                  isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : `${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover}`
+                } shadow-xs transition-all active:scale-95 cursor-pointer min-h-[34px]`}
+                title="Add New Chore"
+                aria-label="Add New Chore"
               >
-                <span>📅</span>
-                <span className="hidden sm:inline">{t.googleCalendar}</span>
+                <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
+                <span>Chore</span>
               </button>
             )}
           </div>
@@ -1102,107 +1015,60 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
         />
       )}
 
-      {/* Scheduled Chores Prominent Glass Section Header Bar (Single Unified Row) */}
-      <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-dock p-2 sm:p-3 rounded-2xl border border-white/20' : 'bg-white/40 p-2 sm:p-3 rounded-2xl border border-slate-200/80'} flex items-center justify-between gap-1.5 sm:gap-3 shadow-2xs transition-all`}>
+      {/* Mobile Scheduled Chores Header Bar */}
+      <div className={`sm:hidden ${isGlassTheme(currentTheme) ? 'apple-glass-dock p-2.5 rounded-2xl border border-white/20' : 'bg-white/60 p-2.5 rounded-2xl border border-slate-200/80'} flex items-center justify-between gap-2 shadow-2xs transition-all`}>
         {/* Left: Chores Title and Number Badge */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <span className={`text-xs sm:text-xs font-black min-w-[28px] h-7 sm:h-8 px-2 rounded-xl flex items-center justify-center shrink-0 ${
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className={`text-xs font-black min-w-[26px] h-7 px-1.5 rounded-xl flex items-center justify-center shrink-0 ${
             isGlassTheme(currentTheme)
               ? 'apple-glass-pill bg-white/30 text-sky-950 border border-white/20 shadow-2xs font-extrabold'
               : 'bg-slate-100 text-slate-800 border border-slate-200/80'
-          }`}
-          title={`${filtered.length} chores scheduled`}
-          >
+          }`}>
             {filtered.length}
           </span>
-          <h2 className="text-xs sm:text-sm md:text-base font-black text-slate-900 tracking-tight truncate">
-            {selectedMemberObj ? `${selectedMemberObj.name}'s` : <><span className="hidden sm:inline">Scheduled Chores</span><span className="sm:hidden">Chores</span></>}
+          <h2 className="text-xs font-black text-slate-900 tracking-tight whitespace-nowrap">
+            {selectedMemberObj ? `${selectedMemberObj.name.split(' ')[0]}'s` : 'Chores'}
           </h2>
         </div>
 
-        {/* Center: Search Bar filling available space */}
-        <div className="relative flex-1 min-w-[90px]">
+        {/* Mobile Search Bar directly beside title */}
+        <div className="relative flex-1 min-w-0">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder={selectedMemberObj ? `Search ${selectedMemberObj.name}'s...` : "Search chores..."}
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full pl-7 sm:pl-8 pr-6 sm:pr-7 py-1.5 text-xs rounded-xl font-medium min-h-[32px] sm:min-h-[34px] transition-all focus:outline-hidden focus:ring-2 focus:ring-sky-500/50 ${
-              isGlassTheme(currentTheme)
-                ? 'apple-glass-input bg-white/50 border-white/30 text-slate-900 placeholder:text-slate-500 shadow-2xs'
-                : 'bg-white/90 border border-slate-200/90 text-slate-900 placeholder:text-slate-400 shadow-2xs'
-            }`}
+            className="w-full pl-7 pr-6 py-1 text-xs rounded-xl border border-slate-200/80 bg-white/70 focus:outline-hidden"
           />
           {searchQuery && (
             <button
               type="button"
-              onClick={() => {
-                soundFX.playPop();
-                setSearchQuery('');
-              }}
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer min-h-[24px] min-w-[24px] flex items-center justify-center rounded-lg active:scale-95"
-              title="Clear search"
-              aria-label="Clear search"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3 h-3" />
             </button>
           )}
         </div>
 
-        {/* Right: Layout Toggle (Desktop) & Add Chore Button */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Desktop/Tablet Layout Toggle */}
-          <div className={`hidden md:flex items-center ${isGlassTheme(currentTheme) ? 'apple-glass-pill' : 'bg-slate-100 border-slate-200'} p-0.5 rounded-xl border shadow-2xs`}>
-            <button
-              onClick={() => handleToggleViewMode('list')}
-              className={`p-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1 cursor-pointer ${
-                effectiveViewMode === 'list' 
-                  ? isGlassTheme(currentTheme)
-                    ? 'apple-glass-pill bg-white/20 text-slate-950 font-black shadow-xs border-white/20'
-                    : 'bg-white text-slate-900 shadow-2xs' 
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-              title="List View"
-            >
-              <LayoutList className="w-3.5 h-3.5" />
-              <span className="text-[11px]">List</span>
-            </button>
-            <button
-              onClick={() => handleToggleViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all text-xs font-bold flex items-center gap-1 cursor-pointer ${
-                effectiveViewMode === 'grid' 
-                  ? isGlassTheme(currentTheme)
-                    ? 'apple-glass-pill bg-white/20 text-slate-950 font-black shadow-xs border-white/20'
-                    : 'bg-white text-slate-900 shadow-2xs' 
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-              title="Compact Tiles View"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="text-[11px]">Compact</span>
-            </button>
-          </div>
-
-          {/* Mom Mode Add Chore Action - Icon only on mobile to maximize search bar space */}
-          {isMomMode && (
-            <button
-              id="contextual-add-chore-btn"
-              onClick={() => {
-                soundFX.playPop();
-                onOpenNewChore();
-              }}
-              className={`inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-black ${
-                isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : `${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover}`
-              } shadow-xs transition-all active:scale-95 cursor-pointer min-h-[32px] sm:min-h-[34px] min-w-[32px] sm:min-w-[34px]`}
-              title="Add New Chore"
-              aria-label="Add New Chore"
-            >
-              <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
-              <span className="hidden md:inline">Chore</span>
-            </button>
-          )}
-        </div>
+        {/* Mobile Add Chore Button */}
+        {isMomMode && (
+          <button
+            id="contextual-add-chore-btn-mobile"
+            onClick={() => {
+              soundFX.playPop();
+              onOpenNewChore();
+            }}
+            className={`inline-flex items-center justify-center p-1.5 rounded-xl text-xs font-black ${
+              isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : `${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover}`
+            } shadow-xs transition-all active:scale-95 cursor-pointer min-h-[30px] min-w-[30px] shrink-0`}
+            title="Add New Chore"
+            aria-label="Add New Chore"
+          >
+            <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
+          </button>
+        )}
       </div>
 
       {/* Chore Cards Grid */}

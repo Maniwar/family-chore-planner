@@ -13,10 +13,13 @@ import {
   Gem,
   Award,
   ArrowRight,
-  Gift
+  Gift,
+  Home,
+  Users
 } from 'lucide-react';
-import { HouseholdMember } from '../types';
+import { HouseholdMember, HouseholdInfo } from '../types';
 import { PROGRESSION_LEVELS, getMemberProgression, COSMETIC_ITEMS, CosmeticAvatarItem } from '../utils/progression';
+import { calculateHouseProgression } from '../utils/houseProgression';
 import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
@@ -25,22 +28,26 @@ interface ProgressionJourneyModalProps {
   isOpen: boolean;
   onClose: () => void;
   members: HouseholdMember[];
+  householdInfo?: HouseholdInfo;
   selectedMemberId: string;
   onSelectMember: (id: string) => void;
   onEquipCosmetic: (memberId: string, cosmeticId: string) => void;
   currentTheme?: ThemePreset;
   onNavigateToRewards?: () => void;
+  onOpenHouseEvolution?: () => void;
 }
 
 export const ProgressionJourneyModal: React.FC<ProgressionJourneyModalProps> = ({
   isOpen,
   onClose,
   members,
+  householdInfo,
   selectedMemberId,
   onSelectMember,
   onEquipCosmetic,
   currentTheme = 'rose',
   onNavigateToRewards,
+  onOpenHouseEvolution,
 }) => {
   if (!isOpen) return null;
 
@@ -50,8 +57,10 @@ export const ProgressionJourneyModal: React.FC<ProgressionJourneyModalProps> = (
   const eligibleKids = members.filter(m => m.role !== 'parent');
   const activeMember = members.find(m => m.id === selectedMemberId) || eligibleKids[0] || members[0];
   const progression = getMemberProgression(activeMember);
+  const houseProg = calculateHouseProgression(members, householdInfo);
+  const myHouseContrib = houseProg.memberContributions.find(c => c.member.id === activeMember.id);
 
-  const [activeTab, setActiveTab] = useState<'track' | 'cosmetics'>('track');
+  const [activeTab, setActiveTab] = useState<'track' | 'cosmetics' | 'house'>('track');
 
   return (
     <div 
@@ -163,6 +172,23 @@ export const ProgressionJourneyModal: React.FC<ProgressionJourneyModalProps> = (
                     {activeMember.streakDays}d Streak Active ({progression.streakMultiplier}x XP Multiplier!)
                   </span>
                 )}
+
+                {/* House Synergy Pill */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundFX.playPop();
+                      setActiveTab('house');
+                    }}
+                    className="inline-flex items-center gap-1.5 text-[10px] font-black text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 px-2 py-0.5 rounded-lg mt-1 hover:bg-indigo-100 transition-colors cursor-pointer active:scale-95"
+                    title={`Contributes ${myHouseContrib?.playerXp || 0} XP to House Level`}
+                  >
+                    <span>🏠 House Synergy:</span>
+                    <span className="text-indigo-950 dark:text-white font-extrabold">{myHouseContrib?.playerXp || 0} House XP ({myHouseContrib?.contributionPercent || 0}%)</span>
+                    <ChevronRight className="w-2.5 h-2.5 text-indigo-500" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -222,6 +248,25 @@ export const ProgressionJourneyModal: React.FC<ProgressionJourneyModalProps> = (
               <span>Avatar Cosmetics & Frames</span>
               <span className="px-1.5 py-0.2 rounded-md bg-cyan-500 text-white text-[9px] font-black">
                 NEW
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playPop();
+                setActiveTab('house');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer min-h-[34px] flex items-center gap-1.5 ${
+                activeTab === 'house'
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-white/40'
+              }`}
+            >
+              <Home className="w-3.5 h-3.5 text-indigo-500" />
+              <span>House Synergy & Impact</span>
+              <span className="px-1.5 py-0.2 rounded-md bg-indigo-500 text-white text-[9px] font-black">
+                {myHouseContrib?.contributionPercent || 0}%
               </span>
             </button>
           </div>
@@ -299,7 +344,7 @@ export const ProgressionJourneyModal: React.FC<ProgressionJourneyModalProps> = (
                 );
               })}
             </div>
-          ) : (
+          ) : activeTab === 'cosmetics' ? (
             /* Avatar Cosmetics Locker View */
             <div className="space-y-4">
               <div className="p-3 bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800 rounded-2xl flex items-start gap-2.5">
@@ -395,6 +440,151 @@ export const ProgressionJourneyModal: React.FC<ProgressionJourneyModalProps> = (
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          ) : (
+            /* House Synergy & Impact View */
+            <div className="space-y-4">
+              {/* House Stage Banner */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white shadow-md relative overflow-hidden border border-indigo-700/50">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-3xl shadow-inner shrink-0">
+                      {houseProg.currentLevel.badgeEmoji}
+                    </div>
+                    <div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-900">
+                        Level {houseProg.currentLevel.level} Estate
+                      </span>
+                      <h4 className="text-base sm:text-lg font-black mt-0.5 leading-tight">
+                        {houseProg.currentLevel.title}
+                      </h4>
+                      <p className="text-xs text-slate-300 line-clamp-1">
+                        {houseProg.currentLevel.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {onOpenHouseEvolution && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundFX.playPop();
+                        onOpenHouseEvolution();
+                      }}
+                      className="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-400 hover:bg-amber-300 text-slate-950 transition-all active:scale-95 shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Explore House Evolution</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Progress bar to next house level */}
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-300 mb-1">
+                    <span>House Progress to {houseProg.nextLevel ? `Level ${houseProg.nextLevel.level}: ${houseProg.nextLevel.title}` : 'Peak Evolution'}</span>
+                    <span className="text-amber-300 font-extrabold">{houseProg.totalHouseXp} / {houseProg.nextLevel ? `${houseProg.nextLevel.minXp} XP (${houseProg.levelProgressPercent}%)` : 'MAX'}</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-black/40 rounded-full overflow-hidden border border-white/10">
+                    <div 
+                      className="h-full bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-200 rounded-full transition-all duration-500"
+                      style={{ width: `${houseProg.levelProgressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Player Contribution Spotlight */}
+              <div className="p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>{activeMember.name}&apos;s Direct Synergy & Contribution</span>
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-600 text-white">
+                    {myHouseContrib?.contributionPercent || 0}% of Family Power
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-center">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Personal XP</span>
+                    <span className="text-base font-black text-slate-900 dark:text-white">{progression.xp}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-center">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">House Fuel XP</span>
+                    <span className="text-base font-black text-indigo-600 dark:text-indigo-400">+{myHouseContrib?.playerXp || 0}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-center">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Family Rank</span>
+                    <span className="text-base font-black text-amber-600 dark:text-amber-400">
+                      #{Math.max(1, houseProg.memberContributions.findIndex(c => c.member.id === activeMember.id) + 1)} Helper
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-indigo-800 dark:text-indigo-300 mt-2 font-medium">
+                  💡 <strong>How it works:</strong> Every chore and task {activeMember.name} completes contributes XP toward leveling up the family house automatically! The higher everyone levels up, the more epic our shared household becomes.
+                </p>
+              </div>
+
+              {/* All Family Members Contribution Leaderboard */}
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  Family Team Contribution Breakdown
+                </span>
+                <div className="space-y-1.5">
+                  {houseProg.memberContributions.map((c, idx) => {
+                    const isMe = c.member.id === activeMember.id;
+                    return (
+                      <div 
+                        key={c.member.id}
+                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
+                          isMe 
+                            ? 'bg-indigo-50/60 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-700 ring-1 ring-indigo-300' 
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-xs font-black text-slate-400 w-4">#{idx + 1}</span>
+                          <Avatar
+                            photoUrl={c.member.avatarPhotoUrl}
+                            emoji={c.member.avatarEmoji}
+                            name={c.member.name}
+                            size="sm"
+                          />
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">
+                              {c.member.name} {isMe && <span className="text-[10px] text-indigo-600 font-extrabold">(You)</span>}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              Level {c.playerLevel} • {c.playerXp} XP
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="w-20 sm:w-28 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-indigo-500 rounded-full"
+                              style={{ width: `${c.contributionPercent}%` }}
+                            />
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 block">
+                              {c.playerXp} XP
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400">
+                              {c.contributionPercent}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}

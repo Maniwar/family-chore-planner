@@ -28,6 +28,7 @@ export interface HouseholdInfo {
   isCloudSynced?: boolean;
   adminPin?: string; // Cloud-synced 4-digit Parent/Mom mode PIN
   pinProtectionEnabled?: boolean;
+  customHouseXp?: number; // Optional manually overridden House XP to reset or set level
 }
 
 export type ChoreCategory = 
@@ -182,7 +183,8 @@ export type ChoreEventType =
   | 'penalty_applied' 
   | 'penalty_waived' 
   | 'due_extended' 
-  | 'nudge_sent';
+  | 'nudge_sent'
+  | 'point_adjustment';
 
 export interface ChoreEvent {
   id: string;
@@ -195,6 +197,8 @@ export interface ChoreEvent {
   pointsBefore?: number;
   pointsAfter?: number;
   pointsDelta?: number; // e.g. -10 or 0
+  pointsPenalty?: number;
+  timestamp?: string; // ISO string for backwards compatibility
   reason?: string;
   extendedToDate?: string;
   tier?: number;

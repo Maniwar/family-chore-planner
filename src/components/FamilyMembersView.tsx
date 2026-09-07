@@ -18,7 +18,8 @@ import {
   Settings,
   ShieldCheck,
   Zap,
-  Check
+  Check,
+  ChevronRight
 } from 'lucide-react';
 import { HouseholdMember, Chore, HouseholdInfo } from '../types';
 import { getMemberEffectiveAge } from '../utils/age';
@@ -26,6 +27,7 @@ import { Avatar } from './Avatar';
 import { soundFX } from '../utils/audio';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { getMemberProgression, COSMETIC_ITEMS } from '../utils/progression';
+import { calculateHouseProgression } from '../utils/houseProgression';
 
 interface FamilyMembersViewProps {
   members: HouseholdMember[];
@@ -39,6 +41,8 @@ interface FamilyMembersViewProps {
   onAdjustPoints: (memberId: string, amount: number, reason: string) => void;
   onOpenHouseSettings: () => void;
   onOpenProgression?: (member: HouseholdMember) => void;
+  onOpenPointManager?: (memberId?: string) => void;
+  onOpenHouseEvolution?: (memberId?: string) => void;
 }
 
 export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
@@ -53,8 +57,11 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
   onAdjustPoints,
   onOpenHouseSettings,
   onOpenProgression,
+  onOpenPointManager,
+  onOpenHouseEvolution,
 }) => {
   const theme = THEMES[currentTheme] || THEMES.rose;
+  const houseProg = calculateHouseProgression(members, householdInfo);
   const [bonusMemberId, setBonusMemberId] = useState<string | null>(null);
   const [bonusAmount, setBonusAmount] = useState<number>(10);
   const [bonusReason, setBonusReason] = useState<string>('Great help around the house!');
@@ -189,13 +196,15 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
         {/* Snapshot Bar: Stacked Avatars + Quick Household Info */}
         <div className="px-4 py-3 bg-slate-50/90 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex -space-x-2 overflow-hidden py-0.5">
+            <div className="flex -space-x-2 py-1">
               {members.map((m) => (
                 <div key={m.id} className="relative ring-2 ring-white rounded-full bg-white">
                   <Avatar
                     photoUrl={m.avatarPhotoUrl}
                     emoji={m.avatarEmoji}
                     name={m.name}
+                    memberId={m.id}
+                    cosmeticId={m.equippedCosmeticId}
                     size="sm"
                     showBorder={false}
                   />
@@ -207,18 +216,48 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
             </span>
           </div>
 
-          {isMomMode && (
+          <div className="flex items-center gap-2">
+            {/* House Evolution Quick Trigger */}
             <button
+              type="button"
               onClick={() => {
                 soundFX.playPop();
-                onOpenHouseSettings();
+                if (onOpenHouseEvolution) onOpenHouseEvolution();
               }}
-              className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-2.5 py-1 rounded-xl hover:bg-slate-200/70 transition-colors cursor-pointer"
+              className="text-xs font-black text-amber-900 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-300 flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-2xs active:scale-95"
+              title="View House Evolution, Level Perks & Family EXP Contributions"
             >
-              <Settings className="w-3.5 h-3.5 text-slate-500" />
-              <span>House Settings</span>
+              <span>{houseProg.currentLevel.badgeEmoji}</span>
+              <span>Lv.{houseProg.currentLevel.level} House Evolution ({houseProg.levelProgressPercent}%)</span>
             </button>
-          )}
+
+            {isMomMode && onOpenPointManager && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  onOpenPointManager();
+                }}
+                className="text-xs font-black text-amber-900 bg-amber-100 hover:bg-amber-200/90 border border-amber-300 flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-2xs active:scale-95"
+                title="Inspect how points were earned, edit balances, or wipe seed points"
+              >
+                <span>⭐</span>
+                <span>Audit & Edit Points</span>
+              </button>
+            )}
+
+            {isMomMode && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  onOpenHouseSettings();
+                }}
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-2.5 py-1 rounded-xl hover:bg-slate-200/70 transition-colors cursor-pointer"
+              >
+                <Settings className="w-3.5 h-3.5 text-slate-500" />
+                <span>House Settings</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -236,24 +275,24 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
           return (
             <div
               key={member.id}
-              className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200/90'} p-4 sm:p-5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between relative overflow-hidden`}
+              className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white'} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/20' : 'border-slate-200/90'} p-4 sm:p-5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between relative`}
             >
               <div>
                 {/* Header: Photo / Avatar, Name, Role, Age & Mom Controls */}
                 <div className="flex items-start justify-between gap-2 mb-3.5">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative shrink-0">
+                    <div className="relative shrink-0 pb-1">
                       <Avatar
                         photoUrl={member.avatarPhotoUrl}
                         emoji={member.avatarEmoji}
                         name={member.name}
+                        memberId={member.id}
+                        cosmeticId={member.equippedCosmeticId}
                         size="lg"
                         cosmeticClass={equippedCosmetic?.cssClass}
                         className="shadow-2xs shrink-0"
+                        level={prog.currentLevel.level}
                       />
-                      <span className="absolute -bottom-1 -right-1 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full shadow-xs border border-white">
-                        Lv.{prog.currentLevel.level}
-                      </span>
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -283,6 +322,24 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                             <Sparkles className="w-2.5 h-2.5 text-amber-600" />
                           </button>
                         )}
+                        {(() => {
+                          const contrib = houseProg.memberContributions.find(c => c.member.id === member.id);
+                          if (!contrib) return null;
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                soundFX.playPop();
+                                if (onOpenHouseEvolution) onOpenHouseEvolution(member.id);
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-indigo-50 text-indigo-800 border border-indigo-200 hover:bg-indigo-100 transition-colors cursor-pointer active:scale-95"
+                              title={`${member.name} contributes ${contrib.playerXp} XP to House Level (${contrib.contributionPercent}% of family total)`}
+                            >
+                              <span>🏠 {contrib.playerXp} House XP</span>
+                              <span className="px-1 py-0.2 rounded bg-indigo-200 text-indigo-900 font-extrabold text-[9px]">{contrib.contributionPercent}%</span>
+                            </button>
+                          );
+                        })()}
                         {member.birthDate && (
                           <span className="text-[11px] text-slate-400 flex items-center gap-1">
                             <Calendar className="w-3 h-3 text-slate-400" />
@@ -295,6 +352,18 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
 
                   {isMomMode && (
                     <div className="flex items-center gap-0.5 shrink-0">
+                      {onOpenPointManager && (
+                        <button
+                          onClick={() => {
+                            soundFX.playPop();
+                            onOpenPointManager(member.id);
+                          }}
+                          className="p-1.5 text-amber-600 hover:text-amber-800 rounded-xl hover:bg-amber-100/70 transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-95"
+                          title={`Inspect & Edit ${member.name}'s Points`}
+                        >
+                          <span className="text-xs">⭐</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           soundFX.playPop();
@@ -324,9 +393,25 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
 
                 {/* 3-Column Points & Stats Container (Apple Inset Style) */}
                 <div className="grid grid-cols-3 gap-1.5 p-2.5 bg-slate-50/90 rounded-2xl border border-slate-200/80 mb-3.5 text-center">
-                  <div className="p-1 rounded-xl">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                      Available
+                  <div 
+                    onClick={() => {
+                      if (isMomMode && onOpenPointManager) {
+                        soundFX.playPop();
+                        onOpenPointManager(member.id);
+                      }
+                    }}
+                    className={`p-1 rounded-xl transition-all ${
+                      isMomMode && onOpenPointManager 
+                        ? 'cursor-pointer hover:bg-amber-100/70 active:scale-95 ring-1 ring-transparent hover:ring-amber-300' 
+                        : ''
+                    }`}
+                    title={isMomMode ? `Click to inspect and edit ${member.name}'s points` : undefined}
+                  >
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block flex items-center justify-center gap-1">
+                      <span>Available</span>
+                      {isMomMode && onOpenPointManager && (
+                        <span className="text-[10px] text-amber-600">✏️</span>
+                      )}
                     </span>
                     <span className="text-base sm:text-lg font-black text-amber-900 block leading-tight mt-0.5">
                       {member.currentPoints} <span className="text-[10px] font-normal text-amber-700">pts</span>

@@ -17,7 +17,7 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 import { Chore, ChoreAssignmentLog, HouseholdMember } from '../types';
-import { formatDisplayDate, formatTimeDisplay } from '../utils/storage';
+import { formatDisplayDate, formatTimeDisplay, getChoreAssigneeForDate } from '../utils/storage';
 import { soundFX } from '../utils/audio';
 import { SupportedLanguage, getCategoryShortDisplay } from '../utils/i18n';
 import { Avatar } from './Avatar';
@@ -81,12 +81,33 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
   const pendingReviewLogs = logs.filter(l => l.status === 'needs_review');
 
   const pendingItems = pendingReviewLogs.map(log => {
-    const chore = chores.find(c => c.id === log.choreId);
-    const member = members.find(m => m.id === log.memberId);
-    return { log, chore, member };
-  }).filter((item): item is { log: ChoreAssignmentLog; chore: Chore; member: HouseholdMember } => 
-    !!item.chore && !!item.member
-  );
+    const chore = chores.find(c => String(c.id).trim() === String(log.choreId).trim()) ||
+      chores.find(c => c.title.toLowerCase() === (log as any).choreTitle?.toLowerCase());
+
+    const effectiveChore: Chore = chore || {
+      id: log.choreId,
+      title: 'Completed Chore',
+      description: 'Chore awaiting quality inspection',
+      category: 'General',
+      assignedMemberId: log.memberId,
+      frequency: 'daily',
+      defaultPoints: log.pointsAwarded || 15,
+      difficulty: 'medium',
+      isActive: true,
+      qualityChecklist: [],
+    };
+
+    let member = members.find(m => m.id === log.memberId);
+    if (!member && chore) {
+      const assigneeId = getChoreAssigneeForDate(chore, log.date) || chore.assignedMemberId;
+      member = members.find(m => m.id === assigneeId);
+    }
+    if (!member) {
+      member = members.find(m => m.role !== 'parent') || members[0];
+    }
+
+    return { log, chore: effectiveChore, member };
+  });
 
   const filteredPending = selectedMemberFilter === 'all'
     ? pendingItems
@@ -97,7 +118,7 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
 
   // Recent reviewed history logs
   const recentApprovedLogs = logs
-    .filter(l => l.status === 'approved' && l.reviewedAt)
+    .filter(l => (l.status === 'approved' || l.status === 'needs_redo') && l.reviewedAt)
     .sort((a, b) => (b.reviewedAt || '').localeCompare(a.reviewedAt || ''))
     .slice(0, 20)
     .map(log => {
@@ -366,15 +387,38 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
           {/* Empty State */}
           {filteredPending.length === 0 ? (
             <div className={`rounded-3xl border p-8 sm:p-12 text-center shadow-xs ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
-              <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 mx-auto flex items-center justify-center text-3xl mb-3 shadow-2xs animate-bounce">
-                ✨
+              <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 mx-auto flex items-center justify-center text-3xl mb-3 shadow-2xs">
+                {pendingItems.length > 0 ? '👀' : '✨'}
               </div>
               <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">
-                All Caught Up, Mom!
+                {pendingItems.length > 0 ? 'No Chores for this Filter' : 'All Caught Up, Mom!'}
               </h3>
               <p className={`text-xs sm:text-sm ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} max-w-md mx-auto leading-relaxed`}>
-                There are no completed chores waiting for inspection in this filter. Check back once helpers finish and submit their tasks!
+                {pendingItems.length > 0 ? (
+                  <>
+                    There are no chores waiting for inspection for{' '}
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      {members.find(m => m.id === selectedMemberFilter)?.name || 'this helper'}
+                    </span>
+                    . However, there are <span className="font-bold text-amber-600 dark:text-amber-400">{pendingItems.length} chore(s)</span> waiting across all helpers!
+                  </>
+                ) : (
+                  'There are no completed chores waiting for inspection right now. Check back once helpers finish and submit their tasks!'
+                )}
               </p>
+              {pendingItems.length > 0 && selectedMemberFilter !== 'all' && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => {
+                      soundFX.playPop();
+                      setSelectedMemberFilter('all');
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-black shadow-xs cursor-pointer active:scale-95 transition-transform ${theme.primaryBg} ${theme.primaryText}`}
+                  >
+                    View All {pendingItems.length} Pending Inspection{pendingItems.length > 1 ? 's' : ''}
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             /* Inspection Items Feed with Mobile Swipe Gestures */
@@ -645,7 +689,11 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                         </div>
 
                         {log.feedbackNote && (
-                          <p className="mt-1.5 text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/40 px-2.5 py-1.5 rounded-xl border border-emerald-100 dark:border-emerald-900/60 italic leading-snug">
+                          <p className={`mt-1.5 text-xs px-2.5 py-1.5 rounded-xl border italic leading-snug ${
+                            log.status === 'needs_redo'
+                              ? 'text-rose-800 dark:text-rose-300 bg-rose-50/90 dark:bg-rose-950/40 border-rose-100 dark:border-rose-900/60'
+                              : 'text-emerald-800 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-900/60'
+                          }`}>
                             "{log.feedbackNote}"
                           </p>
                         )}
@@ -662,14 +710,26 @@ export const InspectionQueueView: React.FC<InspectionQueueViewProps> = ({
                             />
                           ))}
                         </div>
-                        <span className="text-xs font-black text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-                          {log.qualityGrade || 'A+'}
-                        </span>
+                        {log.status === 'needs_redo' ? (
+                          <span className="text-xs font-black text-rose-800 dark:text-rose-300 bg-rose-50 dark:bg-rose-950 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800">
+                            Redo
+                          </span>
+                        ) : (
+                          <span className="text-xs font-black text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                            {log.qualityGrade || 'A+'}
+                          </span>
+                        )}
                       </div>
 
-                      <span className="text-xs font-black text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-950 px-3 py-1.5 rounded-2xl border border-amber-200 dark:border-amber-800 whitespace-nowrap shadow-2xs">
-                        +{totalPts} pts
-                      </span>
+                      {log.status === 'needs_redo' ? (
+                        <span className="text-xs font-black text-rose-900 dark:text-rose-200 bg-rose-100 dark:bg-rose-950 px-3 py-1.5 rounded-2xl border border-rose-200 dark:border-rose-800 whitespace-nowrap shadow-2xs">
+                          0 pts (Redo)
+                        </span>
+                      ) : (
+                        <span className="text-xs font-black text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-950 px-3 py-1.5 rounded-2xl border border-amber-200 dark:border-amber-800 whitespace-nowrap shadow-2xs">
+                          +{totalPts} pts
+                        </span>
+                      )}
 
                       <button
                         onClick={() => {

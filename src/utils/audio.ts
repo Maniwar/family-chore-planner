@@ -229,6 +229,12 @@ class SoundFX {
       osc2.stop(now + 0.35);
     } catch {}
   }
+
+  // Friendly nudge reminder chime
+  public nudge() {
+    this.triggerHaptic('medium');
+    this.playPop();
+  }
 }
 
 export const soundFX = new SoundFX();

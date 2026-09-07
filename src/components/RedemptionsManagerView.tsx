@@ -20,7 +20,8 @@ import {
   SlidersHorizontal,
   Calendar,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Users
 } from 'lucide-react';
 import { RewardClaim, HouseholdMember, RewardItem } from '../types';
 import { Avatar } from './Avatar';
@@ -57,9 +58,21 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
   onDeleteClaim,
   onNavigateToRewards,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('pending');
+  // Status counters
+  const pendingCount = useMemo(() => claims.filter(c => c.status === 'pending').length, [claims]);
+  const approvedCount = useMemo(() => claims.filter(c => c.status === 'approved').length, [claims]);
+  const deliveredCount = useMemo(() => claims.filter(c => c.status === 'delivered').length, [claims]);
+
+  // Default to pending if there are pending requests, otherwise show all history so panels never look empty
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const hasPending = claims.some(c => c.status === 'pending');
+    if (hasPending) return 'pending';
+    return claims.length > 0 ? 'all' : 'pending';
+  });
+
   const [selectedMemberFilter, setSelectedMemberFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [timeframe, setTimeframe] = useState<'all' | 'today' | 'this_week' | 'last_week' | 'past_7' | 'past_30' | 'this_month'>('all');
   
   // Note dialog modal state
   const [noteModalClaim, setNoteModalClaim] = useState<RewardClaim | null>(null);
@@ -84,21 +97,27 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
     }
   };
 
-  // Status counters
-  const pendingCount = useMemo(() => claims.filter(c => c.status === 'pending').length, [claims]);
-  const approvedCount = useMemo(() => claims.filter(c => c.status === 'approved').length, [claims]);
-  const deliveredCount = useMemo(() => claims.filter(c => c.status === 'delivered').length, [claims]);
-
-  // Filtered claims based on active filters
+  // Filtered claims based on active filters with robust ID and Name normalization
   const filteredClaims = useMemo(() => {
     return claims.filter((claim) => {
       // Tab filter
       if (activeTab !== 'all' && claim.status !== activeTab) {
         return false;
       }
-      // Member filter
-      if (selectedMemberFilter !== 'all' && claim.memberId !== selectedMemberFilter) {
-        return false;
+      // Member filter with prefix & name tolerance
+      if (selectedMemberFilter !== 'all') {
+        const targetMember = members.find(m => m.id === selectedMemberFilter);
+        const normFilter = selectedMemberFilter.toLowerCase().replace(/^(mem_|member_)/, '');
+        const normClaimId = (claim.memberId || '').toLowerCase().replace(/^(mem_|member_)/, '');
+        const idMatches = claim.memberId === selectedMemberFilter || (normFilter && normClaimId === normFilter);
+        const nameMatches = targetMember && claim.memberName && (
+          claim.memberName.toLowerCase().trim() === targetMember.name.toLowerCase().trim() ||
+          claim.memberName.toLowerCase().includes(targetMember.name.toLowerCase().split(' ')[0]) ||
+          targetMember.name.toLowerCase().includes(claim.memberName.toLowerCase().split(' ')[0])
+        );
+        if (!idMatches && !nameMatches) {
+          return false;
+        }
       }
       // Search query
       if (searchQuery.trim()) {
@@ -108,9 +127,37 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
         const matchesNote = claim.note?.toLowerCase().includes(q) || claim.parentNote?.toLowerCase().includes(q);
         if (!matchesTitle && !matchesMember && !matchesNote) return false;
       }
+      // Timeframe filter
+      if (timeframe !== 'all') {
+        const claimDate = claim.claimedAt ? new Date(claim.claimedAt) : null;
+        if (claimDate && !isNaN(claimDate.getTime())) {
+          const now = new Date();
+          const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+          const ms = claimDate.getTime();
+          if (timeframe === 'today') {
+            if (ms < todayMidnight) return false;
+          } else if (timeframe === 'this_week') {
+            const dayOfWeek = (now.getDay() + 6) % 7;
+            const startOfWeek = todayMidnight - dayOfWeek * 86400000;
+            if (ms < startOfWeek) return false;
+          } else if (timeframe === 'last_week') {
+            const dayOfWeek = (now.getDay() + 6) % 7;
+            const startOfWeek = todayMidnight - dayOfWeek * 86400000;
+            const startOfLastWeek = startOfWeek - 7 * 86400000;
+            if (ms < startOfLastWeek || ms >= startOfWeek) return false;
+          } else if (timeframe === 'past_7') {
+            if (ms < todayMidnight - 7 * 86400000) return false;
+          } else if (timeframe === 'past_30') {
+            if (ms < todayMidnight - 30 * 86400000) return false;
+          } else if (timeframe === 'this_month') {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+            if (ms < startOfMonth) return false;
+          }
+        }
+      }
       return true;
     });
-  }, [claims, activeTab, selectedMemberFilter, searchQuery]);
+  }, [claims, activeTab, selectedMemberFilter, searchQuery, timeframe, members]);
 
   // Touch handlers for mobile swipe
   const handleTouchStart = (e: React.TouchEvent, claimId: string) => {
@@ -366,145 +413,305 @@ export const RedemptionsManagerView: React.FC<RedemptionsManagerViewProps> = ({
         </div>
       </div>
 
-      {/* 2. CONTROLS BAR: Segmented Status Tabs & Family Member Filter */}
-      <div className="space-y-2.5">
-        
-        {/* iOS Segmented Tabs Controller */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center bg-slate-200/80 dark:bg-slate-800 p-1 rounded-2xl border border-slate-300/60 dark:border-slate-700 shadow-2xs overflow-x-auto scrollbar-none">
-            {[
-              { id: 'pending' as TabType, label: 'Pending', count: pendingCount, icon: Clock },
-              { id: 'approved' as TabType, label: 'Approved', count: approvedCount, icon: Sparkles },
-              { id: 'delivered' as TabType, label: 'Delivered', count: deliveredCount, icon: CheckCircle2 },
-              { id: 'all' as TabType, label: 'All History', count: claims.length, icon: Layers },
-            ].map(tab => {
-              const Icon = tab.icon;
-              const isSelected = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    soundFX.playPop();
-                    triggerHaptic(10);
-                    setActiveTab(tab.id);
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 min-h-[38px] ${
-                    isSelected
-                      ? (isGlassTheme(currentTheme) ? 'bg-white/40 text-slate-900 shadow-xs' : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs')
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
-                  {tab.count > 0 && (
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+      {/* 2. CONTROLS BAR: Segmented Status Tabs & Family Member People Picker Panel */}
+      <div className="space-y-3">
+        {/* Container Panel */}
+        <div className={`${isGlassTheme(currentTheme) ? 'apple-glass-card' : 'bg-white dark:bg-slate-900'} rounded-2xl border ${isGlassTheme(currentTheme) ? 'border-white/30' : 'border-slate-200 dark:border-slate-800'} p-3.5 shadow-2xs space-y-3`}>
+          {/* Top Row: iOS Segmented Tabs Controller & Search */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+            <div className={`flex items-center p-1 rounded-xl border shadow-2xs overflow-x-auto scrollbar-none ${
+              isGlassTheme(currentTheme) 
+                ? 'apple-glass-panel border-white/30' 
+                : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+            }`}>
+              {[
+                { id: 'pending' as TabType, label: 'Pending', count: pendingCount, icon: Clock },
+                { id: 'approved' as TabType, label: 'Approved', count: approvedCount, icon: Sparkles },
+                { id: 'delivered' as TabType, label: 'Delivered', count: deliveredCount, icon: CheckCircle2 },
+                { id: 'all' as TabType, label: 'All History', count: claims.length, icon: Layers },
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isSelected = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      soundFX.playPop();
+                      triggerHaptic(10);
+                      setActiveTab(tab.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 min-h-[36px] ${
                       isSelected
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                        : 'bg-slate-300/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                    }`}>
-                      {tab.count}
-                    </span>
-                  )}
+                        ? (isGlassTheme(currentTheme) 
+                            ? 'bg-white text-slate-900 shadow-xs font-black' 
+                            : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-black')
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{tab.label}</span>
+                    {tab.count > 0 && (
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                        isSelected
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search Input for Quick Lookup */}
+            <div className="relative min-w-[200px] flex-1 sm:flex-initial">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search reward or helper..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full text-xs pl-8 pr-8 py-2 rounded-xl border transition-all focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 ${
+                  isGlassTheme(currentTheme)
+                    ? 'apple-glass-input text-slate-900 placeholder:text-slate-500'
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white placeholder:text-slate-400'
+                }`}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
                 </button>
-              );
-            })}
+              )}
+            </div>
           </div>
 
-          {/* Search Input for Quick Lookup */}
-          <div className="relative min-w-[200px] flex-1 sm:flex-initial">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search reward or helper..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs pl-8 pr-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20"
-            />
-            {searchQuery && (
+          {/* People Picker Panel: Filter by Family Member */}
+          <div className="pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+                <Users className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Filter by Family Helper</span>
+              </span>
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                {selectedMemberFilter === 'all' 
+                  ? `Showing all helpers (${claims.length} total claims)` 
+                  : `Showing ${members.find(m => m.id === selectedMemberFilter)?.name || 'Helper'}`}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 -mx-1 px-1">
               <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                onClick={() => {
+                  soundFX.playPop();
+                  setSelectedMemberFilter('all');
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 min-h-[42px] cursor-pointer whitespace-nowrap shrink-0 active:scale-95 border ${
+                  selectedMemberFilter === 'all'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-black ring-2 ring-emerald-500/20'
+                    : isGlassTheme(currentTheme)
+                    ? 'apple-glass-card hover:bg-white/60 text-slate-800 border-white/40'
+                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-50 border-slate-200 dark:border-slate-700'
+                }`}
               >
-                <X className="w-3.5 h-3.5" />
+                <span>👨‍👩‍👧‍👦 All Kids</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                  selectedMemberFilter === 'all'
+                    ? 'bg-emerald-800 text-white'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                }`}>
+                  {claims.length}
+                </span>
+              </button>
+
+              {members.filter(m => m.role !== 'parent').map((member) => {
+                const count = claims.filter(c => c.memberId === member.id).length;
+                const isSelected = selectedMemberFilter === member.id;
+                return (
+                  <button
+                    key={member.id}
+                    onClick={() => {
+                      soundFX.playPop();
+                      setSelectedMemberFilter(member.id);
+                    }}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 min-h-[42px] cursor-pointer whitespace-nowrap shrink-0 active:scale-95 border ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-black ring-2 ring-emerald-500/20'
+                        : isGlassTheme(currentTheme)
+                        ? 'apple-glass-card hover:bg-white/60 text-slate-800 border-white/40'
+                        : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-50 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <Avatar
+                      photoUrl={member.avatarPhotoUrl}
+                      emoji={member.avatarEmoji}
+                      name={member.name}
+                      size="xs"
+                      showBorder={false}
+                    />
+                    <span className="font-bold">{member.name.split(' ')[0]}</span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                      isSelected 
+                        ? 'bg-emerald-800 text-white' 
+                        : count > 0 
+                        ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Timeframe Filter Row */}
+          <div className="pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+              <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1 mr-1 shrink-0">
+                <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Timeframe:</span>
+              </span>
+              {(
+                [
+                  { id: 'all', label: 'All Time' },
+                  { id: 'today', label: 'Today' },
+                  { id: 'this_week', label: 'This Week' },
+                  { id: 'last_week', label: 'Last Week' },
+                  { id: 'past_7', label: 'Past 7 Days' },
+                  { id: 'past_30', label: 'Past 30 Days' },
+                  { id: 'this_month', label: 'This Month' },
+                ] as const
+              ).map(tf => {
+                const isSelected = timeframe === tf.id;
+                return (
+                  <button
+                    key={tf.id}
+                    onClick={() => {
+                      soundFX.playPop();
+                      setTimeframe(tf.id);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer min-h-[30px] active:scale-95 ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white shadow-2xs font-black ring-2 ring-emerald-500/20'
+                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {tf.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {timeframe !== 'all' && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  setTimeframe('all');
+                }}
+                className="text-[11px] font-bold text-emerald-600 hover:underline cursor-pointer"
+              >
+                Clear Time Filter
               </button>
             )}
           </div>
-        </div>
-
-        {/* Member Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 -mx-1 px-1">
-          <button
-            onClick={() => {
-              soundFX.playPop();
-              setSelectedMemberFilter('all');
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 min-h-[40px] cursor-pointer whitespace-nowrap shrink-0 active:scale-95 ${
-              selectedMemberFilter === 'all'
-                ? 'bg-slate-900 text-white shadow-2xs font-black'
-                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700'
-            }`}
-          >
-            <span>👨‍👩‍👧‍👦 All Kids</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-              selectedMemberFilter === 'all'
-                ? 'bg-slate-800 text-slate-200'
-                : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-            }`}>
-              {claims.length}
-            </span>
-          </button>
-
-          {members.filter(m => m.role !== 'parent').map((member) => {
-            const count = claims.filter(c => c.memberId === member.id).length;
-            const isSelected = selectedMemberFilter === member.id;
-            return (
-              <button
-                key={member.id}
-                onClick={() => {
-                  soundFX.playPop();
-                  setSelectedMemberFilter(member.id);
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 min-h-[40px] cursor-pointer whitespace-nowrap shrink-0 active:scale-95 ${
-                  isSelected
-                    ? 'bg-emerald-600 text-white shadow-2xs font-black'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700'
-                }`}
-              >
-                <Avatar
-                  photoUrl={member.avatarPhotoUrl}
-                  emoji={member.avatarEmoji}
-                  name={member.name}
-                  size="xs"
-                  showBorder={false}
-                />
-                <span>{member.name.split(' ')[0]}</span>
-                {count > 0 && (
-                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-                    isSelected ? 'bg-emerald-800 text-white' : 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-200'
-                  }`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
         </div>
       </div>
 
       {/* 3. REDEMPTION CLAIMS FEED */}
       {filteredClaims.length === 0 ? (
-        <div className={`rounded-3xl border p-8 sm:p-12 text-center shadow-xs ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/40' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
-          <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 mx-auto flex items-center justify-center text-3xl mb-3 shadow-2xs">
-            🎁
+        <div className={`rounded-3xl border p-8 sm:p-12 text-center shadow-xs space-y-4 ${isGlassTheme(currentTheme) ? 'apple-glass-panel border-white/40' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
+          <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 mx-auto flex items-center justify-center text-3xl shadow-2xs">
+            {activeTab === 'pending' && claims.length > 0 ? '🎉' : '🎁'}
           </div>
-          <h3 className={`text-base sm:text-lg font-black ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'} mb-1`}>
-            No Redemptions Found
-          </h3>
-          <p className={`text-xs sm:text-sm ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} max-w-md mx-auto leading-relaxed`}>
-            {activeTab === 'pending'
-              ? 'Great news! There are no reward redemption requests waiting for approval right now.'
-              : 'No redemption history matches the selected tab and filter criteria.'}
-          </p>
+          <div>
+            <h3 className={`text-base sm:text-lg font-black ${isGlassTheme(currentTheme) ? 'text-slate-900' : 'text-slate-900 dark:text-white'} mb-1`}>
+              {claims.length === 0
+                ? 'No Reward Claims Yet'
+                : activeTab === 'pending'
+                ? 'All Caught Up! Zero Pending'
+                : selectedMemberFilter !== 'all'
+                ? 'No Redemptions For This Helper'
+                : 'No Redemptions in This Filter'}
+            </h3>
+            <p className={`text-xs sm:text-sm ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-500 dark:text-slate-400'} max-w-md mx-auto leading-relaxed`}>
+              {claims.length === 0
+                ? 'When kids redeem their chore points for rewards, their requests appear here for approval and delivery.'
+                : activeTab === 'pending'
+                ? `Great news! You have no requests waiting for review. You have ${deliveredCount} delivered rewards and ${approvedCount} approved rewards in history.`
+                : selectedMemberFilter !== 'all'
+                ? `No redemptions found under this status for ${members.find(m => m.id === selectedMemberFilter)?.name || 'this helper'}.`
+                : 'No redemption history matches the selected tab and search criteria.'}
+            </p>
+          </div>
+
+          {/* Quick Action Recovery Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            {activeTab === 'pending' && deliveredCount > 0 && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  setActiveTab('delivered');
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 transition-all shadow-xs min-h-[38px] flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>View Delivered Rewards ({deliveredCount})</span>
+              </button>
+            )}
+
+            {claims.length > 0 && activeTab !== 'all' && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  setActiveTab('all');
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white cursor-pointer active:scale-95 transition-all min-h-[38px] flex items-center gap-1.5"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>View All History ({claims.length})</span>
+              </button>
+            )}
+
+            {selectedMemberFilter !== 'all' && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  setSelectedMemberFilter('all');
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white cursor-pointer active:scale-95 transition-all min-h-[38px]"
+              >
+                Show All Family Members
+              </button>
+            )}
+
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  setSearchQuery('');
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white cursor-pointer active:scale-95 transition-all min-h-[38px]"
+              >
+                Clear Search
+              </button>
+            )}
+
+            {onNavigateToRewards && (
+              <button
+                onClick={() => {
+                  soundFX.playPop();
+                  onNavigateToRewards();
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer active:scale-95 transition-all min-h-[38px]"
+              >
+                Browse Rewards Store
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:gap-4">

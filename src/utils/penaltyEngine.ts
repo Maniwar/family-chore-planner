@@ -34,18 +34,48 @@ export const DEFAULT_PENALTY_SETTINGS: HouseholdPenaltySettings = {
 
 /**
  * Parses a date string (YYYY-MM-DD) into midnight in the target timezone or local.
+ * Bulletproof: gracefully handles Date instances, objects with date/originalDueDate fields,
+ * ISO strings with timestamps, undefined/null, or invalid strings.
  */
-export function parseDateInTimezone(dateStr: string, timeStr?: string): Date {
-  const parts = dateStr.split('-').map(Number);
-  const year = parts[0];
-  const month = parts[1] - 1;
-  const day = parts[2];
+export function parseDateInTimezone(dateStr: any, timeStr?: string): Date {
+  const now = new Date();
+  if (!dateStr) {
+    return now;
+  }
+
+  let str = '';
+  if (typeof dateStr === 'string') {
+    str = dateStr.trim();
+  } else if (dateStr instanceof Date) {
+    if (isNaN(dateStr.getTime())) return now;
+    str = dateStr.toISOString().split('T')[0];
+  } else if (typeof dateStr === 'number' && !isNaN(dateStr)) {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return now;
+    str = d.toISOString().split('T')[0];
+  } else if (typeof dateStr === 'object' && dateStr !== null) {
+    const candidate = dateStr.date || dateStr.originalDueDate || dateStr.extendedDueDate || (dateStr.completedAt ? String(dateStr.completedAt).split('T')[0] : '');
+    str = typeof candidate === 'string' ? candidate.trim() : (candidate ? String(candidate).trim() : now.toISOString().split('T')[0]);
+  } else {
+    str = String(dateStr).trim();
+  }
+
+  if (!str) return now;
+
+  if (str.includes('T')) {
+    str = str.split('T')[0];
+  }
+
+  const parts = str.split('-').map(Number);
+  const year = !isNaN(parts[0]) && parts[0] > 1900 ? parts[0] : now.getFullYear();
+  const month = !isNaN(parts[1]) && parts[1] >= 1 ? parts[1] - 1 : now.getMonth();
+  const day = !isNaN(parts[2]) && parts[2] >= 1 ? parts[2] : now.getDate();
 
   let hours = 23;
   let minutes = 59;
   let seconds = 59;
 
-  if (timeStr && timeStr.includes(':')) {
+  if (timeStr && typeof timeStr === 'string' && timeStr.includes(':')) {
     const [h, m] = timeStr.split(':').map(Number);
     if (!isNaN(h) && !isNaN(m)) {
       hours = h;
@@ -59,16 +89,47 @@ export function parseDateInTimezone(dateStr: string, timeStr?: string): Date {
 
 /**
  * Calculates whole calendar days late.
+ * Supports both signatures:
+ * 1. calculateDaysLate(choreDateStr: string, extendedDateStr?: string, scheduledTime?: string, shipDateStr?: string)
+ * 2. calculateDaysLate(chore: Chore, log?: ChoreAssignmentLog, currentDateStr?: string, penaltySettings?: PenaltySettings)
  */
 export function calculateDaysLate(
-  choreDateStr: string,
-  extendedDateStr?: string,
+  choreOrDateStr: any,
+  logOrExtendedDateStr?: any,
   scheduledTime?: string,
   _shipDateStr?: string
 ): number {
   const now = new Date();
-  const effectiveDueDateStr = extendedDateStr || choreDateStr;
-  const dueDate = parseDateInTimezone(effectiveDueDateStr, scheduledTime);
+  let effectiveDueDateStr: string;
+  let effTime = scheduledTime;
+
+  if (typeof choreOrDateStr === 'object' && choreOrDateStr !== null) {
+    // Chore object was passed as 1st argument
+    effTime = choreOrDateStr.scheduledTime || scheduledTime;
+    if (typeof logOrExtendedDateStr === 'object' && logOrExtendedDateStr !== null) {
+      effectiveDueDateStr = logOrExtendedDateStr.extendedDueDate || logOrExtendedDateStr.originalDueDate || logOrExtendedDateStr.date || now.toISOString().split('T')[0];
+    } else if (typeof logOrExtendedDateStr === 'string' && logOrExtendedDateStr) {
+      effectiveDueDateStr = logOrExtendedDateStr;
+    } else {
+      effectiveDueDateStr = now.toISOString().split('T')[0];
+    }
+  } else {
+    // Normal signature with date string
+    const baseDate = typeof choreOrDateStr === 'string' ? choreOrDateStr : now.toISOString().split('T')[0];
+    let extDate: string | undefined = undefined;
+    if (typeof logOrExtendedDateStr === 'string') {
+      extDate = logOrExtendedDateStr;
+    } else if (typeof logOrExtendedDateStr === 'object' && logOrExtendedDateStr !== null) {
+      extDate = logOrExtendedDateStr.extendedDueDate;
+    }
+    effectiveDueDateStr = extDate || baseDate;
+  }
+
+  if (effectiveDueDateStr.includes('T')) {
+    effectiveDueDateStr = effectiveDueDateStr.split('T')[0];
+  }
+
+  const dueDate = parseDateInTimezone(effectiveDueDateStr, effTime);
 
   // If due date and time is in the future, 0 days late
   if (now.getTime() <= dueDate.getTime()) {
@@ -77,7 +138,10 @@ export function calculateDaysLate(
 
   // Calculate calendar days passed between the due date and today
   const dueParts = effectiveDueDateStr.split('-').map(Number);
-  const dueMidnight = new Date(dueParts[0], dueParts[1] - 1, dueParts[2], 0, 0, 0, 0);
+  const year = !isNaN(dueParts[0]) ? dueParts[0] : now.getFullYear();
+  const month = !isNaN(dueParts[1]) ? dueParts[1] - 1 : now.getMonth();
+  const day = !isNaN(dueParts[2]) ? dueParts[2] : now.getDate();
+  const dueMidnight = new Date(year, month, day, 0, 0, 0, 0);
   const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
 
   const diffMs = todayMidnight.getTime() - dueMidnight.getTime();

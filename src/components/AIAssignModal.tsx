@@ -216,7 +216,11 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to generate chores with AI');
+        const rawErr = errData.error || '';
+        const friendly = rawErr.includes('503') || rawErr.includes('high demand') 
+          ? 'AI services are experiencing high demand. Please try again in a moment or pick from our chore templates.'
+          : (rawErr || 'Failed to generate chores with AI');
+        throw new Error(friendly);
       }
 
       const data = await response.json();
