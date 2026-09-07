@@ -48,6 +48,10 @@ interface HouseholdDrilldownDrawerProps {
     onTrackMembers: PersonStatusSummary[];
   };
   getStatusBadge: (status: PersonStatusType) => React.ReactNode;
+  onQuickApprove?: (choreId: string, logId?: string, choreDate?: string, targetMemberId?: string) => void;
+  onBatchApproveOverdue?: (items: { choreId: string; logId?: string; memberId: string; date: string; title?: string }[]) => void;
+  onMarkComplete?: (choreId: string, notes?: string, checklist?: { [key: number]: boolean }, targetDate?: string, targetMemberId?: string) => void;
+  onOpenInspect?: (chore: Chore, log: ChoreAssignmentLog | null) => void;
 }
 
 export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> = ({
@@ -75,6 +79,10 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
   members,
   householdEvaluation,
   getStatusBadge,
+  onQuickApprove,
+  onBatchApproveOverdue,
+  onMarkComplete,
+  onOpenInspect,
 }) => {
   const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
     onClose,
@@ -295,41 +303,69 @@ export const HouseholdDrilldownDrawer: React.FC<HouseholdDrilldownDrawerProps> =
                           <span className="font-black text-slate-800">{item.tierInfo.tierLabel}</span>
                         </div>
 
-                        {/* Administrative Quick Actions */}
-                        {isMomMode && (
-                          <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                        {/* Primary Action Button */}
+                        {isMomMode ? (
+                          <div className="pt-2 border-t border-slate-100 space-y-2">
                             <button
+                              type="button"
                               onClick={() => {
-                                onOpenNudge(item.member, item.chore);
+                                if (onQuickApprove) {
+                                  onQuickApprove(item.chore.id, item.log?.id, item.effectiveDueDate, item.member.id);
+                                }
                               }}
-                              className="flex-1 py-2 px-2 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer min-h-[44px] active:scale-95 transition-all"
+                              className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-98"
                             >
-                              <BellRing className="w-3.5 h-3.5 text-amber-600" />
-                              <span>Nudge</span>
+                              <span>Approve (Did This) ⭐</span>
                             </button>
 
-                            <button
-                              onClick={() => {
-                                soundFX.playPop();
-                                setSelectedPersonSheet(behindMembers.find(s => s.member.id === item.member.id) || null);
-                                setWaiveTarget({ ...item, member: item.member });
-                              }}
-                              className="flex-1 py-2 px-2 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer min-h-[44px] active:scale-95 transition-all"
-                            >
-                              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Waive</span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  onOpenNudge(item.member, item.chore);
+                                }}
+                                className="flex-1 py-2 px-2 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer min-h-[40px] active:scale-95 transition-all"
+                              >
+                                <BellRing className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Nudge</span>
+                              </button>
 
+                              <button
+                                onClick={() => {
+                                  soundFX.playPop();
+                                  setSelectedPersonSheet(behindMembers.find(s => s.member.id === item.member.id) || null);
+                                  setWaiveTarget({ ...item, member: item.member });
+                                }}
+                                className="flex-1 py-2 px-2 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer min-h-[40px] active:scale-95 transition-all"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Waive</span>
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  soundFX.playPop();
+                                  setSelectedPersonSheet(behindMembers.find(s => s.member.id === item.member.id) || null);
+                                  setExtendTarget({ ...item, member: item.member });
+                                }}
+                                className="flex-1 py-2 px-2 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-800 border border-indigo-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer min-h-[40px] active:scale-95 transition-all"
+                              >
+                                <CalendarPlus className="w-3.5 h-3.5 text-indigo-600" />
+                                <span>Extend</span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pt-2 border-t border-slate-100">
                             <button
+                              type="button"
                               onClick={() => {
-                                soundFX.playPop();
-                                setSelectedPersonSheet(behindMembers.find(s => s.member.id === item.member.id) || null);
-                                setExtendTarget({ ...item, member: item.member });
+                                if (onMarkComplete) {
+                                  onMarkComplete(item.chore.id, undefined, undefined, item.effectiveDueDate, item.member.id);
+                                }
                               }}
-                              className="flex-1 py-2 px-2 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-800 border border-indigo-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer min-h-[44px] active:scale-95 transition-all"
+                              className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-98"
                             >
-                              <CalendarPlus className="w-3.5 h-3.5 text-indigo-600" />
-                              <span>Extend</span>
+                              <span>I Did This! (Submit) ✨</span>
                             </button>
                           </div>
                         )}

@@ -705,8 +705,19 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     }).catch(console.warn);
   };
 
-  const handleMarkComplete = (choreId: string, notes?: string, checklist?: { [key: number]: boolean }) => {
-    const existingIndex = logs.findIndex(l => l.choreId === choreId && l.date === currentDateStr);
+  const handleMarkComplete = (
+    choreId: string, 
+    notes?: string, 
+    checklist?: { [key: number]: boolean },
+    targetDate?: string,
+    targetMemberId?: string
+  ) => {
+    const effectiveDate = targetDate || currentDateStr;
+    const existingIndex = logs.findIndex(l => 
+      l.choreId === choreId && 
+      l.date === effectiveDate && 
+      (!targetMemberId || l.memberId === targetMemberId)
+    );
     const chore = chores.find(c => c.id === choreId);
     if (!chore) return;
 
@@ -718,7 +729,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
 
     soundFX.playComplete();
 
-    const effectiveAssigneeId = getChoreAssigneeForDate(chore, currentDateStr) || 
+    const effectiveAssigneeId = targetMemberId ||
+      getChoreAssigneeForDate(chore, effectiveDate) || 
       (chore.assignedMemberId && chore.assignedMemberId !== 'unassigned' ? chore.assignedMemberId : undefined) || 
       members.find(m => m.role !== 'parent')?.id || 
       members[0]?.id || 
@@ -736,20 +748,20 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         completedNote: notes || updatedLogs[existingIndex].completedNote,
         checklistStatus: checklist || updatedLogs[existingIndex].checklistStatus,
       };
-      showToast('Chore marked done! Ready for Mom to inspect in Status tab ✨');
+      showToast('Chore marked done! Ready for Mom to inspect ✨');
     } else {
       const newLog: ChoreAssignmentLog = {
-        id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         choreId,
         memberId: effectiveAssigneeId,
-        date: currentDateStr,
+        date: effectiveDate,
         status: 'needs_review',
         completedAt: new Date().toISOString(),
         completedNote: notes,
         checklistStatus: checklist,
       };
       updatedLogs = [...logs, newLog];
-      showToast('Chore marked done! Ready for Mom to inspect in Status tab ✨');
+      showToast('Chore marked done! Ready for Mom to inspect ✨');
     }
 
     setLogs(updatedLogs);
@@ -761,10 +773,13 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     }).catch(console.warn);
   };
 
-  const handleQuickApprove = (choreId: string, logId: string) => {
-    const targetLog = logs.find(l => l.id === logId) || logs.find(l => l.choreId === choreId && l.date === currentDateStr);
+  const handleQuickApprove = (choreId: string, logId?: string, choreDate?: string, targetMemberId?: string) => {
+    const effectiveDate = choreDate || currentDateStr;
     const chore = chores.find(c => c.id === choreId);
+    const targetLog = (logId ? logs.find(l => l.id === logId) : null) || 
+      logs.find(l => l.choreId === choreId && l.date === effectiveDate && (!targetMemberId || l.memberId === targetMemberId));
     const pointsToAward = chore ? chore.defaultPoints : 10;
+    const effectiveMemberId = targetMemberId || targetLog?.memberId || (chore ? getChoreAssigneeForDate(chore, effectiveDate) : undefined) || chore?.assignedMemberId || 'unassigned';
 
     let updatedLogs: ChoreAssignmentLog[];
     let updatedMembers = members;
@@ -774,7 +789,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         if (l.id === targetLog.id) {
           return {
             ...l,
-            status: 'approved',
+            memberId: effectiveMemberId,
+            status: 'approved' as const,
             qualityScore: 5,
             pointsAwarded: pointsToAward,
             bonusPoints: 0,
@@ -785,7 +801,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       });
 
       updatedMembers = members.map(m => {
-        if (m.id === targetLog.memberId) {
+        if (m.id === effectiveMemberId) {
           return {
             ...m,
             currentPoints: m.currentPoints + pointsToAward,
@@ -797,10 +813,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       });
     } else if (chore) {
       const newLog: ChoreAssignmentLog = {
-        id: `log_${Date.now()}`,
+        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         choreId: chore.id,
-        memberId: chore.assignedMemberId,
-        date: currentDateStr,
+        memberId: effectiveMemberId,
+        date: effectiveDate,
         status: 'approved',
         completedAt: new Date().toISOString(),
         reviewedAt: new Date().toISOString(),
@@ -810,7 +826,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       updatedLogs = [...logs, newLog];
 
       updatedMembers = members.map(m => {
-        if (m.id === chore.assignedMemberId) {
+        if (m.id === effectiveMemberId) {
           return {
             ...m,
             currentPoints: m.currentPoints + pointsToAward,
@@ -838,6 +854,84 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     triggerConfettiCelebration();
     soundFX.playRewardCoin();
     showToast(`Approved! Awarded 5 Stars & ${pointsToAward} pts.`);
+  };
+
+  const handleBatchApproveOverdue = (items: { choreId: string; logId?: string; memberId: string; date: string; title?: string }[]) => {
+    if (!items || items.length === 0) return;
+    let pointsAwardedMap: Record<string, number> = {};
+    const existingLogIdsToApprove = new Set<string>();
+    const itemsToCreate: ChoreAssignmentLog[] = [];
+
+    items.forEach(item => {
+      const targetLog = item.logId 
+        ? logs.find(l => l.id === item.logId)
+        : logs.find(l => l.choreId === item.choreId && l.date === item.date && l.memberId === item.memberId);
+      const chore = chores.find(c => c.id === item.choreId);
+      const pts = chore ? chore.defaultPoints : 10;
+      pointsAwardedMap[item.memberId] = (pointsAwardedMap[item.memberId] || 0) + pts;
+
+      if (targetLog) {
+        existingLogIdsToApprove.add(targetLog.id);
+      } else if (chore) {
+        itemsToCreate.push({
+          id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          choreId: chore.id,
+          memberId: item.memberId,
+          date: item.date,
+          status: 'approved',
+          completedAt: new Date().toISOString(),
+          reviewedAt: new Date().toISOString(),
+          qualityScore: 5,
+          pointsAwarded: pts,
+        });
+      }
+    });
+
+    const updatedLogs = [
+      ...logs.map(l => {
+        if (existingLogIdsToApprove.has(l.id)) {
+          const chore = chores.find(c => c.id === l.choreId);
+          const pts = chore ? chore.defaultPoints : 10;
+          return {
+            ...l,
+            status: 'approved' as const,
+            qualityScore: 5,
+            pointsAwarded: pts,
+            reviewedAt: new Date().toISOString(),
+          };
+        }
+        return l;
+      }),
+      ...itemsToCreate,
+    ];
+
+    const updatedMembers = members.map(m => {
+      const added = pointsAwardedMap[m.id] || 0;
+      if (added > 0) {
+        return {
+          ...m,
+          currentPoints: m.currentPoints + added,
+          lifetimePoints: m.lifetimePoints + added,
+          starsCount: m.starsCount + 1,
+        };
+      }
+      return m;
+    });
+
+    setLogs(updatedLogs);
+    saveLogs(updatedLogs);
+    setMembers(updatedMembers);
+    saveMembers(updatedMembers);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      logs: updatedLogs,
+      members: updatedMembers,
+    }).catch(console.warn);
+
+    triggerBigCelebration();
+    soundFX.playRewardCoin();
+    showToast(`Approved ${items.length} overdue chore${items.length > 1 ? 's' : ''}! Awarded 5 Stars ✨`);
   };
 
   const handleBatchApproveAll = (logsToApprove?: { chore: Chore; log: ChoreAssignmentLog }[]) => {
@@ -2205,6 +2299,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             onOpenPointManager={handleOpenPointManager}
             onEquipCosmetic={handleEquipCosmetic}
             onQuickApprove={handleQuickApprove}
+            onBatchApproveOverdue={handleBatchApproveOverdue}
+            onMarkComplete={handleMarkComplete}
             onOpenInspect={(chore, log) => handleOpenInspect(chore, log)}
             onUndoApprove={handleUndoApprove}
           />

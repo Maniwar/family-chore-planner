@@ -150,6 +150,11 @@ interface StatusViewProps {
   onNavigateToInspection?: () => void;
   onOpenPointManager?: (memberId?: string) => void;
   onEquipCosmetic?: (memberId: string, cosmeticId: string) => void;
+  onQuickApprove?: (choreId: string, logId?: string, choreDate?: string, targetMemberId?: string) => void;
+  onBatchApproveOverdue?: (items: { choreId: string; logId?: string; memberId: string; date: string; title?: string }[]) => void;
+  onMarkComplete?: (choreId: string, notes?: string, checklist?: { [key: number]: boolean }, targetDate?: string, targetMemberId?: string) => void;
+  onOpenInspect?: (chore: Chore, log: ChoreAssignmentLog | null) => void;
+  onUndoApprove?: (choreId: string, logId: string) => void;
 }
 
 export const StatusView: React.FC<StatusViewProps> = ({
@@ -171,6 +176,11 @@ export const StatusView: React.FC<StatusViewProps> = ({
   onNavigateToInspection,
   onOpenPointManager,
   onEquipCosmetic,
+  onQuickApprove,
+  onBatchApproveOverdue,
+  onMarkComplete,
+  onOpenInspect,
+  onUndoApprove,
 }) => {
   const theme = THEMES[currentTheme] || THEMES.rose;
   const [activeSubTab, setActiveSubTab] = useState<'now' | 'timeline' | 'history'>('now');
@@ -2666,6 +2676,10 @@ export const StatusView: React.FC<StatusViewProps> = ({
           setWaiveTarget={setWaiveTarget}
           setExtendTarget={setExtendTarget}
           getStatusBadge={getStatusBadge}
+          onQuickApprove={onQuickApprove}
+          onBatchApproveOverdue={onBatchApproveOverdue}
+          onMarkComplete={onMarkComplete}
+          onOpenInspect={onOpenInspect}
         />
       )}
 
@@ -2697,6 +2711,10 @@ export const StatusView: React.FC<StatusViewProps> = ({
           members={members}
           householdEvaluation={householdEvaluation}
           getStatusBadge={getStatusBadge}
+          onQuickApprove={onQuickApprove}
+          onBatchApproveOverdue={onBatchApproveOverdue}
+          onMarkComplete={onMarkComplete}
+          onOpenInspect={onOpenInspect}
         />
       )}
 
