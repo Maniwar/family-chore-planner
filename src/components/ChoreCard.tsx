@@ -75,6 +75,14 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
   );
   const [kidNote, setKidNote] = useState(log?.completedNote || '');
 
+  React.useEffect(() => {
+    setCheckedItems(log?.checklistStatus || {});
+  }, [JSON.stringify(log?.checklistStatus)]);
+
+  React.useEffect(() => {
+    setKidNote(log?.completedNote || '');
+  }, [log?.completedNote]);
+
   // Swipe Gesture State
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
