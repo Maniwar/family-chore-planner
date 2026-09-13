@@ -15,6 +15,7 @@ import firebaseConfig from '../../firebase-applet-config.json';
 import { HouseholdMember, Chore, ChoreAssignmentLog, RewardItem, RewardClaim, HouseholdInfo } from '../types';
 import { INITIAL_MEMBERS, INITIAL_CHORES, generateSampleLogs, INITIAL_REWARDS, INITIAL_CLAIMS } from '../data/initialData';
 import { getParentPin } from './parentLock';
+import { getUserGeminiApiKey } from './geminiApiKey';
 
 // Initialize Firebase SDK with the project config
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -133,6 +134,10 @@ export function getHouseholdAuthHeaders(householdId?: string, extraHeaders?: Rec
   const pin = getParentPin();
   if (pin) {
     headers['X-Admin-Pin'] = pin;
+  }
+  const userGeminiKey = getUserGeminiApiKey();
+  if (userGeminiKey) {
+    headers['X-Gemini-Api-Key'] = userGeminiKey;
   }
   return headers;
 }

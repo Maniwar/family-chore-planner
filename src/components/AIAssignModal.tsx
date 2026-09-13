@@ -21,7 +21,8 @@ import {
   Wand2, 
   Flame, 
   Home, 
-  Calendar 
+  Calendar,
+  Key
 } from 'lucide-react';
 import { HouseholdMember, Chore, AIAssignmentResult, AIAssignmentSuggestion, ChoreCategory } from '../types';
 import { getMemberEffectiveAge } from '../utils/age';
@@ -30,6 +31,7 @@ import { soundFX } from '../utils/audio';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
 import { ensureAuthenticatedHousehold, getHouseholdAuthHeaders } from '../utils/firebaseSync';
+import { hasUserGeminiApiKey } from '../utils/geminiApiKey';
 
 interface GeneratedChoreTemplate {
   title: string;
@@ -54,6 +56,7 @@ interface AIAssignModalProps {
   onApplyAssignments: (assignments: { choreId: string; assignedMemberId: string }[]) => void;
   onAddGeneratedChores?: (newChores: GeneratedChoreTemplate[]) => void;
   initialTab?: 'assigner' | 'creator' | 'coach';
+  onOpenApiKeySettings?: () => void;
 }
 
 export const AIAssignModal: React.FC<AIAssignModalProps> = ({
@@ -65,6 +68,7 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
   onApplyAssignments,
   onAddGeneratedChores,
   initialTab = 'assigner',
+  onOpenApiKeySettings,
 }) => {
   const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
     onClose,
@@ -337,22 +341,47 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
             </div>
           </div>
           
-          <button
-            type="button"
-            data-no-drag="true"
-            onPointerDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              soundFX.playPop();
-              handleDismiss();
-            }}
-            className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer min-h-[36px] min-w-[36px] shrink-0 z-20"
-            title="Close Assistant"
-            aria-label="Close Assistant"
-          >
-            <X className="w-4 h-4 stroke-[2.5]" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0 z-20">
+            {onOpenApiKeySettings && (
+              <button
+                type="button"
+                data-no-drag="true"
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  soundFX.playPop();
+                  onOpenApiKeySettings();
+                }}
+                className={`px-2.5 py-1.5 rounded-full text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                  hasUserGeminiApiKey()
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/30'
+                    : 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-400/30 hover:bg-purple-500/25'
+                }`}
+                title="Configure Gemini API Key"
+              >
+                <Key className="w-3 h-3" />
+                <span>{hasUserGeminiApiKey() ? 'Custom Key' : 'BYO Key'}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              data-no-drag="true"
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                soundFX.playPop();
+                handleDismiss();
+              }}
+              className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all active:scale-90 hover:scale-105 cursor-pointer min-h-[36px] min-w-[36px] shrink-0"
+              title="Close Assistant"
+              aria-label="Close Assistant"
+            >
+              <X className="w-4 h-4 stroke-[2.5]" />
+            </button>
+          </div>
         </div>
 
         {/* Apple HIG Segmented Control */}

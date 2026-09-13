@@ -17,7 +17,16 @@ import {
   ListTodo, 
   Gift,
   Award,
-  Crown
+  Crown,
+  Key,
+  ExternalLink,
+  ShieldCheck,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Check,
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 import { SupportedLanguage, SUPPORTED_LANGUAGES } from '../utils/i18n';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
@@ -26,6 +35,7 @@ import { HouseholdInfo } from '../types';
 import { soundFX } from '../utils/audio';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
+import { getUserGeminiApiKey, setUserGeminiApiKey, testGeminiApiKey, checkApiKeyStatus } from '../utils/geminiApiKey';
 
 interface QuickSettingsModalProps {
   isOpen: boolean;
@@ -86,6 +96,59 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
   });
 
   const [badgeFilter, setBadgeFilter] = React.useState<'all' | 'emoji' | 'vector' | 'thematic'>('all');
+
+  // Bring Your Own Key (BYOK) state for Gemini AI
+  const [apiKeyInput, setApiKeyInput] = React.useState<string>('');
+  const [showKeyText, setShowKeyText] = React.useState<boolean>(false);
+  const [isVerifyingKey, setIsVerifyingKey] = React.useState<boolean>(false);
+  const [keyFeedback, setKeyFeedback] = React.useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [savedUserKey, setSavedUserKey] = React.useState<string | null>(null);
+  const [hasServerKey, setHasServerKey] = React.useState<boolean>(false);
+  const [isAiKeyExpanded, setIsAiKeyExpanded] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const current = getUserGeminiApiKey();
+    setSavedUserKey(current);
+    setApiKeyInput(current || '');
+    setKeyFeedback(null);
+
+    checkApiKeyStatus().then((status) => {
+      setHasServerKey(status.hasServerKey);
+    });
+  }, [isOpen]);
+
+  const handleTestAndSaveKey = async (keyToSave?: string) => {
+    const rawKey = (keyToSave !== undefined ? keyToSave : apiKeyInput).trim();
+    if (!rawKey) {
+      setKeyFeedback({ type: 'error', text: 'Please paste a Gemini API key first.' });
+      return;
+    }
+
+    setIsVerifyingKey(true);
+    setKeyFeedback({ type: 'info', text: 'Connecting to Google Gemini to verify key...' });
+
+    const result = await testGeminiApiKey(rawKey);
+    setIsVerifyingKey(false);
+
+    if (result.success) {
+      setUserGeminiApiKey(rawKey);
+      setSavedUserKey(rawKey);
+      setKeyFeedback({ type: 'success', text: 'Active! ' + result.message });
+      soundFX.playFanfare();
+    } else {
+      setKeyFeedback({ type: 'error', text: result.message });
+      soundFX.playPop();
+    }
+  };
+
+  const handleRemoveKey = () => {
+    setUserGeminiApiKey(null);
+    setSavedUserKey(null);
+    setApiKeyInput('');
+    setKeyFeedback({ type: 'info', text: 'Custom key removed. The app will now use default shared service if available.' });
+    soundFX.playPop();
+  };
 
   if (!isOpen) return null;
 
@@ -614,6 +677,210 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                   <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                 </div>
               </button>
+            </div>
+          </div>
+
+          {/* GROUP: AI INTELLIGENCE & GOOGLE GEMINI BYOK */}
+          <div id="ai-api-key-settings-section">
+            <div className="px-1 mb-1.5 flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                <span>AI Features & Gemini Key</span>
+              </span>
+              {savedUserKey ? (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Your Key Connected
+                </span>
+              ) : hasServerKey ? (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                  Shared Key Active
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                  Key Needed
+                </span>
+              )}
+            </div>
+
+            <div className={`rounded-2xl border p-4 space-y-3.5 shadow-2xs ${
+              isGlass
+                ? 'border-white/70 bg-white/45 '
+                : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
+            }`}>
+              
+              {/* Header description */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <Key className="w-4 h-4 text-amber-300" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-black text-slate-950 dark:text-white leading-tight">
+                        Bring Your Own Gemini API Key
+                      </h4>
+                      <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium">
+                        Powers Smart Auto-Assign, Setup Buddy & Quality Checklist drafting
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAiKeyExpanded(!isAiKeyExpanded)}
+                  className="text-xs font-bold text-purple-700 dark:text-purple-300 hover:underline shrink-0 pt-1"
+                >
+                  {isAiKeyExpanded ? 'Hide Details' : 'Instructions'}
+                </button>
+              </div>
+
+              {/* Guidance & Google AI Studio Quick Link */}
+              <div className={`p-3 rounded-xl border text-xs leading-relaxed ${
+                isGlass 
+                  ? 'bg-purple-500/10 border-purple-300/40 text-purple-950 dark:text-purple-200' 
+                  : 'bg-purple-50/80 dark:bg-purple-950/30 border-purple-200/80 dark:border-purple-800 text-purple-900 dark:text-purple-200'
+              }`}>
+                <div className="flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1.5 flex-1">
+                    <p className="font-semibold">
+                      <strong>Free & Private:</strong> Gemini API keys have generous free tier quotas from Google and are stored strictly on this device (never shared).
+                    </p>
+                    <div className="flex items-center flex-wrap gap-2 pt-1">
+                      <a
+                        href="https://aistudio.google.com/app/apikey"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold rounded-lg text-[11px] shadow-xs transition-transform"
+                      >
+                        <span>Get Free Key in Google AI Studio</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        (Takes 30 seconds with any Google login)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {isAiKeyExpanded && (
+                  <div className="mt-3 pt-3 border-t border-purple-200/60 dark:border-purple-800/60 space-y-1.5 text-[11px]">
+                    <p className="font-bold text-slate-900 dark:text-white">How to get your free key:</p>
+                    <ol className="list-decimal pl-4 space-y-1 text-slate-700 dark:text-slate-300">
+                      <li>Click the button above to open <strong>Google AI Studio</strong>.</li>
+                      <li>Sign in with your standard Google Account if prompted.</li>
+                      <li>Click <strong>"Create API key"</strong> and copy the generated key.</li>
+                      <li>Paste it into the field below and click <strong>Test & Save</strong>.</li>
+                    </ol>
+                  </div>
+                )}
+              </div>
+
+              {/* Input & Action Bar */}
+              <div className="space-y-2">
+                <div className="relative flex items-center">
+                  <input
+                    id="user-gemini-api-key-input"
+                    type={showKeyText ? 'text' : 'password'}
+                    value={apiKeyInput}
+                    onChange={(e) => {
+                      setApiKeyInput(e.target.value);
+                      if (keyFeedback) setKeyFeedback(null);
+                    }}
+                    placeholder="AIzaSy..."
+                    autoComplete="off"
+                    spellCheck={false}
+                    className={`w-full py-2.5 pl-3 pr-20 text-xs font-mono rounded-xl border transition-all outline-hidden ${
+                      isGlass
+                        ? 'bg-white/60 dark:bg-slate-900/60 border-white/60 focus:border-purple-500 text-slate-900 dark:text-white'
+                        : 'bg-slate-50 dark:bg-slate-800/90 border-slate-300 dark:border-slate-700 focus:border-purple-500 text-slate-900 dark:text-white'
+                    }`}
+                  />
+                  <div className="absolute right-2 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowKeyText(!showKeyText)}
+                      className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                      title={showKeyText ? 'Hide Key' : 'Show Key'}
+                    >
+                      {showKeyText ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                    {savedUserKey && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveKey}
+                        className="p-1.5 text-rose-400 hover:text-rose-600 transition-colors"
+                        title="Remove Saved Key"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Feedback Message Banner */}
+                {keyFeedback && (
+                  <div
+                    className={`p-2.5 rounded-xl text-xs flex items-center gap-2 font-medium ${
+                      keyFeedback.type === 'success'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                        : keyFeedback.type === 'error'
+                        ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                        : 'bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800'
+                    }`}
+                  >
+                    {keyFeedback.type === 'success' ? (
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    ) : keyFeedback.type === 'error' ? (
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 text-sky-600 animate-spin shrink-0" />
+                    )}
+                    <span className="flex-1">{keyFeedback.text}</span>
+                  </div>
+                )}
+
+                {/* Buttons */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    id="save-gemini-key-btn"
+                    type="button"
+                    disabled={isVerifyingKey || !apiKeyInput.trim()}
+                    onClick={() => handleTestAndSaveKey()}
+                    className={`flex-1 py-2.5 px-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98 ${
+                      !apiKeyInput.trim()
+                        ? 'opacity-50 cursor-not-allowed bg-slate-200 dark:bg-slate-800 text-slate-500'
+                        : 'bg-purple-600 hover:bg-purple-700 text-white'
+                    }`}
+                  >
+                    {isVerifyingKey ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Verifying with Google...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Test & Save API Key</span>
+                      </>
+                    )}
+                  </button>
+
+                  {savedUserKey && (
+                    <button
+                      type="button"
+                      onClick={() => handleTestAndSaveKey(savedUserKey)}
+                      disabled={isVerifyingKey}
+                      className="py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 text-xs font-bold transition-all active:scale-98 cursor-pointer shrink-0"
+                      title="Test active key again"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isVerifyingKey ? 'animate-spin' : ''}`} />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

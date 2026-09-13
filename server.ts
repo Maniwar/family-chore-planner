@@ -13,11 +13,11 @@ const PORT = 3000;
 
 app.use(express.json({ limit: "10mb" }));
 
-// Lazy Gemini client helper
-function getGeminiClient(): GoogleGenAI {
-  const apiKey = process.env.GEMINI_API_KEY;
+// Lazy Gemini client helper (supports Bring Your Own Key or server-configured key)
+function getGeminiClient(customApiKey?: string): GoogleGenAI {
+  const apiKey = (customApiKey && customApiKey.trim()) || process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY environment variable is not configured.");
+    throw new Error("No Gemini API key provided. Please enter your Google Gemini API key in Settings or contact the household administrator.");
   }
   return new GoogleGenAI({
     apiKey,
@@ -71,8 +71,8 @@ app.get(["/api/auth/client-id", "/api/oauth/client-id"], (req, res) => {
 // Resilient Gemini model caller with automatic model fallback for 503 / high demand spikes
 const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
 
-async function callGeminiWithFallback(contents: any, config?: any) {
-  const ai = getGeminiClient();
+async function callGeminiWithFallback(contents: any, config?: any, customApiKey?: string) {
+  const ai = getGeminiClient(customApiKey);
   let lastError: any = null;
 
   for (const modelName of GEMINI_MODELS) {
@@ -378,11 +378,61 @@ const requireAiHouseholdAuth = (req: express.Request, res: express.Response, nex
   const hh = authenticateHouseholdAiRequest(req, res);
   if (!hh) return;
   (req as any).household = hh;
+
+  // Extract custom client-provided Gemini API key if present
+  const customKeyHeader = req.headers["x-gemini-api-key"] || req.headers["x-api-key"];
+  if (typeof customKeyHeader === "string" && customKeyHeader.trim()) {
+    (req as any).userGeminiApiKey = customKeyHeader.trim();
+  }
+
   next();
 };
 
 // Gate ALL /api/ai/* routes behind household authentication and rate limits
 app.use("/api/ai", requireAiHouseholdAuth);
+
+// BYOK Validation Endpoint: Verify a user-provided Gemini API key
+app.post("/api/ai/verify-key", async (req, res) => {
+  try {
+    const keyToTest = (req as any).userGeminiApiKey || req.body?.key;
+    if (!keyToTest || typeof keyToTest !== "string" || !keyToTest.trim()) {
+      return res.status(400).json({ valid: false, error: "Please provide an API key to verify." });
+    }
+
+    const testAi = getGeminiClient(keyToTest.trim());
+    // Run a minimal, ultra-low-latency verification probe
+    const testResponse = await testAi.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: "Ping! Please reply with 'pong'.",
+      config: {
+        maxOutputTokens: 10,
+        temperature: 0.1,
+      },
+    });
+
+    if (testResponse && testResponse.text) {
+      return res.json({
+        valid: true,
+        message: "Your Google Gemini API key is valid and connected! ✨",
+      });
+    } else {
+      return res.status(400).json({
+        valid: false,
+        error: "API key responded with empty output. Please verify permissions.",
+      });
+    }
+  } catch (error: any) {
+    const msg = error?.message || String(error);
+    console.warn("User Gemini key verification failed:", msg);
+    let friendlyError = "Invalid API key or unauthorized. Please check that the key is copied correctly.";
+    if (msg.includes("API_KEY_INVALID") || msg.includes("403") || msg.includes("Forbidden")) {
+      friendlyError = "The provided key is not recognized as a valid Google Gemini API key (HTTP 403).";
+    } else if (msg.includes("RESOURCE_EXHAUSTED") || msg.includes("429")) {
+      friendlyError = "Your API key has exceeded its quota or rate limit (HTTP 429).";
+    }
+    return res.status(400).json({ valid: false, error: friendlyError });
+  }
+});
 
 // AI Smart Auto-Assignment Endpoint
 app.post("/api/ai/auto-assign", async (req, res) => {
@@ -396,7 +446,7 @@ app.post("/api/ai/auto-assign", async (req, res) => {
       return res.status(400).json({ error: "Chores list is required" });
     }
 
-    const ai = getGeminiClient();
+    const userKey = (req as any).userGeminiApiKey;
 
     const prompt = `
 You are an expert pediatric child development specialist and family household organization coach.
@@ -474,7 +524,7 @@ Return your response strictly adhering to the JSON schema.
           },
           required: ["fairnessSummary", "fairnessRating", "suggestions", "ageTierInsights"],
         },
-      });
+      }, userKey);
 
       const text = response.text || "{}";
       const result = JSON.parse(text);
@@ -536,7 +586,8 @@ Parent Question: "${question}"
 Provide helpful, empathetic, concise, and structured advice. Use bullet points and practical suggestions for routines, positive reinforcement, allowance, or age-appropriate chore checklists.
 `;
 
-    const response = await callGeminiWithFallback(prompt);
+    const userKey = (req as any).userGeminiApiKey;
+    const response = await callGeminiWithFallback(prompt, undefined, userKey);
 
     return res.json({ advice: response.text || "Here is your household guidance." });
   } catch (error: any) {
@@ -574,6 +625,8 @@ Requirements for each generated chore:
 Return your response strictly adhering to JSON schema.
 `;
 
+    const userKey = (req as any).userGeminiApiKey;
+
     try {
       const response = await callGeminiWithFallback(systemPrompt, {
         responseMimeType: "application/json",
@@ -606,7 +659,7 @@ Return your response strictly adhering to JSON schema.
           },
           required: ["chores"]
         }
-      });
+      }, userKey);
 
       const text = response.text || "{}";
       const result = JSON.parse(text);
@@ -662,6 +715,8 @@ Rules:
 Return strictly conforming to the JSON schema.
 `;
 
+    const userKey = (req as any).userGeminiApiKey;
+
     try {
       const response = await callGeminiWithFallback(systemPrompt, {
         responseMimeType: "application/json",
@@ -680,7 +735,7 @@ Return strictly conforming to the JSON schema.
           },
           required: ["qualityChecklist", "suggestedPoints", "suggestedMinutes", "suggestedDifficulty"]
         }
-      });
+      }, userKey);
 
       const text = response.text || "{}";
       const result = JSON.parse(text);
@@ -810,6 +865,8 @@ TASK & GUIDELINES:
 Return strictly conforming to the JSON schema.
 `;
 
+    const userKey = (req as any).userGeminiApiKey;
+
     try {
       const response = await callGeminiWithFallback(systemPrompt, {
         responseMimeType: "application/json",
@@ -860,7 +917,7 @@ Return strictly conforming to the JSON schema.
           },
           required: ["reply", "actions"]
         }
-      });
+      }, userKey);
 
       const text = response.text || "{}";
       const result = JSON.parse(text);

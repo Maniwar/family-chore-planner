@@ -2743,6 +2743,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           initialTab={aiAssignInitialTab}
           onApplyAssignments={handleApplyAIAssignments}
           onAddGeneratedChores={handleBatchAddChores}
+          onOpenApiKeySettings={() => {
+            setIsAIAssignModalOpen(false);
+            setIsQuickSettingsOpen(true);
+          }}
         />
       )}
 
