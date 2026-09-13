@@ -1227,7 +1227,7 @@ app.post("/api/household/:id/sync", async (req, res) => {
 
 
     const clientVersion = req.body.version;
-    const isStale = typeof clientVersion === 'number' && clientVersion < (existing.version || 0);
+    const isStale = typeof clientVersion !== 'number' || clientVersion < (existing.version || 0);
 
     if (Array.isArray(members)) {
       if (isStale) {

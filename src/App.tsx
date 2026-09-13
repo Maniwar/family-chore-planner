@@ -586,7 +586,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     if (!activeHousehold?.id) return;
     if (isReceivingRemoteUpdateRef.current) return;
 
-    const dataPayload = {
+        const dataPayload: any = {
+      version: activeHousehold?.version,
       familyName: householdInfo.familyName,
       houseAddressOrMotto: householdInfo.houseAddressOrMotto,
       housePhotoUrl: householdInfo.housePhotoUrl,
@@ -687,22 +688,44 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       });
 
       // Update hash so we don't reflect this remote update back to the server
+            let computedMembers = members;
+      if (cloudHh.members && cloudHh.members.length > 0) {
+          computedMembers = cloudHh.members.map(cm => {
+            const localMatch = members.find(lm => lm.id === cm.id);
+            if (localMatch?.avatarPhotoUrl && (!cm.avatarPhotoUrl || cm.avatarPhotoUrl.trim() === '')) {
+              return { ...cm, avatarPhotoUrl: localMatch.avatarPhotoUrl };
+            }
+            return cm;
+          });
+      }
+      
+      let computedChores = chores;
+      if (cloudHh.chores && cloudHh.chores.length > 0) {
+          computedChores = cloudHh.chores;
+      }
+      
+      let computedLogs = logs;
+      if (cloudHh.logs) {
+          computedLogs = sanitizeLogs(cloudHh.logs);
+      }
+      
       lastSyncedHashRef.current = JSON.stringify({
-        familyName: cloudHh.familyName,
-        houseAddressOrMotto: cloudHh.houseAddressOrMotto,
-        housePhotoUrl: cloudHh.housePhotoUrl,
+        version: cloudHh.version,
+        familyName: cloudHh.familyName || householdInfo.familyName,
+        houseAddressOrMotto: cloudHh.houseAddressOrMotto || householdInfo.houseAddressOrMotto,
+        housePhotoUrl: cloudHh.housePhotoUrl || householdInfo.housePhotoUrl,
         householdCode: cloudHh.householdCode,
         adminPin: cloudHh.adminPin || getParentPin(),
         pinProtectionEnabled: cloudHh.pinProtectionEnabled !== undefined ? cloudHh.pinProtectionEnabled : isPinProtectionEnabled(),
-        members: cloudHh.members,
-        chores: cloudHh.chores,
-        logs: cloudHh.logs,
+        members: computedMembers,
+        chores: computedChores,
+        logs: computedLogs,
         rewards: activeRewardsList,
-        claims: cloudHh.claims,
-        penaltySettings: cloudHh.penaltySettings,
-        events: cloudHh.events,
-        nudges: cloudHh.nudges,
-        customHouseXp: cloudHh.customHouseXp,
+        claims: cloudHh.claims || claims,
+        penaltySettings: cloudHh.penaltySettings || penaltySettings,
+        events: cloudHh.events || events,
+        nudges: cloudHh.nudges || nudges,
+        customHouseXp: cloudHh.customHouseXp !== undefined ? cloudHh.customHouseXp : householdInfo.customHouseXp,
       });
 
       setTimeout(() => {
