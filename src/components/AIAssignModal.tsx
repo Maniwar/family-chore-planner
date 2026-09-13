@@ -29,6 +29,7 @@ import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { soundFX } from '../utils/audio';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
+import { ensureAuthenticatedHousehold, getHouseholdAuthHeaders } from '../utils/firebaseSync';
 
 interface GeneratedChoreTemplate {
   title: string;
@@ -114,9 +115,10 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
         return;
       }
 
+      await ensureAuthenticatedHousehold();
       const response = await fetch('/api/ai/auto-assign', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHouseholdAuthHeaders(),
         body: JSON.stringify({
           members: members.map(m => ({
             id: m.id,
@@ -201,9 +203,10 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
     const targetMember = members.find(m => m.id === creatorTargetMemberId);
 
     try {
+      await ensureAuthenticatedHousehold();
       const response = await fetch('/api/ai/generate-chores', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHouseholdAuthHeaders(),
         body: JSON.stringify({
           prompt: creatorPrompt.trim() || `Practical family chores for ${creatorRoom}`,
           roomCategory: creatorRoom,
@@ -263,9 +266,10 @@ export const AIAssignModal: React.FC<AIAssignModalProps> = ({
     setCoachAnswer(null);
 
     try {
+      await ensureAuthenticatedHousehold();
       const response = await fetch('/api/ai/chore-advice', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHouseholdAuthHeaders(),
         body: JSON.stringify({
           question: textToSend,
           members: members.map(m => ({

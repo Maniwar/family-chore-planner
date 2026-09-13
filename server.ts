@@ -180,6 +180,210 @@ function generateCuratedChoresFallback(userPrompt: string, roomCategory: string,
   return filtered.slice(0, Math.max(1, count));
 }
 
+// ==========================================
+// RESILIENT SERVER-BACKED CLOUD HOUSEHOLD SYNC & AUTH
+// ==========================================
+
+const HOUSEHOLD_DATA_DIR = path.join(process.cwd(), ".data");
+const HOUSEHOLD_STORE_FILE = path.join(HOUSEHOLD_DATA_DIR, "households.json");
+
+interface ServerHouseholdRecord {
+  id: string;
+  householdCode: string;
+  authKey?: string;
+  familyName: string;
+  houseAddressOrMotto?: string;
+  housePhotoUrl?: string;
+  adminPin?: string;
+  pinProtectionEnabled?: boolean;
+  joinPassphrase?: string;
+  members?: any[];
+  chores?: any[];
+  logs?: any[];
+  rewards?: any[];
+  claims?: any[];
+  penaltySettings?: any;
+  events?: any[];
+  nudges?: any[];
+  customHouseXp?: number;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+let householdsMemoryStore: Record<string, ServerHouseholdRecord> = {};
+
+// Rate limiting store for brute-force and abuse protection (B7)
+const ipRateLimits = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = ipRateLimits.get(key);
+  if (!entry || now > entry.resetTime) {
+    ipRateLimits.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxRequests) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
+// Timing-safe string comparison hygiene (B7)
+function safeEqual(a: string | undefined | null, b: string | undefined | null): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+// Random household code generator - no hardcoded defaults (B4)
+function generateHouseholdCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "NEST-";
+  for (let i = 0; i < 4; i++) {
+    code += chars[crypto.randomInt(0, chars.length)];
+  }
+  return code;
+}
+
+// Random admin PIN generator - no hardcoded defaults (B4)
+function generateAdminPin(): string {
+  return crypto.randomInt(1000, 10000).toString();
+}
+
+// Sanitize household: strip credentials from all response bodies (B2)
+function sanitizeHousehold(hh: ServerHouseholdRecord) {
+  const { adminPin, joinPassphrase, householdCode, authKey, ...safe } = hh;
+  return safe;
+}
+
+function initHouseholdStore() {
+  try {
+    if (!fs.existsSync(HOUSEHOLD_DATA_DIR)) {
+      fs.mkdirSync(HOUSEHOLD_DATA_DIR, { recursive: true });
+    }
+    if (fs.existsSync(HOUSEHOLD_STORE_FILE)) {
+      const data = fs.readFileSync(HOUSEHOLD_STORE_FILE, "utf-8");
+      householdsMemoryStore = JSON.parse(data);
+
+      // B6: Delete stray probe records
+      if (householdsMemoryStore["hh_doesnotexist000"]) {
+        delete householdsMemoryStore["hh_doesnotexist000"];
+      }
+
+      let modified = false;
+      Object.values(householdsMemoryStore).forEach((h) => {
+        if (!h) return;
+        // Ensure unguessable authKey
+        if (!h.authKey) {
+          h.authKey = crypto.randomBytes(32).toString("hex");
+          modified = true;
+        }
+        // B5: Backfill missing or empty passphrases
+        if (!h.joinPassphrase || !h.joinPassphrase.trim()) {
+          h.joinPassphrase = crypto.randomBytes(16).toString("base64url");
+          modified = true;
+        }
+      });
+
+      if (modified) {
+        saveHouseholdStore();
+      }
+    }
+  } catch (e) {
+    console.warn("Could not load stored households file, using memory store:", e);
+  }
+}
+
+function saveHouseholdStore() {
+  try {
+    if (!fs.existsSync(HOUSEHOLD_DATA_DIR)) {
+      fs.mkdirSync(HOUSEHOLD_DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(HOUSEHOLD_STORE_FILE, JSON.stringify(householdsMemoryStore, null, 2), "utf-8");
+  } catch (e) {
+    console.warn("Could not persist households to disk:", e);
+  }
+}
+
+initHouseholdStore();
+
+// Token extraction: B7 - Remove query parameter ?auth= support to prevent token leakage in URLs
+function getRequestAuthToken(req: express.Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.substring(7).trim();
+  }
+  const xAuth = req.headers["x-household-auth"];
+  if (typeof xAuth === "string" && xAuth.trim()) {
+    return xAuth.trim();
+  }
+  return null;
+}
+
+// B3: Bearer token is the ONLY accepted credential.
+function verifyHouseholdAuth(req: express.Request, hh: ServerHouseholdRecord): boolean {
+  if (!hh || !hh.authKey) return false;
+  const clientToken = getRequestAuthToken(req);
+  if (!clientToken) return false;
+  return safeEqual(clientToken, hh.authKey);
+}
+
+// AI Endpoint Protection Middleware:
+// Gated against anonymous abuse with token authentication, per-IP rate limiting, and per-household rate limiting.
+function authenticateHouseholdAiRequest(req: express.Request, res: express.Response): ServerHouseholdRecord | null {
+  const token = getRequestAuthToken(req);
+  if (!token) {
+    res.status(401).json({ error: "Unauthorized: Household authentication token required" });
+    return null;
+  }
+
+  // Look for target household: from header, body, or by matching the authKey
+  const targetId = req.headers["x-household-id"] || req.body?.householdId || req.body?.currentHousehold?.householdInfo?.id;
+  let hh: ServerHouseholdRecord | undefined;
+
+  if (typeof targetId === "string" && householdsMemoryStore[targetId]) {
+    hh = householdsMemoryStore[targetId];
+  } else {
+    // Look up household by auth token
+    hh = Object.values(householdsMemoryStore).find((h) => h && h.authKey && safeEqual(token, h.authKey));
+  }
+
+  if (!hh || !verifyHouseholdAuth(req, hh)) {
+    res.status(401).json({ error: "Unauthorized: Invalid household authentication credentials" });
+    return null;
+  }
+
+  const rawIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || req.socket.remoteAddress || "unknown";
+
+  // Per-IP rate limit: maximum 20 requests per minute
+  if (!checkRateLimit(`ai_ip_${rawIp}`, 20, 60000)) {
+    res.status(429).json({ error: "Rate limit exceeded. Too many requests from this IP." });
+    return null;
+  }
+
+  // Per-household rate limit: maximum 20 requests per minute
+  if (!checkRateLimit(`ai_hh_${hh.id}`, 20, 60000)) {
+    res.status(429).json({ error: "Rate limit exceeded. Too many requests for this household." });
+    return null;
+  }
+
+  return hh;
+}
+
+const requireAiHouseholdAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const hh = authenticateHouseholdAiRequest(req, res);
+  if (!hh) return;
+  (req as any).household = hh;
+  next();
+};
+
+// Gate ALL /api/ai/* routes behind household authentication and rate limits
+app.use("/api/ai", requireAiHouseholdAuth);
+
 // AI Smart Auto-Assignment Endpoint
 app.post("/api/ai/auto-assign", async (req, res) => {
   try {
@@ -209,11 +413,11 @@ Configuration Options:
 - Include Parents in Routine Chores: ${includeParents ? 'Yes' : 'No (assign primarily to children/teens, only give parents complex supervisory/safety tasks if necessary)'}
 
 Rules for Age-Based Assignment:
-1. Age 3-5 (Toddlers & Preschoolers, e.g. Sven): Simple playful 1-step motor tasks (put toys/blocks into bins, fluff couch cushions & pillows, align teddy bears).
-2. Age 6-9 (Elementary, e.g. Layla): Multi-step routine tasks (water garden flower pots, unload silverware & dishes, make bed, clear dinner table & sweep under chairs, restock bathroom towels).
+1. Age 3-5 (Toddlers & Preschoolers, e.g. Leo): Simple playful 1-step motor tasks (put toys/blocks into bins, fluff couch cushions & pillows, align teddy bears).
+2. Age 6-9 (Elementary, e.g. Maya): Multi-step routine tasks (water garden flower pots, unload silverware & dishes, make bed, clear dinner table & sweep under chairs, restock bathroom towels).
 3. Age 10-17 (Pre-teens & High School): Responsible multi-room chores (load dishwasher, sweep patio/driveway, dust consoles/shelves, fold laundry, scrub bathroom sinks).
-4. Age 18-21+ (Young Adults & Teens, e.g. Theena, Ashbelle): Comprehensive household duties (hand-wash pots & pans, disinfect toilet bowls & bases, pull garden weeds, strip bed linens, vacuum rugs & stairs).
-5. Parents / Adults (e.g. Mani, Hilda): Major home upkeep, power lawn mowing & edging, deep counter/cooktop degreasing, curbside trash/recycling bins, and master laundry cycles.
+4. Age 18-21+ (Young Adults & Teens, e.g. Jordan, Emma): Comprehensive household duties (hand-wash pots & pans, disinfect toilet bowls & bases, pull garden weeds, strip bed linens, vacuum rugs & stairs).
+5. Parents / Adults (e.g. David, Sarah): Major home upkeep, power lawn mowing & edging, deep counter/cooktop degreasing, curbside trash/recycling bins, and master laundry cycles.
 6. Ensure an age-appropriate balance of points and effort so every family member feels appreciated and not overwhelmed.
 7. Provide an encouraging, developmental reason for each assignment explaining why it fits that specific member's age and skills.
 
@@ -504,7 +708,56 @@ Return strictly conforming to the JSON schema.
 // AI Family Setup & Management Buddy Endpoint
 app.post("/api/ai/setup-buddy", async (req, res) => {
   try {
-    const { messages = [], currentHousehold = {} } = req.body;
+    const { messages = [], currentHousehold = {} } = req.body || {};
+
+    // 1. Cap message count & validate array
+    if (!Array.isArray(messages)) {
+      return res.status(400).json({ error: "Invalid messages format. Array expected." });
+    }
+
+    if (messages.length > 25) {
+      return res.status(400).json({ error: "Message count exceeds allowable limit (maximum 25 messages)." });
+    }
+
+    // 2. Cap message length and total conversation length
+    let totalTextChars = 0;
+    for (const msg of messages) {
+      if (!msg || typeof msg !== "object") {
+        return res.status(400).json({ error: "Invalid message entry in messages array." });
+      }
+      if (typeof msg.text !== "string") {
+        return res.status(400).json({ error: "Message text must be a string." });
+      }
+      if (msg.text.length > 2000) {
+        return res.status(400).json({ error: "Message text exceeds maximum limit of 2000 characters." });
+      }
+      totalTextChars += msg.text.length;
+    }
+
+    if (totalTextChars > 15000) {
+      return res.status(400).json({ error: "Total conversation text exceeds maximum limit of 15000 characters." });
+    }
+
+    // 3. Validate currentHousehold shape
+    if (currentHousehold !== undefined && currentHousehold !== null) {
+      if (typeof currentHousehold !== "object" || Array.isArray(currentHousehold)) {
+        return res.status(400).json({ error: "Invalid currentHousehold structure. Object expected." });
+      }
+      const { householdInfo, members, chores, rewards } = currentHousehold;
+      if (householdInfo !== undefined && (typeof householdInfo !== "object" || Array.isArray(householdInfo))) {
+        return res.status(400).json({ error: "Invalid householdInfo structure. Object expected." });
+      }
+      if (members !== undefined && !Array.isArray(members)) {
+        return res.status(400).json({ error: "Invalid members structure. Array expected." });
+      }
+      if (chores !== undefined && !Array.isArray(chores)) {
+        return res.status(400).json({ error: "Invalid chores structure. Array expected." });
+      }
+      if (rewards !== undefined && !Array.isArray(rewards)) {
+        return res.status(400).json({ error: "Invalid rewards structure. Array expected." });
+      }
+    }
+
     const { householdInfo = {}, members = [], chores = [], rewards = [] } = currentHousehold;
 
     const lastUserMessage = messages.length > 0 
@@ -622,7 +875,7 @@ Return strictly conforming to the JSON schema.
         ]
       });
     } catch (modelErr: any) {
-      console.warn("AI Setup Buddy model fallback:", modelErr?.message);
+      console.warn("AI Setup Buddy model fallback:", modelErr?.message || "Model issue");
       
       // Smart local heuristic fallback if API is unavailable
       const lower = lastUserMessage.toLowerCase();
@@ -646,7 +899,7 @@ Return strictly conforming to the JSON schema.
       return res.json({ reply, actions, suggestedFollowUps });
     }
   } catch (error: any) {
-    console.error("AI Setup Buddy error:", error);
+    console.error("AI Setup Buddy error:", error?.message || "Internal error");
     return res.status(500).json({
       reply: "I ran into a temporary hiccup connecting to my knowledge base. Please try asking again in a moment!",
       actions: [],
@@ -654,159 +907,6 @@ Return strictly conforming to the JSON schema.
     });
   }
 });
-
-// ==========================================
-// RESILIENT SERVER-BACKED CLOUD HOUSEHOLD SYNC
-// ==========================================
-
-const HOUSEHOLD_DATA_DIR = path.join(process.cwd(), ".data");
-const HOUSEHOLD_STORE_FILE = path.join(HOUSEHOLD_DATA_DIR, "households.json");
-
-interface ServerHouseholdRecord {
-  id: string;
-  householdCode: string;
-  authKey?: string;
-  familyName: string;
-  houseAddressOrMotto?: string;
-  housePhotoUrl?: string;
-  adminPin?: string;
-  pinProtectionEnabled?: boolean;
-  joinPassphrase?: string;
-  members?: any[];
-  chores?: any[];
-  logs?: any[];
-  rewards?: any[];
-  claims?: any[];
-  penaltySettings?: any;
-  events?: any[];
-  nudges?: any[];
-  customHouseXp?: number;
-  createdAt: string;
-  updatedAt: string;
-  version: number;
-}
-
-let householdsMemoryStore: Record<string, ServerHouseholdRecord> = {};
-
-// Rate limiting store for brute-force sensitive endpoints (B7)
-const ipRateLimits = new Map<string, { count: number; resetTime: number }>();
-
-function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
-  const now = Date.now();
-  const entry = ipRateLimits.get(key);
-  if (!entry || now > entry.resetTime) {
-    ipRateLimits.set(key, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-  if (entry.count >= maxRequests) {
-    return false;
-  }
-  entry.count++;
-  return true;
-}
-
-// Timing-safe string comparison hygiene (B7)
-function safeEqual(a: string | undefined | null, b: string | undefined | null): boolean {
-  if (typeof a !== "string" || typeof b !== "string") return false;
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return crypto.timingSafeEqual(bufA, bufB);
-}
-
-// Random household code generator - no hardcoded defaults (B4)
-function generateHouseholdCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "NEST-";
-  for (let i = 0; i < 4; i++) {
-    code += chars[crypto.randomInt(0, chars.length)];
-  }
-  return code;
-}
-
-// Random admin PIN generator - no hardcoded defaults (B4)
-function generateAdminPin(): string {
-  return crypto.randomInt(1000, 10000).toString();
-}
-
-// Sanitize household: strip credentials from all response bodies (B2)
-function sanitizeHousehold(hh: ServerHouseholdRecord) {
-  const { adminPin, joinPassphrase, householdCode, authKey, ...safe } = hh;
-  return safe;
-}
-
-function initHouseholdStore() {
-  try {
-    if (!fs.existsSync(HOUSEHOLD_DATA_DIR)) {
-      fs.mkdirSync(HOUSEHOLD_DATA_DIR, { recursive: true });
-    }
-    if (fs.existsSync(HOUSEHOLD_STORE_FILE)) {
-      const data = fs.readFileSync(HOUSEHOLD_STORE_FILE, "utf-8");
-      householdsMemoryStore = JSON.parse(data);
-
-      // B6: Delete stray probe records
-      if (householdsMemoryStore["hh_doesnotexist000"]) {
-        delete householdsMemoryStore["hh_doesnotexist000"];
-      }
-
-      let modified = false;
-      Object.values(householdsMemoryStore).forEach((h) => {
-        if (!h) return;
-        // Ensure unguessable authKey
-        if (!h.authKey) {
-          h.authKey = crypto.randomBytes(32).toString("hex");
-          modified = true;
-        }
-        // B5: Backfill missing or empty passphrases
-        if (!h.joinPassphrase || !h.joinPassphrase.trim()) {
-          h.joinPassphrase = crypto.randomBytes(16).toString("base64url");
-          modified = true;
-        }
-      });
-
-      if (modified) {
-        saveHouseholdStore();
-      }
-    }
-  } catch (e) {
-    console.warn("Could not load stored households file, using memory store:", e);
-  }
-}
-
-function saveHouseholdStore() {
-  try {
-    if (!fs.existsSync(HOUSEHOLD_DATA_DIR)) {
-      fs.mkdirSync(HOUSEHOLD_DATA_DIR, { recursive: true });
-    }
-    fs.writeFileSync(HOUSEHOLD_STORE_FILE, JSON.stringify(householdsMemoryStore, null, 2), "utf-8");
-  } catch (e) {
-    console.warn("Could not persist households to disk:", e);
-  }
-}
-
-initHouseholdStore();
-
-// Token extraction: B7 - Remove query parameter ?auth= support to prevent token leakage in URLs
-function getRequestAuthToken(req: express.Request): string | null {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    return authHeader.substring(7).trim();
-  }
-  const xAuth = req.headers["x-household-auth"];
-  if (typeof xAuth === "string" && xAuth.trim()) {
-    return xAuth.trim();
-  }
-  return null;
-}
-
-// B3: Bearer token is the ONLY accepted credential.
-// x-household-code and x-admin-pin branches are deleted.
-function verifyHouseholdAuth(req: express.Request, hh: ServerHouseholdRecord): boolean {
-  if (!hh || !hh.authKey) return false;
-  const clientToken = getRequestAuthToken(req);
-  if (!clientToken) return false;
-  return safeEqual(clientToken, hh.authKey);
-}
 
 // PERMANENTLY DISABLED: Do NOT volunteer any family's household to unauthenticated strangers
 app.get("/api/household/primary", (req, res) => {

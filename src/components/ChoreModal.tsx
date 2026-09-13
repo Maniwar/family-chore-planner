@@ -25,6 +25,7 @@ import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { soundFX } from '../utils/audio';
 import { useBottomSheet } from '../hooks/useBottomSheet';
 import { BottomSheetGrabber } from './BottomSheetGrabber';
+import { ensureAuthenticatedHousehold, getHouseholdAuthHeaders } from '../utils/firebaseSync';
 
 interface ChoreModalProps {
   isOpen: boolean;
@@ -274,9 +275,10 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
     setIsDraftingChecklist(true);
 
     try {
+      await ensureAuthenticatedHousehold();
       const response = await fetch('/api/ai/draft-quality-checklist', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHouseholdAuthHeaders(),
         body: JSON.stringify({
           title: currentTitle,
           category,
@@ -339,9 +341,10 @@ export const ChoreModal: React.FC<ChoreModalProps> = ({
     setIsAIEnhancing(true);
 
     try {
+      await ensureAuthenticatedHousehold();
       const response = await fetch('/api/ai/generate-chores', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHouseholdAuthHeaders(),
         body: JSON.stringify({
           prompt: title.trim() || `Practical chore for ${category}`,
           roomCategory: category,

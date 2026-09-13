@@ -410,7 +410,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                     {isMomMode ? (
                       /* MOM MODE: Direct Approval & Administrative Options */
                       <div className="space-y-2 pt-1">
-                        {/* 1-Tap "Layla Did This (Approve 5⭐)" */}
+                        {/* 1-Tap "Member Did This (Approve 5⭐)" */}
                         <button
                           type="button"
                           onClick={() => {
@@ -494,7 +494,7 @@ export const PersonStatusDrawer: React.FC<PersonStatusDrawerProps> = ({
                         </div>
                       </div>
                     ) : (
-                      /* KID MODE (LAYLA): 1-Tap "I Did This! (Submit for Review)" */
+                      /* KID MODE: 1-Tap "I Did This! (Submit for Review)" */
                       <div className="pt-1 space-y-2">
                         <button
                           type="button"

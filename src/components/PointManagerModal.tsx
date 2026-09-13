@@ -1760,7 +1760,7 @@ export const PointManagerModal: React.FC<PointManagerModalProps> = ({
                   setConfirmDialog({
                     isOpen: true,
                     title: 'Reset ALL Family Members to 0 Points?',
-                    description: 'This will reset current points to 0 for everyone (Ashbelle, Hilda, Layla, Mani, etc.) so your family can start chore earnings completely from scratch.',
+                    description: 'This will reset current points to 0 for all household members so your family can start chore earnings completely from scratch.',
                     actionLabel: 'Reset All Family to 0 pts',
                     actionColor: 'rose',
                     onConfirm: () => {

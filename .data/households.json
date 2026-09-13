@@ -11,8 +11,8 @@
     "joinPassphrase": "MuchLove1!",
     "members": [
       {
-        "id": "mem_mani",
-        "name": "Mani (Dad)",
+        "id": "mem_david",
+        "name": "David (Dad)",
         "role": "parent",
         "avatarColor": "bg-blue-600 text-white",
         "avatarEmoji": "👨‍🔧",
@@ -29,8 +29,8 @@
         ]
       },
       {
-        "id": "mem_hilda",
-        "name": "Hilda (Mom)",
+        "id": "mem_sarah",
+        "name": "Sarah (Mom)",
         "role": "parent",
         "avatarColor": "bg-rose-500 text-white",
         "avatarEmoji": "👩‍💼",
@@ -47,8 +47,8 @@
         ]
       },
       {
-        "id": "mem_ashbelle",
-        "name": "Ashbelle",
+        "id": "mem_emma",
+        "name": "Emma",
         "role": "teen",
         "avatarColor": "bg-purple-500 text-white",
         "avatarEmoji": "🧑‍🎓",
@@ -65,8 +65,8 @@
         ]
       },
       {
-        "id": "mem_theena",
-        "name": "Theena",
+        "id": "mem_jordan",
+        "name": "Jordan",
         "role": "teen",
         "avatarColor": "bg-indigo-500 text-white",
         "avatarEmoji": "👧",
@@ -83,8 +83,8 @@
         ]
       },
       {
-        "id": "mem_layla",
-        "name": "Layla",
+        "id": "mem_maya",
+        "name": "Maya",
         "role": "child",
         "avatarColor": "bg-amber-500 text-white",
         "avatarEmoji": "🧒",
@@ -101,8 +101,8 @@
         ]
       },
       {
-        "id": "mem_sven",
-        "name": "Sven",
+        "id": "mem_leo",
+        "name": "Leo",
         "role": "child",
         "avatarColor": "bg-emerald-500 text-white",
         "avatarEmoji": "👶",
@@ -125,7 +125,7 @@
         "title": "Pick & Pull Weeds from Garden Beds",
         "description": "Pull weeds out by roots along front walkway flowerbeds and back garden borders, place in green yard waste bin.",
         "category": "Yard & Outdoor",
-        "assignedMemberId": "mem_ashbelle",
+        "assignedMemberId": "mem_emma",
         "frequency": "weekends",
         "scheduledDays": [
           6
@@ -149,7 +149,7 @@
         "title": "Mow Lawn & Edge Walkways",
         "description": "Mow front and back lawns at 2.5 inches, edge border alongside driveway, and blow clippings off concrete.",
         "category": "Yard & Outdoor",
-        "assignedMemberId": "mem_mani",
+        "assignedMemberId": "mem_david",
         "frequency": "weekly",
         "scheduledDays": [
           6
@@ -173,7 +173,7 @@
         "title": "Sweep Front Porch, Driveway & Patio",
         "description": "Sweep leaves, dust, and cobwebs from the front entry porch, steps, back patio, and main driveway.",
         "category": "Yard & Outdoor",
-        "assignedMemberId": "mem_theena",
+        "assignedMemberId": "mem_jordan",
         "frequency": "weekdays",
         "scheduledDays": [
           2,
@@ -198,7 +198,7 @@
         "title": "Water Outdoor Flower Pots & Garden",
         "description": "Use the garden hose sprayer on gentle shower mode to water all hanging baskets, porch flower pots, and garden beds.",
         "category": "Yard & Outdoor",
-        "assignedMemberId": "mem_layla",
+        "assignedMemberId": "mem_maya",
         "frequency": "daily",
         "scheduledDays": [
           0,
@@ -228,7 +228,7 @@
         "title": "Unload Clean Dishwasher",
         "description": "Empty clean plates, bowls, cups, and silverware into upper cupboards and utensil drawers.",
         "category": "Kitchen",
-        "assignedMemberId": "mem_layla",
+        "assignedMemberId": "mem_maya",
         "frequency": "daily",
         "scheduledDays": [
           0,
@@ -258,15 +258,15 @@
         "title": "Load Dinner Dishes & Run Dishwasher",
         "description": "Rinse food scraps from dinner dishes, load top and bottom dishwasher racks, insert detergent pod, and start cycle.",
         "category": "Kitchen",
-        "assignedMemberId": "mem_theena",
+        "assignedMemberId": "mem_jordan",
         "dayAssignments": {
-          "0": "mem_theena",
-          "1": "mem_theena",
-          "2": "mem_ashbelle",
-          "3": "mem_theena",
-          "4": "mem_ashbelle",
-          "5": "mem_theena",
-          "6": "mem_ashbelle"
+          "0": "mem_jordan",
+          "1": "mem_jordan",
+          "2": "mem_emma",
+          "3": "mem_jordan",
+          "4": "mem_emma",
+          "5": "mem_jordan",
+          "6": "mem_emma"
         },
         "frequency": "daily",
         "scheduledDays": [
@@ -297,15 +297,15 @@
         "title": "Hand Wash Large Pots, Skillets & Pans",
         "description": "Wash non-stick skillets, roasting pans, and chef knives by hand with warm soapy water, dry on rack, and put away.",
         "category": "Kitchen",
-        "assignedMemberId": "mem_ashbelle",
+        "assignedMemberId": "mem_emma",
         "dayAssignments": {
-          "0": "mem_ashbelle",
-          "1": "mem_ashbelle",
-          "2": "mem_theena",
-          "3": "mem_ashbelle",
-          "4": "mem_theena",
-          "5": "mem_ashbelle",
-          "6": "mem_theena"
+          "0": "mem_emma",
+          "1": "mem_emma",
+          "2": "mem_jordan",
+          "3": "mem_emma",
+          "4": "mem_jordan",
+          "5": "mem_emma",
+          "6": "mem_jordan"
         },
         "frequency": "daily",
         "scheduledDays": [
@@ -336,7 +336,7 @@
         "title": "Wipe Kitchen Counters, Stovetop & Island",
         "description": "Spray countertops, cooktop burners, and center prep island with surface cleaner and wipe streak-free.",
         "category": "Kitchen",
-        "assignedMemberId": "mem_hilda",
+        "assignedMemberId": "mem_sarah",
         "frequency": "daily",
         "scheduledDays": [
           0,
@@ -366,7 +366,7 @@
         "title": "Take Out Kitchen Trash & Recycling to Bins",
         "description": "Tie full 13-gallon trash and recycling bags, carry to outdoor curbside bins, and replace with a fresh liner.",
         "category": "Kitchen",
-        "assignedMemberId": "mem_mani",
+        "assignedMemberId": "mem_david",
         "frequency": "weekdays",
         "scheduledDays": [
           1,
@@ -393,7 +393,7 @@
         "title": "Deep Clean Microwave & Stovetop Hood",
         "description": "Steam microwave with bowl of water and lemon, wipe splatter off turntable and roof, polish front microwave glass.",
         "category": "Kitchen",
-        "assignedMemberId": "mem_ashbelle",
+        "assignedMemberId": "mem_emma",
         "frequency": "weekly",
         "scheduledDays": [
           0
@@ -417,7 +417,7 @@
         "title": "Clear Dining Table & Sweep Under Chairs",
         "description": "Clear plates and cups after family dinner, spray dining table, push chairs in, and sweep crumbs from hardwood floor.",
         "category": "Kitchen",
-        "assignedMemberId": "mem_layla",
+        "assignedMemberId": "mem_maya",
         "frequency": "daily",
         "scheduledDays": [
           0,
@@ -443,11 +443,11 @@
         "isActive": true
       },
       {
-        "id": "chore_bed_sven",
-        "title": "Sven's Room: Put Toys into Bins & Pick Up Blocks",
-        "description": "Help little Sven (3y) pick up soft building blocks, picture books, and plush stuffed animals into labeled toy organizer bins.",
+        "id": "chore_bed_leo",
+        "title": "Leo's Room: Put Toys into Bins & Pick Up Blocks",
+        "description": "Help little Leo (3y) pick up soft building blocks, picture books, and plush stuffed animals into labeled toy organizer bins.",
         "category": "Bedrooms",
-        "assignedMemberId": "mem_sven",
+        "assignedMemberId": "mem_leo",
         "frequency": "daily",
         "scheduledDays": [
           0,
@@ -473,11 +473,11 @@
         "isActive": true
       },
       {
-        "id": "chore_bed_layla",
-        "title": "Layla's Room: Make Bed, Tidy Rug & Organize Desk",
+        "id": "chore_bed_maya",
+        "title": "Maya's Room: Make Bed, Tidy Rug & Organize Desk",
         "description": "Pull up bedsheets flat, fluff pillows, put dirty school clothes in hamper, and organize coloring pens on desk.",
         "category": "Bedrooms",
-        "assignedMemberId": "mem_layla",
+        "assignedMemberId": "mem_maya",
         "frequency": "daily",
         "scheduledDays": [
           0,
@@ -503,11 +503,11 @@
         "isActive": true
       },
       {
-        "id": "chore_bed_theena",
-        "title": "Theena's Room: Vacuum Carpet, Dust Desk & Tidy",
+        "id": "chore_bed_jordan",
+        "title": "Jordan's Room: Vacuum Carpet, Dust Desk & Tidy",
         "description": "Keep room tidy, dust study desk and vanity shelves, make bed, and run vacuum over bedroom carpet.",
         "category": "Bedrooms",
-        "assignedMemberId": "mem_theena",
+        "assignedMemberId": "mem_jordan",
         "frequency": "custom_days",
         "scheduledDays": [
           2,
@@ -528,11 +528,11 @@
         "isActive": true
       },
       {
-        "id": "chore_bed_ashbelle",
-        "title": "Ashbelle's Room: Strip Bed Linens & Clean Room",
+        "id": "chore_bed_emma",
+        "title": "Emma's Room: Strip Bed Linens & Clean Room",
         "description": "Strip bedsheets and pillowcases for weekly laundry wash, vacuum rug, and organize dresser top.",
         "category": "Bedrooms",
-        "assignedMemberId": "mem_ashbelle",
+        "assignedMemberId": "mem_emma",
         "frequency": "weekly",
         "scheduledDays": [
           6
@@ -556,7 +556,7 @@
         "title": "Master Bedroom: Linen Rotation & Nightstands Tidy",
         "description": "Make master bed, change sheets weekly, dust bedside lamps and wipe nightstands clean.",
         "category": "Bedrooms",
-        "assignedMemberId": "mem_hilda",
+        "assignedMemberId": "mem_sarah",
         "frequency": "weekly",
         "scheduledDays": [
           0
@@ -579,7 +579,7 @@
         "title": "Scrub Upstairs Kids Bathroom Sinks & Mirrors",
         "description": "Wipe toothpaste splatters from bathroom mirrors and chrome faucets, scrub sink basins, and wipe countertop clean.",
         "category": "Bathrooms",
-        "assignedMemberId": "mem_theena",
+        "assignedMemberId": "mem_jordan",
         "frequency": "custom_days",
         "scheduledDays": [
           1,
@@ -605,7 +605,7 @@
         "title": "Disinfect & Scrub Toilet Bowls & Bases",
         "description": "Apply toilet bowl cleaner inside rim, scrub with brush, spray and wipe seat, lid, handle, and exterior base with disinfectant.",
         "category": "Bathrooms",
-        "assignedMemberId": "mem_ashbelle",
+        "assignedMemberId": "mem_emma",
         "frequency": "custom_days",
         "scheduledDays": [
           3,
@@ -630,7 +630,7 @@
         "title": "Scrub Bathtub & Shower Tile Surround",
         "description": "Spray shower walls and tub with foaming cleaner, scrub soap scum from tile grout, polish chrome fixtures, and rinse clean.",
         "category": "Bathrooms",
-        "assignedMemberId": "mem_mani",
+        "assignedMemberId": "mem_david",
         "frequency": "weekly",
         "scheduledDays": [
           6
@@ -654,7 +654,7 @@
         "title": "Restock Toilet Paper & Hang Fresh Hand Towels",
         "description": "Check all 3 bathrooms in the house: ensure 2 extra rolls of toilet paper under each sink, and hang clean fresh hand towels.",
         "category": "Bathrooms",
-        "assignedMemberId": "mem_layla",
+        "assignedMemberId": "mem_maya",
         "frequency": "custom_days",
         "scheduledDays": [
           2,
@@ -679,7 +679,7 @@
         "title": "Mop Upstairs & Downstairs Bathroom Tile Floors",
         "description": "Sweep bathroom rug dust, shake out bath mats, and mop porcelain tile floors with warm disinfectant water.",
         "category": "Bathrooms",
-        "assignedMemberId": "mem_theena",
+        "assignedMemberId": "mem_jordan",
         "frequency": "weekly",
         "scheduledDays": [
           6
@@ -703,7 +703,7 @@
         "title": "Vacuum Living Room Carpet, Rugs & Stairs",
         "description": "Run upright vacuum cleaner over living room wool rug, family room carpet, and vacuum carpeted stairs with hand attachment.",
         "category": "Living Room",
-        "assignedMemberId": "mem_ashbelle",
+        "assignedMemberId": "mem_emma",
         "frequency": "custom_days",
         "scheduledDays": [
           1,
@@ -729,7 +729,7 @@
         "title": "Fluff Living Room Couch Pillows & Fold Blankets",
         "description": "Fluff couch cushions, align sectional pillows, fold cozy fleece throw blankets, and put remotes in the coffee table caddy.",
         "category": "Living Room",
-        "assignedMemberId": "mem_sven",
+        "assignedMemberId": "mem_leo",
         "frequency": "daily",
         "scheduledDays": [
           0,
@@ -759,7 +759,7 @@
         "title": "Dust TV Console, Bookshelves & Coffee Table",
         "description": "Use microfiber duster to remove dust from television screen, media console, family picture frames, and windowsill edges.",
         "category": "Living Room",
-        "assignedMemberId": "mem_layla",
+        "assignedMemberId": "mem_maya",
         "frequency": "weekly",
         "scheduledDays": [
           5
@@ -783,7 +783,7 @@
         "title": "Mop Hardwood Hallways & Entryway Foyer",
         "description": "Dust-mop front foyer and main first-floor hallways, then damp-mop with hardwood floor cleaner for a sparkling finish.",
         "category": "Living Room",
-        "assignedMemberId": "mem_mani",
+        "assignedMemberId": "mem_david",
         "frequency": "weekly",
         "scheduledDays": [
           6
@@ -807,7 +807,7 @@
         "title": "Sort Family Laundry & Start Wash Cycles",
         "description": "Sort laundry hampers from all 4 bedrooms into whites, darks, and towels, add detergent, and start the washing machine.",
         "category": "Laundry",
-        "assignedMemberId": "mem_hilda",
+        "assignedMemberId": "mem_sarah",
         "frequency": "custom_days",
         "scheduledDays": [
           0,
@@ -834,7 +834,7 @@
         "title": "Fold Clean Laundry & Pair Socks",
         "description": "Empty warm clothes from the dryer, fold t-shirts, jeans, and pajamas neatly, and match sock pairs into bundles.",
         "category": "Laundry",
-        "assignedMemberId": "mem_theena",
+        "assignedMemberId": "mem_jordan",
         "frequency": "custom_days",
         "scheduledDays": [
           0,
@@ -859,9 +859,9 @@
       {
         "id": "chore_laundry_deliver_baskets",
         "title": "Deliver Folded Laundry Baskets to 4 Bedrooms",
-        "description": "Carry the sorted, folded clothing baskets to Sven, Layla, Theena, Ashbelle, and Mom & Dad’s bedrooms for easy put-away.",
+        "description": "Carry the sorted, folded clothing baskets to Leo, Maya, Jordan, Emma, and Mom & Dad’s bedrooms for easy put-away.",
         "category": "Laundry",
-        "assignedMemberId": "mem_layla",
+        "assignedMemberId": "mem_maya",
         "frequency": "custom_days",
         "scheduledDays": [
           0,
@@ -873,9 +873,9 @@
         "scheduledTime": "17:30",
         "defaultPoints": 10,
         "qualityChecklist": [
-          "Sven’s basket placed next to his dresser",
-          "Layla’s basket placed in her room",
-          "Theena & Ashbelle’s baskets delivered to their bedrooms",
+          "Leo’s basket placed next to his dresser",
+          "Maya’s basket placed in her room",
+          "Jordan & Emma’s baskets delivered to their bedrooms",
           "Master bedroom basket placed by Mom & Dad’s closet"
         ],
         "estimatedMinutes": 8,
@@ -886,13 +886,13 @@
     ],
     "logs": [
       {
-        "id": "log_2026-09-13_chore_bed_sven_mem_sven",
-        "choreId": "chore_bed_sven",
-        "memberId": "mem_sven",
+        "id": "log_2026-09-13_chore_bed_leo_mem_leo",
+        "choreId": "chore_bed_leo",
+        "memberId": "mem_leo",
         "date": "2026-09-13",
         "status": "needs_review",
         "completedAt": "2026-09-13T08:20:00",
-        "completedNote": "Sven put all his teddy bears in the bin with high-fives!",
+        "completedNote": "Leo put all his teddy bears in the bin with high-fives!",
         "checklistStatus": {
           "0": true,
           "1": true,
@@ -901,9 +901,9 @@
         }
       },
       {
-        "id": "log_2026-09-13_chore_bath_kids_sink_mem_theena",
+        "id": "log_2026-09-13_chore_bath_kids_sink_mem_jordan",
         "choreId": "chore_bath_kids_sink",
-        "memberId": "mem_theena",
+        "memberId": "mem_jordan",
         "date": "2026-09-13",
         "status": "needs_review",
         "completedAt": "2026-09-13T09:10:00",
@@ -916,37 +916,37 @@
         }
       },
       {
-        "id": "log_2026-09-13_chore_kitchen_load_dw_mem_theena",
+        "id": "log_2026-09-13_chore_kitchen_load_dw_mem_jordan",
         "choreId": "chore_kitchen_load_dw",
-        "memberId": "mem_theena",
+        "memberId": "mem_jordan",
         "date": "2026-09-13",
         "status": "pending"
       },
       {
-        "id": "log_2026-09-13_chore_kitchen_pots_pans_mem_ashbelle",
+        "id": "log_2026-09-13_chore_kitchen_pots_pans_mem_emma",
         "choreId": "chore_kitchen_pots_pans",
-        "memberId": "mem_ashbelle",
+        "memberId": "mem_emma",
         "date": "2026-09-13",
         "status": "pending"
       },
       {
-        "id": "log_2026-09-13_chore_kitchen_counters_mem_hilda",
+        "id": "log_2026-09-13_chore_kitchen_counters_mem_sarah",
         "choreId": "chore_kitchen_counters",
-        "memberId": "mem_hilda",
+        "memberId": "mem_sarah",
         "date": "2026-09-13",
         "status": "pending"
       },
       {
-        "id": "log_2026-09-13_chore_living_pillows_throws_mem_sven",
+        "id": "log_2026-09-13_chore_living_pillows_throws_mem_leo",
         "choreId": "chore_living_pillows_throws",
-        "memberId": "mem_sven",
+        "memberId": "mem_leo",
         "date": "2026-09-13",
         "status": "pending"
       },
       {
-        "id": "log_2026-09-12_chore_laundry_deliver_baskets_mem_layla",
+        "id": "log_2026-09-12_chore_laundry_deliver_baskets_mem_maya",
         "choreId": "chore_laundry_deliver_baskets",
-        "memberId": "mem_layla",
+        "memberId": "mem_maya",
         "date": "2026-09-12",
         "status": "approved",
         "completedAt": "2026-09-12T16:00:00",
@@ -962,9 +962,9 @@
         }
       },
       {
-        "id": "log_2026-09-12_chore_living_dusting_mem_layla",
+        "id": "log_2026-09-12_chore_living_dusting_mem_maya",
         "choreId": "chore_living_dusting",
-        "memberId": "mem_layla",
+        "memberId": "mem_maya",
         "date": "2026-09-12",
         "status": "approved",
         "completedAt": "2026-09-12T15:00:00",
@@ -981,9 +981,9 @@
         }
       },
       {
-        "id": "log_2026-09-12_chore_kitchen_unload_dw_mem_layla",
+        "id": "log_2026-09-12_chore_kitchen_unload_dw_mem_maya",
         "choreId": "chore_kitchen_unload_dw",
-        "memberId": "mem_layla",
+        "memberId": "mem_maya",
         "date": "2026-09-12",
         "status": "approved",
         "completedAt": "2026-09-12T08:10:00",
@@ -1001,9 +1001,9 @@
         }
       },
       {
-        "id": "log_2026-09-12_chore_yard_water_mem_layla",
+        "id": "log_2026-09-12_chore_yard_water_mem_maya",
         "choreId": "chore_yard_water",
-        "memberId": "mem_layla",
+        "memberId": "mem_maya",
         "date": "2026-09-12",
         "status": "approved",
         "completedAt": "2026-09-12T08:30:00",
@@ -1021,9 +1021,9 @@
         }
       },
       {
-        "id": "log_2026-09-12_chore_bed_layla_mem_layla",
-        "choreId": "chore_bed_layla",
-        "memberId": "mem_layla",
+        "id": "log_2026-09-12_chore_bed_maya_mem_maya",
+        "choreId": "chore_bed_maya",
+        "memberId": "mem_maya",
         "date": "2026-09-12",
         "status": "approved",
         "completedAt": "2026-09-12T07:30:00",
@@ -1041,9 +1041,9 @@
         }
       },
       {
-        "id": "log_2026-09-12_chore_kitchen_dining_table_mem_layla",
+        "id": "log_2026-09-12_chore_kitchen_dining_table_mem_maya",
         "choreId": "chore_kitchen_dining_table",
-        "memberId": "mem_layla",
+        "memberId": "mem_maya",
         "date": "2026-09-12",
         "status": "approved",
         "completedAt": "2026-09-12T19:30:00",
@@ -1061,16 +1061,16 @@
         }
       },
       {
-        "id": "log_2026-09-12_chore_kitchen_pots_pans_mem_ashbelle",
+        "id": "log_2026-09-12_chore_kitchen_pots_pans_mem_emma",
         "choreId": "chore_kitchen_pots_pans",
-        "memberId": "mem_ashbelle",
+        "memberId": "mem_emma",
         "date": "2026-09-12",
         "status": "approved",
         "completedAt": "2026-09-12T20:20:00",
         "reviewedAt": "2026-09-12T20:45:00",
         "qualityScore": 5,
         "qualityGrade": "A+",
-        "feedbackNote": "Pots were spotless and island clean. Thank you Ashbelle!",
+        "feedbackNote": "Pots were spotless and island clean. Thank you Emma!",
         "pointsAwarded": 25,
         "bonusPoints": 5,
         "checklistStatus": {
@@ -1081,9 +1081,9 @@
         }
       },
       {
-        "id": "log_2026-09-12_chore_bath_toilets_mem_ashbelle",
+        "id": "log_2026-09-12_chore_bath_toilets_mem_emma",
         "choreId": "chore_bath_toilets",
-        "memberId": "mem_ashbelle",
+        "memberId": "mem_emma",
         "date": "2026-09-12",
         "status": "approved",
         "completedAt": "2026-09-12T16:00:00",
@@ -1365,8 +1365,8 @@
         "id": "claim_1",
         "rewardId": "rew_1",
         "rewardTitle": "30 Minutes Extra Screen Time / Gaming",
-        "memberId": "mem_layla",
-        "memberName": "Layla",
+        "memberId": "mem_maya",
+        "memberName": "Maya",
         "pointCost": 125,
         "claimedAt": "2026-09-12T18:00:00",
         "status": "delivered"
@@ -1375,8 +1375,8 @@
         "id": "claim_2",
         "rewardId": "rew_ice_cream",
         "rewardTitle": "After-School Popsicle, Smoothie, or Pastry",
-        "memberId": "mem_sven",
-        "memberName": "Sven",
+        "memberId": "mem_leo",
+        "memberName": "Leo",
         "pointCost": 110,
         "claimedAt": "2026-09-13T09:00:00",
         "status": "pending"

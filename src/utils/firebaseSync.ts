@@ -127,6 +127,7 @@ export function getHouseholdAuthHeaders(householdId?: string, extraHeaders?: Rec
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
       headers['X-Household-Auth'] = token;
+      headers['X-Household-Id'] = targetId;
     }
   }
   const pin = getParentPin();
@@ -214,6 +215,34 @@ export async function createNewHousehold(
   setCurrentHouseholdId(householdId);
 
   return householdData;
+}
+
+/**
+ * Ensures the client has an active authenticated household session with a valid auth token.
+ * Creates a household on the server if no session exists yet, allowing AI endpoints to authenticate.
+ */
+export async function ensureAuthenticatedHousehold(): Promise<string | null> {
+  const currentId = getCurrentHouseholdId();
+  if (currentId) {
+    const token = getHouseholdAuthToken(currentId);
+    if (token) return token;
+  }
+
+  try {
+    const created = await createNewHousehold(
+      'Our Family Home',
+      'Clean spaces, happy smiles & teamwork! ✨',
+      '1234',
+      'welcome' + Math.random().toString(36).substring(2, 7)
+    );
+    if (created?.id) {
+      setCurrentHouseholdId(created.id);
+      return getHouseholdAuthToken(created.id);
+    }
+  } catch (e) {
+    console.warn('Could not auto-register household session:', e);
+  }
+  return null;
 }
 
 /**

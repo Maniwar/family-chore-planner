@@ -33,6 +33,7 @@ import {
 } from '../types';
 import { soundFX } from '../utils/audio';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
+import { ensureAuthenticatedHousehold, getHouseholdAuthHeaders } from '../utils/firebaseSync';
 
 interface AISetupBuddyModalProps {
   isOpen: boolean;
@@ -152,10 +153,11 @@ export const AISetupBuddyModal: React.FC<AISetupBuddyModalProps> = ({
     setIsLoading(true);
 
     try {
+      await ensureAuthenticatedHousehold();
       // Send conversation to backend Gemini setup-buddy endpoint
       const response = await fetch('/api/ai/setup-buddy', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHouseholdAuthHeaders(),
         body: JSON.stringify({
           messages: updatedMessages.map(m => ({ role: m.role, text: m.text })),
           currentHousehold: {
