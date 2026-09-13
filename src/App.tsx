@@ -97,6 +97,8 @@ export default function App() {
   // Cloud multi-tenant household state
   const [activeHousehold, setActiveHousehold] = useState<CloudHousehold | null>(null);
   const [isCloudSyncModalOpen, setIsCloudSyncModalOpen] = useState<boolean>(false);
+  const [cloudSyncInitialTab, setCloudSyncInitialTab] = useState<'status' | 'create' | 'join'>('status');
+  const [cloudSyncPrefilledCode, setCloudSyncPrefilledCode] = useState<string>('');
 
   // Deduplication & hydration refs to prevent bouncing echoes or premature clobbers between devices
   const lastSyncedHashRef = useRef<string>('');
@@ -386,9 +388,21 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         let targetHh: CloudHousehold | null = null;
 
         if (inviteCode) {
-          targetHh = await findHouseholdByCode(inviteCode);
-          if (targetHh) {
+          const foundViaCode = await findHouseholdByCode(inviteCode);
+          if (foundViaCode) {
             window.history.replaceState({}, document.title, window.location.pathname);
+            
+            if (!foundViaCode.id || foundViaCode.joinPassphrase === 'REQUIRED') {
+              // Passphrase is required; we can't join silently.
+              // Prompt the user in the sync modal.
+              if (isMounted) {
+                setCloudSyncPrefilledCode(inviteCode.toUpperCase());
+                setCloudSyncInitialTab('join');
+                setIsCloudSyncModalOpen(true);
+              }
+            } else {
+              targetHh = foundViaCode;
+            }
           }
         }
 
@@ -2424,7 +2438,11 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       <Header
         members={members}
         householdInfo={householdInfo}
-        onOpenCloudSync={() => setIsCloudSyncModalOpen(true)}
+        onOpenCloudSync={() => {
+          setCloudSyncInitialTab('status');
+          setCloudSyncPrefilledCode('');
+          setIsCloudSyncModalOpen(true);
+        }}
         onOpenQuickSettings={() => setIsQuickSettingsOpen(true)}
         onOpenHouseEvolution={() => {
           setHighlightMemberIdForHouse(undefined);
@@ -2831,6 +2849,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         onHouseholdConnected={handleHouseholdConnected}
         onHouseholdDisconnected={handleHouseholdDisconnected}
         onShowToast={(msg) => showToast(msg)}
+        localData={{ members, chores, rewards, claims, logs }}
+        initialTab={cloudSyncInitialTab}
+        prefilledJoinCode={cloudSyncPrefilledCode}
       />
 
       {/* Gamified Progression Journey & Cosmetics Locker Modal */}
@@ -2909,7 +2930,11 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         isSoundEnabled={isSoundEnabled}
         onToggleSound={handleToggleSound}
         householdInfo={householdInfo}
-        onOpenCloudSync={() => setIsCloudSyncModalOpen(true)}
+        onOpenCloudSync={() => {
+          setCloudSyncInitialTab('status');
+          setCloudSyncPrefilledCode('');
+          setIsCloudSyncModalOpen(true);
+        }}
         onOpenGoogleCalendar={() => setCurrentView('calendar')}
         onOpenPrintView={() => setCurrentView('reports')}
         onOpenFamilyMembers={() => {

@@ -333,28 +333,23 @@ function verifyHouseholdAuth(req: express.Request, hh: ServerHouseholdRecord): b
 }
 
 // AI Endpoint Protection Middleware:
-// Gated against anonymous abuse with token authentication, per-IP rate limiting, and per-household rate limiting.
-function authenticateHouseholdAiRequest(req: express.Request, res: express.Response): ServerHouseholdRecord | null {
-  const token = getRequestAuthToken(req);
-  if (!token) {
-    res.status(401).json({ error: "Unauthorized: Household authentication token required" });
-    return null;
-  }
+// Gated against anonymous abuse with per-IP rate limiting.
+function authenticateHouseholdAiRequest(req: express.Request, res: express.Response): boolean {
+  const customKeyHeader = req.headers["x-gemini-api-key"] || req.headers["x-api-key"];
+  const hasCustomKey = typeof customKeyHeader === "string" && customKeyHeader.trim().length > 0;
 
-  // Look for target household: from header, body, or by matching the authKey
-  const targetId = req.headers["x-household-id"] || req.body?.householdId || req.body?.currentHousehold?.householdInfo?.id;
-  let hh: ServerHouseholdRecord | undefined;
-
-  if (typeof targetId === "string" && householdsMemoryStore[targetId]) {
-    hh = householdsMemoryStore[targetId];
-  } else {
-    // Look up household by auth token
-    hh = Object.values(householdsMemoryStore).find((h) => h && h.authKey && safeEqual(token, h.authKey));
-  }
-
-  if (!hh || !verifyHouseholdAuth(req, hh)) {
-    res.status(401).json({ error: "Unauthorized: Invalid household authentication credentials" });
-    return null;
+  // If not bringing their own key, they MUST authenticate via a valid household session
+  if (!hasCustomKey) {
+    const hhId = req.headers["x-household-id"] as string;
+    if (!hhId) {
+      res.status(401).json({ error: "Unauthorized. Missing household ID or custom API key." });
+      return false;
+    }
+    const hh = householdsMemoryStore[hhId];
+    if (!verifyHouseholdAuth(req, hh)) {
+      res.status(401).json({ error: "Unauthorized. Invalid household credentials." });
+      return false;
+    }
   }
 
   const rawIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || req.socket.remoteAddress || "unknown";
@@ -362,29 +357,19 @@ function authenticateHouseholdAiRequest(req: express.Request, res: express.Respo
   // Per-IP rate limit: maximum 20 requests per minute
   if (!checkRateLimit(`ai_ip_${rawIp}`, 20, 60000)) {
     res.status(429).json({ error: "Rate limit exceeded. Too many requests from this IP." });
-    return null;
+    return false;
   }
-
-  // Per-household rate limit: maximum 20 requests per minute
-  if (!checkRateLimit(`ai_hh_${hh.id}`, 20, 60000)) {
-    res.status(429).json({ error: "Rate limit exceeded. Too many requests for this household." });
-    return null;
-  }
-
-  return hh;
+  return true;
 }
 
 const requireAiHouseholdAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const hh = authenticateHouseholdAiRequest(req, res);
-  if (!hh) return;
-  (req as any).household = hh;
+  if (!authenticateHouseholdAiRequest(req, res)) return;
 
   // Extract custom client-provided Gemini API key if present
   const customKeyHeader = req.headers["x-gemini-api-key"] || req.headers["x-api-key"];
   if (typeof customKeyHeader === "string" && customKeyHeader.trim()) {
     (req as any).userGeminiApiKey = customKeyHeader.trim();
   }
-
   next();
 };
 

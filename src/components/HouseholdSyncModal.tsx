@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { CloudHousehold, createNewHousehold, findHouseholdByCode, setCurrentHouseholdId } from '../utils/firebaseSync';
 import { getParentPin } from '../utils/parentLock';
-import { HouseholdInfo } from '../types';
+import { HouseholdInfo, HouseholdMember, Chore, RewardItem, RewardClaim, ChoreAssignmentLog } from '../types';
 import { ThemePreset, THEMES, isGlassTheme } from '../utils/theme';
 import { soundFX } from '../utils/audio';
 import { useBottomSheet } from '../hooks/useBottomSheet';
@@ -35,6 +35,15 @@ interface HouseholdSyncModalProps {
   onHouseholdConnected: (household: CloudHousehold) => void;
   onHouseholdDisconnected: () => void;
   onShowToast: (msg: string, type?: 'success' | 'info' | 'warning') => void;
+  localData?: {
+    members: HouseholdMember[];
+    chores: Chore[];
+    rewards: RewardItem[];
+    claims: RewardClaim[];
+    logs: ChoreAssignmentLog[];
+  };
+  initialTab?: 'status' | 'create' | 'join';
+  prefilledJoinCode?: string;
 }
 
 export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
@@ -46,6 +55,9 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
   onHouseholdConnected,
   onHouseholdDisconnected,
   onShowToast,
+  localData,
+  initialTab = 'status',
+  prefilledJoinCode = '',
 }) => {
   const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
     onClose,
@@ -53,11 +65,11 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
   });
 
   const theme = THEMES[currentTheme] || THEMES.rose;
-  const [tab, setTab] = useState<'status' | 'create' | 'join'>('status');
+  const [tab, setTab] = useState<'status' | 'create' | 'join'>(initialTab);
   const [newFamilyName, setNewFamilyName] = useState(householdInfo.familyName || 'Our Family Home');
   const [newMotto, setNewMotto] = useState(householdInfo.houseAddressOrMotto || 'Clean spaces, happy smiles & teamwork! ✨');
   const [newPassphrase, setNewPassphrase] = useState('');
-  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [joinCodeInput, setJoinCodeInput] = useState(prefilledJoinCode);
   const [joinPassphraseInput, setJoinPassphraseInput] = useState('');
   const [requiresPassphrasePrompt, setRequiresPassphrasePrompt] = useState(false);
   const [pendingHouseholdFound, setPendingHouseholdFound] = useState<CloudHousehold | null>(null);
@@ -66,6 +78,17 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setTab(initialTab);
+      setJoinCodeInput(prefilledJoinCode);
+      setJoinPassphraseInput('');
+      setRequiresPassphrasePrompt(false);
+      setPendingHouseholdFound(null);
+      setErrorMessage('');
+    }
+  }, [isOpen, initialTab, prefilledJoinCode]);
 
   if (!isOpen) return null;
 
@@ -108,7 +131,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
     try {
       soundFX.playFanfare();
       const currentAdminPin = getParentPin();
-      const created = await createNewHousehold(newFamilyName, newMotto, currentAdminPin, newPassphrase);
+      const created = await createNewHousehold(newFamilyName, newMotto, currentAdminPin, newPassphrase, localData);
       onHouseholdConnected(created);
       onShowToast(`Created cloud household for "${created.familyName}"! Join code: ${created.householdCode}`, 'success');
       setTab('status');
