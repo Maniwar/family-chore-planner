@@ -310,8 +310,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     if (cleaned.length !== logs.length) {
       setLogs(cleaned);
       saveLogs(cleaned);
-      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-      syncCompleteHouseholdToCloud(targetHhId, { logs: cleaned }).catch(console.warn);
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+      syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, logs: cleaned}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   }, []);
 
@@ -367,8 +367,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
               const updatedMembers = members.map(m => m.id === member.id ? updatedMember : m);
               setMembers(updatedMembers);
               saveMembers(updatedMembers);
-              const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-              syncCompleteHouseholdToCloud(targetHhId, { members: updatedMembers }).catch(console.warn);
+              const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+              syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, members: updatedMembers}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
               showToast(`PIN set successfully for ${member.name}!`);
               authenticateMember(id);
               setSelectedMemberId(id);
@@ -522,7 +522,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           setRewards(upgradedRewards);
           saveRewards(upgradedRewards);
           if (targetHh.rewards && JSON.stringify(upgradedRewards) !== JSON.stringify(targetHh.rewards)) {
-            syncCompleteHouseholdToCloud(targetHh.id, { rewards: upgradedRewards }).catch(console.warn);
+            syncCompleteHouseholdToCloud(targetHh.id, {version: activeHousehold?.version,  rewards: upgradedRewards }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
           }
           if (targetHh.claims) setClaims(targetHh.claims);
           if (targetHh.penaltySettings) setPenaltySettings(targetHh.penaltySettings);
@@ -609,7 +609,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
 
     const timer = setTimeout(() => {
       lastSyncedHashRef.current = currentHash;
-      syncCompleteHouseholdToCloud(activeHousehold.id, dataPayload).catch(console.warn);
+      syncCompleteHouseholdToCloud(activeHousehold.id, dataPayload).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }, 600);
 
     return () => clearTimeout(timer);
@@ -663,7 +663,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         setRewards(mergedRewards);
         saveRewards(mergedRewards);
         if (JSON.stringify(mergedRewards) !== JSON.stringify(cloudHh.rewards) && targetHhId) {
-          syncCompleteHouseholdToCloud(targetHhId, { rewards: mergedRewards }).catch(console.warn);
+          syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, rewards: mergedRewards}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
         }
       }
       if (cloudHh.claims) setClaims(cloudHh.claims);
@@ -795,11 +795,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     saveMembers(updatedMembers);
     showToast('Chore reset to pending');
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      logs: updatedLogs,
-      members: updatedMembers,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, logs: updatedLogs,
+      members: updatedMembers,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
   };
 
   const handleUpdateChecklist = (
@@ -848,8 +846,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       setLogs(updatedLogs);
       saveLogs(updatedLogs);
 
-      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-      syncCompleteHouseholdToCloud(targetHhId, { logs: updatedLogs }).catch(console.warn);
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+      syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, logs: updatedLogs}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     };
 
     // Check PIN requirement for assignee
@@ -880,8 +878,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
               const updatedMembers = members.map(m => m.id === assigneeMember.id ? updatedMember : m);
               setMembers(updatedMembers);
               saveMembers(updatedMembers);
-              const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-              syncCompleteHouseholdToCloud(targetHhId, { members: updatedMembers }).catch(console.warn);
+              const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+              syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, members: updatedMembers}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
               showToast(`PIN set successfully for ${assigneeMember.name}!`);
               authenticateMember(assigneeMember.id);
               performUpdate();
@@ -937,8 +935,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           const updatedLogs = logs.filter((_, i) => i !== existingIndex);
           setLogs(updatedLogs);
           saveLogs(updatedLogs);
-          const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-          syncCompleteHouseholdToCloud(targetHhId, { logs: updatedLogs }).catch(console.warn);
+          const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+          syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, logs: updatedLogs}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
           soundFX.playPop();
           showToast('Chore unchecked.');
         }
@@ -978,10 +976,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       setLogs(updatedLogs);
       saveLogs(updatedLogs);
 
-      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-      syncCompleteHouseholdToCloud(targetHhId, {
-        logs: updatedLogs,
-      }).catch(console.warn);
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+      syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, logs: updatedLogs,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     };
 
     // Check PIN requirement for assignee
@@ -1014,8 +1010,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
               const updatedMembers = members.map(m => m.id === assigneeMember.id ? updatedMember : m);
               setMembers(updatedMembers);
               saveMembers(updatedMembers);
-              const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-              syncCompleteHouseholdToCloud(targetHhId, { members: updatedMembers }).catch(console.warn);
+              const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+              syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, members: updatedMembers}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
               showToast(`PIN set successfully for ${assigneeMember.name}!`);
               authenticateMember(assigneeMember.id);
               performComplete();
@@ -1109,11 +1105,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     setMembers(updatedMembers);
     saveMembers(updatedMembers);
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      logs: updatedLogs,
-      members: updatedMembers,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, logs: updatedLogs,
+      members: updatedMembers,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
 
     triggerConfettiCelebration();
     soundFX.playRewardCoin();
@@ -1187,11 +1181,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     setMembers(updatedMembers);
     saveMembers(updatedMembers);
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      logs: updatedLogs,
-      members: updatedMembers,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, logs: updatedLogs,
+      members: updatedMembers,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
 
     triggerBigCelebration();
     soundFX.playRewardCoin();
@@ -1243,11 +1235,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     setMembers(updatedMembers);
     saveMembers(updatedMembers);
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      logs: updatedLogs,
-      members: updatedMembers,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, logs: updatedLogs,
+      members: updatedMembers,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
 
     triggerBigCelebration();
     soundFX.playRewardCoin();
@@ -1393,22 +1383,18 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       saveEvents(updatedEvents);
       showToast(`Chore marked for Redo. Feedback left for helper.`);
 
-      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-      syncCompleteHouseholdToCloud(targetHhId, {
-        logs: updatedLogs,
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+      syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, logs: updatedLogs,
         members: updatedMembers,
-        events: updatedEvents,
-      }).catch(console.warn);
+        events: updatedEvents,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     } else {
       soundFX.playPop();
       showToast(`Approved! ${finalPointsAwarded} points awarded.`);
 
-      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-      syncCompleteHouseholdToCloud(targetHhId, {
-        logs: updatedLogs,
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+      syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, logs: updatedLogs,
         members: updatedMembers,
-        events: events,
-      }).catch(console.warn);
+        events: events,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
 
     setInspectModalData({ isOpen: false, chore: null, log: null });
@@ -1467,12 +1453,12 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         method: 'POST',
         headers: getHouseholdAuthHeaders(activeHousehold.id),
         body: JSON.stringify(newNudge),
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
 
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         nudges: updatedNudges,
         events: updatedEvents,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -1546,10 +1532,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast(`Penalty waived for ${member?.name || 'Helper'} on ${chore?.title || 'task'}! ⭐`);
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         logs: updatedLogs,
         events: updatedEvents,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -1625,10 +1611,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast(`Waived ${itemsToWaive.length} overdue task(s)! ⭐`);
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         logs: finalLogs,
         events: updatedEvents,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -1700,10 +1686,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast(`Due date extended to ${newDueDate}! 📅`);
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         logs: updatedLogs,
         events: updatedEvents,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -1712,9 +1698,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast('Penalty & grade rules updated!');
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         penaltySettings: newSettings,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -1768,11 +1754,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       showToast(`New chore "${savedChore.title}" added.`);
     }
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      chores: updated,
-      logs,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, chores: updated,
+      logs,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
   };
 
   const handleBatchAddChores = (newChores: (Omit<Chore, 'id'> & { id?: string })[]) => {
@@ -1789,11 +1773,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     triggerConfettiCelebration();
     showToast(`Added ${choresWithIds.length} new chore template(s) to Library! ✨`);
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      chores: updated,
-      logs,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, chores: updated,
+      logs,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
   };
 
   const handleDeleteChore = (choreId: string) => {
@@ -1802,11 +1784,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     saveChores(updated);
     showToast('Chore deleted.');
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      chores: updated,
-      logs,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, chores: updated,
+      logs,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
   };
 
   const handleToggleChoreActive = (choreId: string) => {
@@ -1819,11 +1799,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     setChores(updated);
     saveChores(updated);
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      chores: updated,
-      logs,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, chores: updated,
+      logs,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
   };
 
   const handleSaveMember = (memberData: Omit<HouseholdMember, 'id' | 'currentPoints' | 'lifetimePoints' | 'starsCount' | 'streakDays'> & { id?: string }) => {
@@ -1857,9 +1835,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
 
     // Instant cloud sync push for avatar photos/profile edits
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         members: updatedList,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -1872,9 +1850,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast('Family helper removed.');
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         members: updated,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -1920,10 +1898,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     setEvents(updatedEvents);
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         members: updated,
         events: updatedEvents,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -1968,11 +1946,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     setEvents(updatedEvents);
     saveEvents(updatedEvents);
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      members: updated,
-      events: updatedEvents,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, members: updated,
+      events: updatedEvents,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
   };
 
   const handleResetAllSeedPoints = () => {
@@ -2005,11 +1981,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     setEvents(updatedEvents);
     saveEvents(updatedEvents);
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      members: updated,
-      events: updatedEvents,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, members: updated,
+      events: updatedEvents,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
   };
 
   const handleResetAllToVerifiedPoints = () => {
@@ -2057,11 +2031,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     setEvents(updatedEvents);
     saveEvents(updatedEvents);
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      members: updated,
-      events: updatedEvents,
-    }).catch(console.warn);
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, members: updated,
+      events: updatedEvents,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
   };
 
   const handleSetHouseXp = (newHouseXp: number, resetHelpersLifetimeXp?: boolean) => {
@@ -2090,14 +2062,12 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     triggerConfettiCelebration();
     showToast(`House XP set to ${safeXp.toLocaleString()} XP! 🏡✨`);
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      customHouseXp: safeXp,
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, customHouseXp: safeXp,
       members: updatedMembers,
       familyName: updatedHhInfo.familyName,
       houseAddressOrMotto: updatedHhInfo.houseAddressOrMotto,
-      housePhotoUrl: updatedHhInfo.housePhotoUrl,
-    }).catch(console.warn);
+      housePhotoUrl: updatedHhInfo.housePhotoUrl,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
   };
 
   const handleOpenPointManager = (memberId?: string) => {
@@ -2153,11 +2123,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       soundFX.playRewardCoin();
       showToast(`Reward "${reward.title}" requested for ${member.name}! Mom will review.`);
 
-      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-      syncCompleteHouseholdToCloud(targetHhId, {
-        members: updatedMembers,
-        claims: updatedClaims
-      }).catch(console.warn);
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+      syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, members: updatedMembers,
+        claims: updatedClaims}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     };
 
     if (!isMomMode && !isMemberAuthenticated(memberId)) {
@@ -2234,10 +2202,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast('Reward claim approved! 🎉 Ready to enjoy.');
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         claims: updated,
         members: updatedMembersList,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2255,9 +2223,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast(cosmeticId ? 'Avatar cosmetic equipped! ✨' : 'Avatar cosmetic unequipped.');
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         members: updated,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2278,9 +2246,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast('Reward marked as delivered & fulfilled! 🎁');
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         claims: updated,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2316,10 +2284,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast(`Claim refunded! ${targetClaim.pointCost} points returned to ${targetClaim.memberName}.`);
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         members: updatedMembers,
         claims: updatedClaims,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2329,9 +2297,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast('Redemption record deleted.');
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         claims: updated,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2345,9 +2313,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast(`Reward "${reward.title}" added to catalog.`);
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         rewards: updated,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2357,9 +2325,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast(`Reward "${updatedReward.title}" updated.`);
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         rewards: updated,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2369,9 +2337,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast('Reward deleted.');
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         rewards: updated,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2381,9 +2349,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     saveRewards(INITIAL_REWARDS);
     showToast('Catalog restored with all 23 Game Theory rewards! ⭐');
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         rewards: INITIAL_REWARDS,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2404,9 +2372,9 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast(`AI successfully auto-assigned ${newAssignments.length} chores based on helper ages and skill levels!`);
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         chores: updatedChores,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2415,11 +2383,11 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     showToast('Household profile and photo saved successfully! 🏡');
 
     if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
+      syncCompleteHouseholdToCloud(activeHousehold.id, {version: activeHousehold?.version, 
         familyName: newInfo.familyName,
         houseAddressOrMotto: newInfo.houseAddressOrMotto,
         housePhotoUrl: newInfo.housePhotoUrl,
-      }).catch(console.warn);
+      }).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
     }
   };
 
@@ -2652,14 +2620,12 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     triggerConfettiCelebration();
     showToast(`Buddy applied ${actions.length} household change(s)! ✨`);
 
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      familyName: currentInfo.familyName,
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+    syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, familyName: currentInfo.familyName,
       houseAddressOrMotto: currentInfo.houseAddressOrMotto,
       members: currentMembers,
       chores: currentChores,
-      rewards: currentRewards,
-    }).catch(console.warn);
+      rewards: currentRewards,}).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
   };
 
   const handleResetDemo = () => {

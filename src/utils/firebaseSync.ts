@@ -319,7 +319,7 @@ export async function getHousehold(householdId: string): Promise<CloudHousehold 
  * Uses a single doc write instead of hundreds of subcollection writes.
  */
 export async function syncCompleteHouseholdToCloud(
-  householdId: string,
+  householdId: string | null | undefined,
   payload: {
     familyName?: string;
     houseAddressOrMotto?: string;
@@ -337,8 +337,14 @@ export async function syncCompleteHouseholdToCloud(
     events?: any[];
     nudges?: any[];
     customHouseXp?: number;
+    version?: number;
   }
 ): Promise<void> {
+  if (!householdId) {
+    console.warn("Attempted to sync without a valid household ID. Changes are queued locally.");
+    return;
+  }
+
   const now = new Date().toISOString();
   const fullData = {
     id: householdId,
@@ -346,21 +352,28 @@ export async function syncCompleteHouseholdToCloud(
     updatedAt: now,
   };
 
-  // Sync to Server API
-  try {
-    const res = await fetch(`/api/household/${encodeURIComponent(householdId)}/sync`, {
-      method: 'POST',
-      headers: getHouseholdAuthHeaders(householdId),
-      body: JSON.stringify(fullData),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.authKey) {
-        setHouseholdAuthToken(householdId, data.authKey);
-      }
+  const res = await fetch(`/api/household/${encodeURIComponent(householdId)}/sync`, {
+    method: 'POST',
+    headers: getHouseholdAuthHeaders(householdId),
+    body: JSON.stringify(fullData),
+  });
+
+  if (res.ok) {
+    const data = await res.json();
+    if (data?.authKey) {
+      setHouseholdAuthToken(householdId, data.authKey);
     }
-  } catch (e) {
-    console.warn('Server sync notice:', e);
+  } else {
+    let errBody;
+    try {
+      errBody = await res.json();
+    } catch {
+      errBody = { error: res.statusText };
+    }
+    const errObj = new Error(errBody.error || `Failed to sync: ${res.status}`);
+    (errObj as any).status = res.status;
+    (errObj as any).body = errBody;
+    throw errObj;
   }
 }
 
