@@ -133,8 +133,7 @@ export const sanitizeLogs = (logs: ChoreAssignmentLog[]): ChoreAssignmentLog[] =
   ]);
   return logs.filter(l => {
     if (syntheticStaleIds.has(l.id)) return false;
-    // Chores cannot be completed or submitted for inspection before their scheduled date
-    if (l.date && l.date > today) return false;
+    // Removed date > today restriction so future pending checklists can sync
     return true;
   });
 };

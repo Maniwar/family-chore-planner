@@ -633,7 +633,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       }
       if (cloudHh.members && cloudHh.members.length > 0) {
         setMembers(prevMembers => {
-          return cloudHh.members!.map(cm => {
+          const newMembers = cloudHh.members!.map(cm => {
             const localMatch = prevMembers.find(lm => lm.id === cm.id);
             if (localMatch?.avatarPhotoUrl && (!cm.avatarPhotoUrl || cm.avatarPhotoUrl.trim() === '')) {
               return {
@@ -643,6 +643,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             }
             return cm;
           });
+          saveMembers(newMembers);
+          return newMembers;
         });
       }
       if (cloudHh.chores && cloudHh.chores.length > 0) {

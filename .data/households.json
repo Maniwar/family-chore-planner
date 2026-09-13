@@ -1385,5 +1385,39 @@
     "createdAt": "2026-08-27T19:12:24.443Z",
     "updatedAt": "2026-09-13T16:13:01.998Z",
     "version": 1
+  },
+  "hh_01a4f184f868": {
+    "id": "hh_01a4f184f868",
+    "householdCode": "NEST-JYZM",
+    "authKey": "7b1f27d303c7a24254ba1976758670d932fcf39ebfff5254e0d759f78bb4d17f",
+    "familyName": "Test Family",
+    "houseAddressOrMotto": "Test Motto",
+    "housePhotoUrl": "",
+    "adminPin": "1234",
+    "pinProtectionEnabled": true,
+    "joinPassphrase": "testpassphrase",
+    "members": [
+      {
+        "id": "m1",
+        "name": "Kid",
+        "pin": "1111"
+      }
+    ],
+    "chores": [],
+    "logs": [
+      {
+        "id": "log1",
+        "choreId": "c1",
+        "memberId": "m1",
+        "checklistStatus": {
+          "0": true
+        }
+      }
+    ],
+    "rewards": [],
+    "claims": [],
+    "createdAt": "2026-09-13T20:57:13.708Z",
+    "updatedAt": "2026-09-13T20:57:13.720Z",
+    "version": 3
   }
 }

@@ -5,6 +5,8 @@ import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs } from "firebase/firestore";
 
 dotenv.config();
 
@@ -12,6 +14,21 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: "10mb" }));
+
+// Initialize Firebase SDK for server-side persistence
+let firebaseConfig: any = null;
+try {
+  const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  }
+} catch (e) {
+  console.warn("Could not load firebase-applet-config.json:", e);
+}
+
+const fbApp = !getApps().length && firebaseConfig ? initializeApp(firebaseConfig) : (getApps().length ? getApp() : null);
+const db = fbApp ? getFirestore(fbApp, firebaseConfig?.firestoreDatabaseId) : null;
+
 
 // Lazy Gemini client helper (supports Bring Your Own Key or server-configured key)
 function getGeminiClient(customApiKey?: string): GoogleGenAI {
@@ -212,6 +229,7 @@ interface ServerHouseholdRecord {
 }
 
 let householdsMemoryStore: Record<string, ServerHouseholdRecord> = {};
+let activeFirestoreListeners: Record<string, Function> = {};
 
 // Rate limiting store for brute-force and abuse protection (B7)
 const ipRateLimits = new Map<string, { count: number; resetTime: number }>();
@@ -260,7 +278,41 @@ function sanitizeHousehold(hh: ServerHouseholdRecord) {
   return safe;
 }
 
-function initHouseholdStore() {
+function ensureFirestoreListener(id: string) {
+  if (!db || activeFirestoreListeners[id]) return;
+  const unsub = onSnapshot(doc(db, "households", id), (snap) => {
+    if (snap.exists()) {
+      householdsMemoryStore[id] = snap.data() as ServerHouseholdRecord;
+    }
+  }, (err) => {
+    console.warn("Firestore listener error:", err);
+  });
+  activeFirestoreListeners[id] = unsub;
+}
+
+async function saveHouseholdStore(hhId?: string) {
+  // Save to disk cache (optional fallback)
+  try {
+    if (!fs.existsSync(HOUSEHOLD_DATA_DIR)) {
+      fs.mkdirSync(HOUSEHOLD_DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(HOUSEHOLD_STORE_FILE, JSON.stringify(householdsMemoryStore, null, 2), "utf-8");
+  } catch (e) {
+    console.warn("Could not persist households to disk:", e);
+  }
+
+  // Save to Firestore
+  if (db && hhId && householdsMemoryStore[hhId]) {
+    try {
+      const cleaned = JSON.parse(JSON.stringify(householdsMemoryStore[hhId]));
+      await setDoc(doc(db, "households", hhId), cleaned);
+    } catch (e) {
+      console.error("Firestore setDoc error:", e);
+    }
+  }
+}
+
+async function initHouseholdStore() {
   try {
     if (!fs.existsSync(HOUSEHOLD_DATA_DIR)) {
       fs.mkdirSync(HOUSEHOLD_DATA_DIR, { recursive: true });
@@ -275,8 +327,8 @@ function initHouseholdStore() {
       }
 
       let modified = false;
-      Object.values(householdsMemoryStore).forEach((h) => {
-        if (!h) return;
+      for (const h of Object.values(householdsMemoryStore)) {
+        if (!h) continue;
         // Ensure unguessable authKey
         if (!h.authKey) {
           h.authKey = crypto.randomBytes(32).toString("hex");
@@ -287,25 +339,33 @@ function initHouseholdStore() {
           h.joinPassphrase = crypto.randomBytes(16).toString("base64url");
           modified = true;
         }
-      });
+      }
 
       if (modified) {
         saveHouseholdStore();
       }
+
+      // Migrate to Firestore if needed
+      if (db) {
+        for (const [id, hh] of Object.entries(householdsMemoryStore)) {
+          ensureFirestoreListener(id);
+          // If the server restarted, we push the local cache to Firestore just in case it wasn't saved
+          try {
+            const snap = await getDoc(doc(db, "households", id));
+            if (!snap.exists()) {
+              await setDoc(doc(db, "households", id), JSON.parse(JSON.stringify(hh)));
+            } else {
+              // Prefer Firestore data if it exists
+              householdsMemoryStore[id] = snap.data() as ServerHouseholdRecord;
+            }
+          } catch (e) {
+            console.error("Error migrating to Firestore:", e);
+          }
+        }
+      }
     }
   } catch (e) {
     console.warn("Could not load stored households file, using memory store:", e);
-  }
-}
-
-function saveHouseholdStore() {
-  try {
-    if (!fs.existsSync(HOUSEHOLD_DATA_DIR)) {
-      fs.mkdirSync(HOUSEHOLD_DATA_DIR, { recursive: true });
-    }
-    fs.writeFileSync(HOUSEHOLD_STORE_FILE, JSON.stringify(householdsMemoryStore, null, 2), "utf-8");
-  } catch (e) {
-    console.warn("Could not persist households to disk:", e);
   }
 }
 
@@ -997,7 +1057,7 @@ app.post("/api/household/create", (req, res) => {
     };
 
     householdsMemoryStore[hhId] = record;
-    saveHouseholdStore();
+    saveHouseholdStore(hhId);
 
     // Return authKey exactly once at create, never return householdCode/adminPin/joinPassphrase in serialized household
     return res.json({ success: true, household: sanitizeHousehold(record), authKey });
@@ -1008,7 +1068,7 @@ app.post("/api/household/create", (req, res) => {
 });
 
 // Dedicated join endpoint - accepts code + passphrase, verifies both, mints/returns token (B3, B7)
-app.post(["/api/household/join", "/api/household/by-code/:code/join"], (req, res) => {
+app.post(["/api/household/join", "/api/household/by-code/:code/join"], async (req, res) => {
   try {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     if (!checkRateLimit(`join_${ip}`, 10, 60000)) {
@@ -1016,18 +1076,12 @@ app.post(["/api/household/join", "/api/household/by-code/:code/join"], (req, res
     }
 
     const codeParam = (req.params.code || req.body.householdCode || req.body.code || "").trim().toUpperCase();
-    const cleanSearch = codeParam.replace(/[^A-Z0-9]/g, "");
 
-    if (!cleanSearch) {
+    if (!codeParam) {
       return res.status(400).json({ error: "householdCode is required" });
     }
 
-    const found = Object.values(householdsMemoryStore).find((h) => {
-      if (!h) return false;
-      const hCode = (h.householdCode || "").toUpperCase();
-      const hClean = hCode.replace(/[^A-Z0-9]/g, "");
-      return hCode === codeParam || hClean === cleanSearch;
-    });
+    const found = await findHouseholdByCodeFromStore(codeParam);
 
     if (!found) {
       return res.status(404).json({ error: "Household not found" });
@@ -1040,7 +1094,7 @@ app.post(["/api/household/join", "/api/household/by-code/:code/join"], (req, res
 
     if (!found.authKey) {
       found.authKey = crypto.randomBytes(32).toString("hex");
-      saveHouseholdStore();
+      saveHouseholdStore(found.id);
     }
 
     return res.json({
@@ -1054,7 +1108,7 @@ app.post(["/api/household/join", "/api/household/by-code/:code/join"], (req, res
 });
 
 // Look up household by code - B2, B5, B7: Returns ONLY a passphrase prompt stub without leaking roster or credentials
-app.get("/api/household/by-code/:code", (req, res) => {
+app.get("/api/household/by-code/:code", async (req, res) => {
   try {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     if (!checkRateLimit(`lookup_${ip}`, 10, 60000)) {
@@ -1063,14 +1117,8 @@ app.get("/api/household/by-code/:code", (req, res) => {
 
     const raw = (req.params.code || "").trim();
     const searchCode = raw.toUpperCase();
-    const cleanSearch = searchCode.replace(/[^A-Z0-9]/g, "");
 
-    const found = Object.values(householdsMemoryStore).find((h) => {
-      if (!h) return false;
-      const hCode = (h.householdCode || "").toUpperCase();
-      const hCleanCode = hCode.replace(/[^A-Z0-9]/g, "");
-      return hCode === searchCode || hCleanCode === cleanSearch;
-    });
+    const found = await findHouseholdByCodeFromStore(searchCode);
 
     if (!found) {
       return res.status(404).json({ error: "Household not found" });
@@ -1088,10 +1136,60 @@ app.get("/api/household/by-code/:code", (req, res) => {
   }
 });
 
-// Fetch full household by ID - REQUIRES AUTHENTICATION (B2, B3)
-app.get("/api/household/:id", (req, res) => {
+async function getHouseholdFromStore(hhId: string): Promise<ServerHouseholdRecord | null> {
+  if (householdsMemoryStore[hhId]) {
+    ensureFirestoreListener(hhId);
+    return householdsMemoryStore[hhId];
+  }
+  if (!db) return null;
   try {
-    const hh = householdsMemoryStore[req.params.id];
+    const snap = await getDoc(doc(db, "households", hhId));
+    if (snap.exists()) {
+      const hh = snap.data() as ServerHouseholdRecord;
+      householdsMemoryStore[hhId] = hh;
+      ensureFirestoreListener(hhId);
+      return hh;
+    }
+  } catch (e) {
+    console.error("Firestore getDoc error:", e);
+  }
+  return null;
+}
+
+async function findHouseholdByCodeFromStore(codeParam: string): Promise<ServerHouseholdRecord | null> {
+  const cleanSearch = codeParam.replace(/[^A-Z0-9]/g, "");
+  if (!cleanSearch) return null;
+  
+  let found = Object.values(householdsMemoryStore).find((h) => {
+    if (!h) return false;
+    const hCode = (h.householdCode || "").toUpperCase();
+    const hClean = hCode.replace(/[^A-Z0-9]/g, "");
+    return hCode === codeParam || hClean === cleanSearch;
+  });
+  
+  if (found) return found;
+
+  if (db) {
+    try {
+      const q = query(collection(db, "households"), where("householdCode", "==", codeParam));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const hh = querySnapshot.docs[0].data() as ServerHouseholdRecord;
+        householdsMemoryStore[hh.id] = hh;
+        ensureFirestoreListener(hh.id);
+        return hh;
+      }
+    } catch (e) {
+      console.error("Firestore query error:", e);
+    }
+  }
+  return null;
+}
+
+// Fetch full household by ID - REQUIRES AUTHENTICATION (B2, B3)
+app.get("/api/household/:id", async (req, res) => {
+  try {
+    const hh = await getHouseholdFromStore(req.params.id);
     if (!hh) {
       return res.status(404).json({ error: "Household not found" });
     }
@@ -1105,10 +1203,10 @@ app.get("/api/household/:id", (req, res) => {
 });
 
 // Sync / update household data across all devices - REQUIRES AUTHENTICATION (B2, B3, B4)
-app.post("/api/household/:id/sync", (req, res) => {
+app.post("/api/household/:id/sync", async (req, res) => {
   try {
     const hhId = req.params.id;
-    const existing = householdsMemoryStore[hhId];
+    const existing = await getHouseholdFromStore(hhId);
 
     // B4: An unauthenticated POST to a nonexistent id must not bring one into existence
     if (!existing) {
@@ -1146,9 +1244,9 @@ app.post("/api/household/:id/sync", (req, res) => {
 
     existing.updatedAt = now;
     existing.version = (existing.version || 0) + 1;
-
+    
     householdsMemoryStore[hhId] = existing;
-    saveHouseholdStore();
+    saveHouseholdStore(hhId);
 
     return res.json({ success: true, household: sanitizeHousehold(existing) });
   } catch (err: any) {
@@ -1158,10 +1256,10 @@ app.post("/api/household/:id/sync", (req, res) => {
 });
 
 // Daily penalty settle job endpoint (triggered by schedule/cron or background heartbeat) - REQUIRES AUTHENTICATION
-app.post("/api/household/:id/settle-penalties", (req, res) => {
+app.post("/api/household/:id/settle-penalties", async (req, res) => {
   try {
     const hhId = req.params.id;
-    const hh = householdsMemoryStore[hhId];
+    const hh = await getHouseholdFromStore(hhId);
     if (!hh) {
       return res.status(404).json({ error: "Household not found" });
     }
@@ -1273,7 +1371,7 @@ app.post("/api/household/:id/settle-penalties", (req, res) => {
 
     hh.updatedAt = now.toISOString();
     hh.version = (hh.version || 0) + 1;
-    saveHouseholdStore();
+    saveHouseholdStore(hhId);
 
     return res.json({
       success: true,
@@ -1288,11 +1386,11 @@ app.post("/api/household/:id/settle-penalties", (req, res) => {
 });
 
 // Post a Nudge to a member - REQUIRES AUTHENTICATION
-app.post("/api/household/:id/nudge", (req, res) => {
+app.post("/api/household/:id/nudge", async (req, res) => {
   try {
     const hhId = req.params.id;
     const { memberId, memberName, senderRole, senderName, message, choreId, choreTitle } = req.body;
-    const hh = householdsMemoryStore[hhId];
+    const hh = await getHouseholdFromStore(hhId);
     if (!hh) return res.status(404).json({ error: "Household not found" });
     if (!verifyHouseholdAuth(req, hh)) {
       return res.status(401).json({ error: "Unauthorized: Invalid household credentials" });
@@ -1335,7 +1433,7 @@ app.post("/api/household/:id/nudge", (req, res) => {
 
     hh.updatedAt = now;
     hh.version = (hh.version || 0) + 1;
-    saveHouseholdStore();
+    saveHouseholdStore(hhId);
 
     return res.json({ success: true, nudge: newNudge });
   } catch (err: any) {
@@ -1344,10 +1442,10 @@ app.post("/api/household/:id/nudge", (req, res) => {
 });
 
 // Long-polling / fast poll endpoint for multi-device live sync - REQUIRES AUTHENTICATION
-app.get("/api/household/:id/poll", (req, res) => {
+app.get("/api/household/:id/poll", async (req, res) => {
   try {
     const hhId = req.params.id;
-    const hh = householdsMemoryStore[hhId];
+    const hh = await getHouseholdFromStore(hhId);
 
     if (!hh) {
       return res.status(404).json({ error: "Household not found" });
