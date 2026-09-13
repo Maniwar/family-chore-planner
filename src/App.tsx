@@ -727,6 +727,48 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     }).catch(console.warn);
   };
 
+  const handleUpdateChecklist = (
+    choreId: string, 
+    checklist: { [key: number]: boolean },
+    targetDate?: string,
+    targetMemberId?: string
+  ) => {
+    const effectiveDate = targetDate || currentDateStr;
+
+    const existingIndex = logs.findIndex(l => 
+      l.choreId === choreId && 
+      l.date === effectiveDate && 
+      (!targetMemberId || l.memberId === targetMemberId)
+    );
+    const chore = chores.find(c => c.id === choreId);
+    if (!chore) return;
+
+    let updatedLogs = [...logs];
+    if (existingIndex >= 0) {
+      updatedLogs[existingIndex] = {
+        ...updatedLogs[existingIndex],
+        checklistStatus: checklist,
+      };
+    } else {
+      const effectiveAssigneeId = targetMemberId || chore.assignedMemberId || 'unassigned';
+      const newLog: ChoreAssignmentLog = {
+        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        choreId,
+        memberId: effectiveAssigneeId,
+        date: effectiveDate,
+        status: 'pending',
+        checklistStatus: checklist,
+      };
+      updatedLogs.push(newLog);
+    }
+
+    setLogs(updatedLogs);
+    saveLogs(updatedLogs);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, { logs: updatedLogs }).catch(console.warn);
+  };
+
   const handleMarkComplete = (
     choreId: string, 
     notes?: string, 
@@ -2556,6 +2598,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
               saveDailyLayout(mode);
             }}
             onMarkComplete={handleMarkComplete}
+            onUpdateChecklist={handleUpdateChecklist}
             onOpenInspect={(chore, log) => handleOpenInspect(chore, log)}
             onQuickApprove={handleQuickApprove}
             onOpenNewChore={() => setChoreModalData({ isOpen: true, choreToEdit: null })}

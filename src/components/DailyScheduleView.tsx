@@ -70,6 +70,7 @@ interface DailyScheduleViewProps {
   viewMode?: 'list' | 'grid';
   onViewModeChange?: (mode: 'list' | 'grid') => void;
   onMarkComplete: (choreId: string, note?: string, checklist?: { [key: number]: boolean }) => void;
+  onUpdateChecklist?: (choreId: string, checklist: { [key: number]: boolean }) => void;
   onOpenInspect: (chore: Chore, log: ChoreAssignmentLog) => void;
   onQuickApprove: (choreId: string, logId: string) => void;
   onOpenNewChore: () => void;
@@ -95,6 +96,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
   viewMode: propViewMode,
   onViewModeChange,
   onMarkComplete,
+  onUpdateChecklist,
   onOpenInspect,
   onQuickApprove,
   onOpenNewChore,
@@ -1290,6 +1292,7 @@ export const DailyScheduleView: React.FC<DailyScheduleViewProps> = ({
                         badgeStyle={badgeStyle}
                         viewMode={effectiveViewMode}
                         onMarkComplete={onMarkComplete}
+                        onUpdateChecklist={onUpdateChecklist}
                         onOpenInspect={onOpenInspect}
                         onQuickApprove={onQuickApprove}
                         onEditChore={onEditChore}

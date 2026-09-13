@@ -42,6 +42,7 @@ interface ChoreCardProps {
   scheduledDate?: string;
   isFutureDate?: boolean;
   onMarkComplete: (choreId: string, note?: string, checklist?: { [key: number]: boolean }) => void;
+  onUpdateChecklist?: (choreId: string, checklist: { [key: number]: boolean }) => void;
   onOpenInspect: (chore: Chore, log: ChoreAssignmentLog) => void;
   onQuickApprove: (choreId: string, logId: string) => void;
   onEditChore?: (chore: Chore) => void;
@@ -60,6 +61,7 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
   scheduledDate,
   isFutureDate = false,
   onMarkComplete,
+  onUpdateChecklist,
   onOpenInspect,
   onQuickApprove,
   onEditChore,
@@ -90,6 +92,9 @@ export const ChoreCard: React.FC<ChoreCardProps> = ({
     soundFX.playPop();
     const updated = { ...checkedItems, [index]: !checkedItems[index] };
     setCheckedItems(updated);
+    if (onUpdateChecklist) {
+      onUpdateChecklist(chore.id, updated);
+    }
   };
 
   const handleChildSubmit = () => {
