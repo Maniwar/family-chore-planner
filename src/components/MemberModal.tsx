@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, User, Camera, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Lock,  X, User, Camera, Upload, Trash2, Image as ImageIcon  } from 'lucide-react';
 import { HouseholdMember, MemberRole } from '../types';
 import { calculateAge, estimateBirthDateFromAge } from '../utils/age';
 import { processImageFile } from '../utils/imageUpload';
@@ -412,9 +412,12 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               onChange={(e) => setPin(e.target.value.replace(/\D/g, '').substring(0, 8))}
               className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10 border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400'}`}
             />
-            <p className="text-[10px] text-slate-400 mt-0.5">
-              Lock this profile so only they can view and manage their chores.
-            </p>
+            <div className="flex items-start gap-1.5 mt-1">
+              <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-[10px] text-slate-500 leading-tight">
+                Setting a PIN locks this profile so only they can claim rewards and complete chores.
+              </p>
+            </div>
           </div>
 
           {/* Buttons */}

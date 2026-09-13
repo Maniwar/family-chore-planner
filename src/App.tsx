@@ -818,10 +818,11 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       'unassigned';
 
     const performUpdate = () => {
+      // Find the log ignoring targetMemberId if it's not provided
       const existingIndex = logs.findIndex(l => 
         l.choreId === choreId && 
         l.date === effectiveDate && 
-        (!targetMemberId || l.memberId === targetMemberId)
+        l.memberId === effectiveAssigneeId
       );
 
       let updatedLogs = [...logs];
@@ -908,12 +909,6 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       return;
     }
 
-    const existingIndex = logs.findIndex(l => 
-      l.choreId === choreId && 
-      l.date === effectiveDate && 
-      (!targetMemberId || l.memberId === targetMemberId)
-    );
-
     const chore = chores.find(c => c.id === choreId);
     if (!chore) return;
 
@@ -923,6 +918,12 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       members.find(m => m.role !== 'parent')?.id || 
       members[0]?.id || 
       'unassigned';
+
+    const existingIndex = logs.findIndex(l => 
+      l.choreId === choreId && 
+      l.date === effectiveDate && 
+      l.memberId === effectiveAssigneeId
+    );
 
     const performComplete = () => {
       // If already exists and no new checklist data is passed, toggle it off!

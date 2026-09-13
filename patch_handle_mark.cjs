@@ -1,10 +1,9 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/App.tsx', 'utf8');
 
-// The file got mangled. Let's fix handleUpdateChecklist specifically.
+const regex = /  const handleUpdateChecklist = \([\s\S]*?\n  const handleMarkComplete = \(/;
 
-const re = /  const handleUpdateChecklist = \([\s\S]*?  const handleMarkComplete = \(/m;
-const replacement = `  const handleUpdateChecklist = (
+const newCode = `  const handleUpdateChecklist = (
     choreId: string, 
     checklist: { [key: number]: boolean },
     targetDate?: string,
@@ -22,10 +21,11 @@ const replacement = `  const handleUpdateChecklist = (
       'unassigned';
 
     const performUpdate = () => {
+      // Find the log ignoring targetMemberId if it's not provided
       const existingIndex = logs.findIndex(l => 
         l.choreId === choreId && 
         l.date === effectiveDate && 
-        (!targetMemberId || l.memberId === targetMemberId)
+        l.memberId === effectiveAssigneeId
       );
 
       let updatedLogs = [...logs];
@@ -97,6 +97,5 @@ const replacement = `  const handleUpdateChecklist = (
 
   const handleMarkComplete = (`
 
-code = code.replace(re, replacement);
-
+code = code.replace(regex, newCode);
 fs.writeFileSync('src/App.tsx', code);
