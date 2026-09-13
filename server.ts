@@ -1060,7 +1060,7 @@ app.post("/api/household/create", async (req, res) => {
     await saveHouseholdStore(hhId);
 
     // Return authKey exactly once at create, never return householdCode/adminPin/joinPassphrase in serialized household
-    return res.json({ success: true, household: sanitizeHousehold(record), authKey });
+    return res.json({ success: true, household: sanitizeHousehold(record), authKey, householdCode: code });
   } catch (err: any) {
     console.error("Create household API error:", err);
     return res.status(500).json({ error: err.message || "Failed to create household" });
@@ -1068,6 +1068,29 @@ app.post("/api/household/create", async (req, res) => {
 });
 
 // Dedicated join endpoint - accepts code + passphrase, verifies both, mints/returns token (B3, B7)
+
+// Root Cause 4: Authenticated route to retrieve the join code
+app.get("/api/household/:id/code", async (req, res) => {
+  try {
+    const hhId = req.params.id;
+    if (!hhId) {
+      return res.status(400).json({ error: "Household ID required" });
+    }
+    const found = await getHouseholdFromStore(hhId);
+    if (!found) {
+      return res.status(404).json({ error: "Household not found" });
+    }
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.replace("Bearer ", "").trim();
+    if (!found.authKey || token !== found.authKey) {
+      return res.status(401).json({ error: "Unauthorized access to household code" });
+    }
+    return res.json({ success: true, householdCode: found.householdCode });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to get household code" });
+  }
+});
+
 app.post(["/api/household/join", "/api/household/by-code/:code/join"], async (req, res) => {
   try {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
@@ -1101,6 +1124,7 @@ app.post(["/api/household/join", "/api/household/by-code/:code/join"], async (re
       success: true,
       household: sanitizeHousehold(found),
       authKey: found.authKey,
+      householdCode: found.householdCode,
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to join household" });

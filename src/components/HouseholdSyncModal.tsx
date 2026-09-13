@@ -135,9 +135,9 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
       onHouseholdConnected(created);
       onShowToast(`Created cloud household for "${created.familyName}"! Join code: ${created.householdCode}`, 'success');
       setTab('status');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create household', err);
-      setErrorMessage('Failed to create household. Please check internet connection.');
+      setErrorMessage(err.message || 'Failed to create household. Please check internet connection.');
     } finally {
       setIsLoading(false);
     }

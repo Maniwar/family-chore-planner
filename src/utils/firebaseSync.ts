@@ -250,7 +250,9 @@ export async function findHouseholdByCode(code: string, passphrase?: string): Pr
         const data = await res.json();
         if (data.household && data.authKey) {
           setHouseholdAuthToken(data.household.id, data.authKey);
-          return data.household as CloudHousehold;
+          const hh = data.household as CloudHousehold;
+          if (data.householdCode) hh.householdCode = data.householdCode;
+          return hh;
         }
       }
       return null;
@@ -341,8 +343,7 @@ export async function syncCompleteHouseholdToCloud(
   }
 ): Promise<void> {
   if (!householdId) {
-    console.warn("Attempted to sync without a valid household ID. Changes are queued locally.");
-    return;
+    return Promise.reject(new Error("Changes saved locally only (Not connected to a Cloud Household)."));
   }
 
   const now = new Date().toISOString();
@@ -502,4 +503,19 @@ export async function syncClaimToCloud(householdId: string, claim: RewardClaim):
 
 export async function syncAllClaimsToCloud(householdId: string, claims: RewardClaim[]): Promise<void> {
   return syncCompleteHouseholdToCloud(householdId, { claims });
+}
+
+export async function getHouseholdCodeFromCloud(householdId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/household/${encodeURIComponent(householdId)}/code`, {
+      headers: getHouseholdAuthHeaders(householdId),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.householdCode) return data.householdCode;
+    }
+  } catch (e) {
+    console.error("Failed to fetch household code", e);
+  }
+  return null;
 }

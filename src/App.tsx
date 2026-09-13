@@ -570,7 +570,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     // Real-time multi-device subscription (listens for Firestore events or 2s server polling)
     const unsubscribe = subscribeHouseholdFull(targetHhId, (cloudHh) => {
       if (!isMounted) return;
-      setActiveHousehold(cloudHh);
+      setActiveHousehold(prev => ({
+        ...cloudHh,
+        householdCode: cloudHh.householdCode || prev?.householdCode
+      }));
       if (cloudHh.adminPin || cloudHh.pinProtectionEnabled !== undefined) {
         syncParentPinFromCloud(cloudHh.adminPin, cloudHh.pinProtectionEnabled);
       }
