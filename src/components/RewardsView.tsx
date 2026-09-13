@@ -45,6 +45,7 @@ import { RewardModal } from './RewardModal';
 import { RewardIconRenderer } from './RewardIconRenderer';
 
 interface RewardsViewProps {
+  selectedMemberId?: string;
   rewards: RewardItem[];
   claims: RewardClaim[];
   members: HouseholdMember[];
@@ -67,6 +68,7 @@ type RewardCategory = 'all' | 'treat' | 'allowance' | 'screentime' | 'activity' 
 type SortOption = 'featured' | 'points_asc' | 'points_desc' | 'name_asc' | 'closest_to_goal';
 
 export const RewardsView: React.FC<RewardsViewProps> = ({
+  selectedMemberId,
   rewards,
   claims,
   members,
@@ -84,6 +86,13 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
   onResetRewardsToDefault,
   onOpenAISetupBuddy,
 }) => {
+  useEffect(() => {
+    if (!isMomMode && selectedMemberId && selectedMemberId !== 'all') {
+      setSelectedFilterMemberId(selectedMemberId);
+      setSelectedClaimMemberId(selectedMemberId);
+    }
+  }, [selectedMemberId, isMomMode]);
+
   const theme = THEMES[currentTheme] || THEMES.rose;
   const isGlass = isGlassTheme(currentTheme);
 
@@ -92,14 +101,18 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
   const [rewardToEdit, setRewardToEdit] = useState<RewardItem | null>(null);
   const [claimModalReward, setClaimModalReward] = useState<RewardItem | null>(null);
   const [selectedClaimMemberId, setSelectedClaimMemberId] = useState<string>(
-    members.find(m => m.role !== 'parent')?.id || members[0]?.id || ''
+    (!isMomMode && selectedMemberId && selectedMemberId !== 'all') 
+      ? selectedMemberId 
+      : (members.find(m => m.role !== 'parent')?.id || members[0]?.id || '')
   );
   const [claimNote, setClaimNote] = useState<string>('');
 
   // Filtering & Search States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<RewardCategory>('all');
-  const [selectedFilterMemberId, setSelectedFilterMemberId] = useState<string>('all');
+  const [selectedFilterMemberId, setSelectedFilterMemberId] = useState<string>(
+    (!isMomMode && selectedMemberId && selectedMemberId !== 'all') ? selectedMemberId : 'all'
+  );
   const [sortBy, setSortBy] = useState<SortOption>('featured');
   const [onlyAffordable, setOnlyAffordable] = useState<boolean>(false);
 

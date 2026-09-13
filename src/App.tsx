@@ -807,39 +807,88 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     targetMemberId?: string
   ) => {
     const effectiveDate = targetDate || currentDateStr;
-
-    const existingIndex = logs.findIndex(l => 
-      l.choreId === choreId && 
-      l.date === effectiveDate && 
-      (!targetMemberId || l.memberId === targetMemberId)
-    );
     const chore = chores.find(c => c.id === choreId);
     if (!chore) return;
 
-    let updatedLogs = [...logs];
-    if (existingIndex >= 0) {
-      updatedLogs[existingIndex] = {
-        ...updatedLogs[existingIndex],
-        checklistStatus: checklist,
-      };
+    const effectiveAssigneeId = targetMemberId ||
+      getChoreAssigneeForDate(chore, effectiveDate) || 
+      (chore.assignedMemberId && chore.assignedMemberId !== 'unassigned' ? chore.assignedMemberId : undefined) || 
+      members.find(m => m.role !== 'parent')?.id || 
+      members[0]?.id || 
+      'unassigned';
+
+    const performUpdate = () => {
+      const existingIndex = logs.findIndex(l => 
+        l.choreId === choreId && 
+        l.date === effectiveDate && 
+        (!targetMemberId || l.memberId === targetMemberId)
+      );
+
+      let updatedLogs = [...logs];
+      if (existingIndex >= 0) {
+        updatedLogs[existingIndex] = {
+          ...updatedLogs[existingIndex],
+          checklistStatus: checklist,
+        };
+      } else {
+        const newLog: ChoreAssignmentLog = {
+          id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          choreId,
+          memberId: effectiveAssigneeId,
+          date: effectiveDate,
+          status: 'pending',
+          checklistStatus: checklist,
+        };
+        updatedLogs.push(newLog);
+      }
+
+      setLogs(updatedLogs);
+      saveLogs(updatedLogs);
+
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+      syncCompleteHouseholdToCloud(targetHhId, { logs: updatedLogs }).catch(console.warn);
+    };
+
+    // Check PIN requirement for assignee
+    const assigneeMember = members.find(m => m.id === effectiveAssigneeId);
+    if (!isMomMode && assigneeMember && selectedMemberId !== effectiveAssigneeId && !isMemberAuthenticated(effectiveAssigneeId)) {
+      if (assigneeMember.pin && assigneeMember.pin.trim() !== '') {
+        setMemberPinModalData({
+          isOpen: true,
+          memberId: assigneeMember.id,
+          expectedPin: assigneeMember.pin,
+          memberName: assigneeMember.name,
+          mode: 'verify',
+          onSuccess: () => {
+             authenticateMember(assigneeMember.id);
+             performUpdate();
+          },
+        });
+      } else {
+        setMemberPinModalData({
+          isOpen: true,
+          memberId: assigneeMember.id,
+          expectedPin: '',
+          memberName: assigneeMember.name,
+          mode: 'setup',
+          onSuccess: (newPin?: string) => {
+            if (newPin) {
+              const updatedMember = { ...assigneeMember, pin: newPin };
+              const updatedMembers = members.map(m => m.id === assigneeMember.id ? updatedMember : m);
+              setMembers(updatedMembers);
+              saveMembers(updatedMembers);
+              const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+              syncCompleteHouseholdToCloud(targetHhId, { members: updatedMembers }).catch(console.warn);
+              showToast(`PIN set successfully for ${assigneeMember.name}!`);
+              authenticateMember(assigneeMember.id);
+              performUpdate();
+            }
+          },
+        });
+      }
     } else {
-      const effectiveAssigneeId = targetMemberId || chore.assignedMemberId || 'unassigned';
-      const newLog: ChoreAssignmentLog = {
-        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        choreId,
-        memberId: effectiveAssigneeId,
-        date: effectiveDate,
-        status: 'pending',
-        checklistStatus: checklist,
-      };
-      updatedLogs.push(newLog);
+      performUpdate();
     }
-
-    setLogs(updatedLogs);
-    saveLogs(updatedLogs);
-
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, { logs: updatedLogs }).catch(console.warn);
   };
 
   const handleMarkComplete = (
@@ -867,12 +916,6 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
 
     const chore = chores.find(c => c.id === choreId);
     if (!chore) return;
-
-    // If already approved, clicking uncompletes/reopens
-    if (existingIndex >= 0 && logs[existingIndex].status === 'approved') {
-      handleUndoApprove(choreId, logs[existingIndex].id);
-      return;
-    }
 
     const effectiveAssigneeId = targetMemberId ||
       getChoreAssigneeForDate(chore, effectiveDate) || 
@@ -2066,7 +2109,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     }
   };
 
-  const handleClaimReward = (rewardId: string, memberId: string) => {
+  const handleClaimReward = (rewardId: string, memberId: string, note?: string) => {
     const reward = rewards.find(r => r.id === rewardId);
     const member = members.find(m => m.id === memberId);
     if (!reward || !member) return;
@@ -2076,38 +2119,73 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       return;
     }
 
-    const updatedMembers = members.map(m => {
-      if (m.id === memberId) {
-        return {
-          ...m,
-          currentPoints: m.currentPoints - reward.pointCost,
-        };
-      }
-      return m;
-    });
-    setMembers(updatedMembers);
+    const performClaim = () => {
+      const updatedMembers = members.map(m => {
+        if (m.id === memberId) {
+          return {
+            ...m,
+            currentPoints: m.currentPoints - reward.pointCost,
+          };
+        }
+        return m;
+      });
+      setMembers(updatedMembers);
+      saveMembers(updatedMembers);
 
-    const newClaim: RewardClaim = {
-      id: `claim_${Date.now()}`,
-      rewardId: reward.id,
-      rewardTitle: reward.title,
-      memberId,
-      memberName: member.name,
-      pointCost: reward.pointCost,
-      claimedAt: new Date().toISOString(),
-      status: 'pending',
+      const newClaim: RewardClaim = {
+        id: `claim_${Date.now()}`,
+        rewardId: reward.id,
+        rewardTitle: reward.title,
+        memberId,
+        memberName: member.name,
+        pointCost: reward.pointCost,
+        claimedAt: new Date().toISOString(),
+        status: 'pending',
+        childNote: note,
+      };
+
+      const updatedClaims = [newClaim, ...claims];
+      setClaims(updatedClaims);
+      saveClaims(updatedClaims);
+      soundFX.playRewardCoin();
+      showToast(`Reward "${reward.title}" requested for ${member.name}! Mom will review.`);
+
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+      syncCompleteHouseholdToCloud(targetHhId, {
+        members: updatedMembers,
+        claims: updatedClaims
+      }).catch(console.warn);
     };
 
-    const updatedClaims = [newClaim, ...claims];
-    setClaims(updatedClaims);
-    soundFX.playRewardCoin();
-    showToast(`Reward "${reward.title}" requested for ${member.name}! Mom will review.`);
-
-    if (activeHousehold?.id) {
-      syncCompleteHouseholdToCloud(activeHousehold.id, {
-        members: updatedMembers,
-        claims: updatedClaims,
-      }).catch(console.warn);
+    if (!isMomMode && !isMemberAuthenticated(memberId)) {
+      if (member.pin && member.pin.trim() !== '') {
+        setMemberPinModalData({
+          isOpen: true,
+          memberId: member.id,
+          expectedPin: member.pin,
+          memberName: member.name,
+          mode: 'verify',
+          onSuccess: () => {
+            authenticateMember(member.id);
+            performClaim();
+          },
+        });
+      } else {
+        setMemberPinModalData({
+          isOpen: true,
+          memberId: member.id,
+          expectedPin: '',
+          memberName: member.name,
+          mode: 'setup',
+          onSuccess: (newPin) => {
+            handleSetMemberPin(member.id, newPin);
+            authenticateMember(member.id);
+            performClaim();
+          },
+        });
+      }
+    } else {
+      performClaim();
     }
   };
 
@@ -2862,6 +2940,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
 
         {currentView === 'rewards' && (
           <RewardsView
+            selectedMemberId={selectedMemberId}
             rewards={rewards}
             claims={claims}
             members={members}
