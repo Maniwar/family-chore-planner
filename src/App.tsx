@@ -102,8 +102,6 @@ export default function App() {
   const [cloudSyncPrefilledCode, setCloudSyncPrefilledCode] = useState<string>('');
 
   // Deduplication & hydration refs to prevent bouncing echoes or premature clobbers between devices
-  const lastSyncedHashRef = useRef<string>('');
-  const isReceivingRemoteUpdateRef = useRef<boolean>(false);
   const isCloudHydratedRef = useRef<boolean>(false);
 
   const [currentDateStr, setCurrentDateStr] = useState<string>(getTodayDateString());
@@ -545,24 +543,6 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           });
 
           // Set hash baseline so debounced effect does not push identical copy
-          lastSyncedHashRef.current = JSON.stringify({
-            familyName: targetHh.familyName,
-            houseAddressOrMotto: targetHh.houseAddressOrMotto,
-            housePhotoUrl: targetHh.housePhotoUrl,
-            householdCode: targetHh.householdCode,
-            adminPin: targetHh.adminPin || getParentPin(),
-            pinProtectionEnabled: targetHh.pinProtectionEnabled !== undefined ? targetHh.pinProtectionEnabled : isPinProtectionEnabled(),
-            members: targetHh.members || members,
-            chores: targetHh.chores || chores,
-            logs: targetHh.logs || logs,
-            rewards: upgradedRewards,
-            claims: targetHh.claims || claims,
-            penaltySettings: targetHh.penaltySettings || penaltySettings,
-            events: targetHh.events || events,
-            nudges: targetHh.nudges || nudges,
-            customHouseXp: targetHh.customHouseXp,
-          });
-
           isCloudHydratedRef.current = true;
         } else if (isMounted) {
           isCloudHydratedRef.current = true;
@@ -580,42 +560,6 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     };
   }, []);
 
-  // Debounced cloud sync to prevent quota exhaustion and duplicate sync echoes
-  useEffect(() => {
-    if (!isCloudHydratedRef.current) return;
-    if (!activeHousehold?.id) return;
-    if (isReceivingRemoteUpdateRef.current) return;
-
-        const dataPayload: any = {
-      version: activeHousehold?.version,
-      familyName: householdInfo.familyName,
-      houseAddressOrMotto: householdInfo.houseAddressOrMotto,
-      housePhotoUrl: householdInfo.housePhotoUrl,
-      householdCode: activeHousehold.householdCode,
-      adminPin: getParentPin(),
-      pinProtectionEnabled: isPinProtectionEnabled(),
-      members,
-      chores,
-      logs,
-      rewards,
-      claims,
-      penaltySettings,
-      events,
-      nudges,
-      customHouseXp: householdInfo.customHouseXp,
-    };
-
-    const currentHash = JSON.stringify(dataPayload);
-    if (currentHash === lastSyncedHashRef.current) return;
-
-    const timer = setTimeout(() => {
-      lastSyncedHashRef.current = currentHash;
-      syncCompleteHouseholdToCloud(activeHousehold.id, dataPayload).catch((err) => { showToast('Changes saved locally (Sync failed: ' + err.message + ')'); console.error('Sync error:', err); });
-    }, 600);
-
-    return () => clearTimeout(timer);
-  }, [members, chores, logs, rewards, claims, penaltySettings, events, nudges, householdInfo, activeHousehold?.id]);
-
   // Real-time Cloud Sync Subscription (Dual Firestore + Fast Polling Engine)
   useEffect(() => {
     const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
@@ -626,8 +570,6 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     // Real-time multi-device subscription (listens for Firestore events or 2s server polling)
     const unsubscribe = subscribeHouseholdFull(targetHhId, (cloudHh) => {
       if (!isMounted) return;
-      isReceivingRemoteUpdateRef.current = true;
-
       setActiveHousehold(cloudHh);
       if (cloudHh.adminPin || cloudHh.pinProtectionEnabled !== undefined) {
         syncParentPinFromCloud(cloudHh.adminPin, cloudHh.pinProtectionEnabled);
@@ -687,50 +629,6 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         return next;
       });
 
-      // Update hash so we don't reflect this remote update back to the server
-            let computedMembers = members;
-      if (cloudHh.members && cloudHh.members.length > 0) {
-          computedMembers = cloudHh.members.map(cm => {
-            const localMatch = members.find(lm => lm.id === cm.id);
-            if (localMatch?.avatarPhotoUrl && (!cm.avatarPhotoUrl || cm.avatarPhotoUrl.trim() === '')) {
-              return { ...cm, avatarPhotoUrl: localMatch.avatarPhotoUrl };
-            }
-            return cm;
-          });
-      }
-      
-      let computedChores = chores;
-      if (cloudHh.chores && cloudHh.chores.length > 0) {
-          computedChores = cloudHh.chores;
-      }
-      
-      let computedLogs = logs;
-      if (cloudHh.logs) {
-          computedLogs = sanitizeLogs(cloudHh.logs);
-      }
-      
-      lastSyncedHashRef.current = JSON.stringify({
-        version: cloudHh.version,
-        familyName: cloudHh.familyName || householdInfo.familyName,
-        houseAddressOrMotto: cloudHh.houseAddressOrMotto || householdInfo.houseAddressOrMotto,
-        housePhotoUrl: cloudHh.housePhotoUrl || householdInfo.housePhotoUrl,
-        householdCode: cloudHh.householdCode,
-        adminPin: cloudHh.adminPin || getParentPin(),
-        pinProtectionEnabled: cloudHh.pinProtectionEnabled !== undefined ? cloudHh.pinProtectionEnabled : isPinProtectionEnabled(),
-        members: computedMembers,
-        chores: computedChores,
-        logs: computedLogs,
-        rewards: activeRewardsList,
-        claims: cloudHh.claims || claims,
-        penaltySettings: cloudHh.penaltySettings || penaltySettings,
-        events: cloudHh.events || events,
-        nudges: cloudHh.nudges || nudges,
-        customHouseXp: cloudHh.customHouseXp !== undefined ? cloudHh.customHouseXp : householdInfo.customHouseXp,
-      });
-
-      setTimeout(() => {
-        isReceivingRemoteUpdateRef.current = false;
-      }, 100);
     });
 
     return () => {
