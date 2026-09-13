@@ -48,6 +48,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   const [targetWeeklyPoints, setTargetWeeklyPoints] = useState<number>(100);
   const [currentPoints, setCurrentPoints] = useState<number>(0);
   const [lifetimePoints, setLifetimePoints] = useState<number>(0);
+  const [pin, setPin] = useState<string>('');
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -67,6 +68,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setTargetWeeklyPoints(memberToEdit.targetWeeklyPoints || 100);
       setCurrentPoints(memberToEdit.currentPoints ?? 0);
       setLifetimePoints(memberToEdit.lifetimePoints ?? 0);
+      setPin(memberToEdit.pin || '');
     } else {
       setName('');
       setRole('child');
@@ -78,6 +80,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setTargetWeeklyPoints(80);
       setCurrentPoints(0);
       setLifetimePoints(0);
+      setPin('');
     }
     setUploadError(null);
   }, [memberToEdit]);
@@ -140,6 +143,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       targetWeeklyPoints: Number(targetWeeklyPoints) || 100,
       currentPoints: Number(currentPoints) || 0,
       lifetimePoints: Number(lifetimePoints) || 0,
+      pin: pin.trim() || undefined,
     });
     onClose();
   };
@@ -394,6 +398,23 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                 Available to spend on rewards.
               </p>
             </div>
+          </div>
+
+          {/* Member PIN */}
+          <div>
+            <label className={`block text-xs font-bold uppercase tracking-wider mb-1 ${isGlassTheme(currentTheme) ? 'text-slate-800' : 'text-slate-600'}`}>
+              Member PIN (Optional)
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. 1234 (Leave blank for no PIN)"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').substring(0, 8))}
+              className={`w-full text-xs p-2.5 rounded-xl font-medium focus:ring-2 ${theme.accentRing} border ${isGlassTheme(currentTheme) ? 'bg-white/10 border-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400'}`}
+            />
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Lock this profile so only they can view and manage their chores.
+            </p>
           </div>
 
           {/* Buttons */}

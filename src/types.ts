@@ -17,6 +17,7 @@ export interface HouseholdMember {
   equippedCosmeticId?: string; // Equipped avatar frame / cosmetic unlock
   unlockedCosmeticIds?: string[]; // IDs of unlocked cosmetics
   gemsCount?: number; // Premium gamification gems for in-app unlocks
+  pin?: string; // Optional personal PIN for this member
 }
 
 export interface HouseholdInfo {

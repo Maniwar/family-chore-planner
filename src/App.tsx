@@ -55,6 +55,7 @@ import { AIAssignModal } from './components/AIAssignModal';
 import { AISetupBuddyModal } from './components/AISetupBuddyModal';
 import { GoogleCalendarView } from './components/GoogleCalendarView';
 import { ParentPinModal } from './components/ParentPinModal';
+import { MemberPinModal } from './components/MemberPinModal';
 import { HouseholdSyncModal } from './components/HouseholdSyncModal';
 import { QuickSettingsModal } from './components/QuickSettingsModal';
 import { ProgressionJourneyModal } from './components/ProgressionJourneyModal';
@@ -208,6 +209,14 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
   const [isAIAssignModalOpen, setIsAIAssignModalOpen] = useState<boolean>(false);
   const [aiAssignInitialTab, setAiAssignInitialTab] = useState<'assigner' | 'creator' | 'coach'>('assigner');
   const [isHouseSettingsModalOpen, setIsHouseSettingsModalOpen] = useState<boolean>(false);
+  const [memberPinModalData, setMemberPinModalData] = useState<{
+    isOpen: boolean;
+    memberId: string;
+    expectedPin: string;
+    memberName: string;
+    mode?: 'verify' | 'setup';
+    onSuccess?: (newPin?: string) => void;
+  }>({ isOpen: false, memberId: '', expectedPin: '', memberName: '', mode: 'verify' });
   const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState<boolean>(false);
 
   const [inspectModalData, setInspectModalData] = useState<{
@@ -261,6 +270,21 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
   });
 
   const [isHouseEvolutionOpen, setIsHouseEvolutionOpen] = useState<boolean>(false);
+
+  // Local auth cache to remember PIN verifications (memberId -> timestamp)
+  const [authenticatedMembers, setAuthenticatedMembers] = useState<Record<string, number>>({});
+  const AUTH_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
+  
+  const isMemberAuthenticated = (memberId: string) => {
+    if (isMomMode) return true; // Mom bypasses
+    const authTime = authenticatedMembers[memberId];
+    if (!authTime) return false;
+    return (Date.now() - authTime) < AUTH_EXPIRY_MS;
+  };
+
+  const authenticateMember = (memberId: string) => {
+    setAuthenticatedMembers(prev => ({ ...prev, [memberId]: Date.now() }));
+  };
   const [highlightMemberIdForHouse, setHighlightMemberIdForHouse] = useState<string | undefined>(undefined);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -306,6 +330,55 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     if (desc) setPinModalDesc(desc);
     setPendingParentAuthCallback(() => onSuccess);
     setIsParentPinModalOpen(true);
+  };
+
+  const handleSelectMember = (id: string) => {
+    if (id === 'all') {
+      setSelectedMemberId('all');
+      return;
+    }
+
+    const member = members.find(m => m.id === id);
+    if (!member) return;
+
+    if (!isMomMode && !isMemberAuthenticated(id)) {
+      if (member.pin && member.pin.trim() !== '') {
+        setMemberPinModalData({
+          isOpen: true,
+          memberId: id,
+          expectedPin: member.pin,
+          memberName: member.name,
+          mode: 'verify',
+          onSuccess: () => {
+            authenticateMember(id);
+            setSelectedMemberId(id);
+          }
+        });
+      } else {
+        setMemberPinModalData({
+          isOpen: true,
+          memberId: id,
+          expectedPin: '',
+          memberName: member.name,
+          mode: 'setup',
+          onSuccess: (newPin?: string) => {
+            if (newPin) {
+              const updatedMember = { ...member, pin: newPin };
+              const updatedMembers = members.map(m => m.id === member.id ? updatedMember : m);
+              setMembers(updatedMembers);
+              saveMembers(updatedMembers);
+              const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+              syncCompleteHouseholdToCloud(targetHhId, { members: updatedMembers }).catch(console.warn);
+              showToast(`PIN set successfully for ${member.name}!`);
+              authenticateMember(id);
+              setSelectedMemberId(id);
+            }
+          }
+        });
+      }
+    } else {
+      setSelectedMemberId(id);
+    }
   };
 
   const handleToggleMomMode = () => {
@@ -791,6 +864,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       l.date === effectiveDate && 
       (!targetMemberId || l.memberId === targetMemberId)
     );
+
     const chore = chores.find(c => c.id === choreId);
     if (!chore) return;
 
@@ -800,8 +874,6 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       return;
     }
 
-    soundFX.playComplete();
-
     const effectiveAssigneeId = targetMemberId ||
       getChoreAssigneeForDate(chore, effectiveDate) || 
       (chore.assignedMemberId && chore.assignedMemberId !== 'unassigned' ? chore.assignedMemberId : undefined) || 
@@ -809,41 +881,105 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
       members[0]?.id || 
       'unassigned';
 
-    let updatedLogs: ChoreAssignmentLog[];
+    const performComplete = () => {
+      // If already exists and no new checklist data is passed, toggle it off!
+      if (existingIndex >= 0 && (!checklist || Object.keys(checklist).length === 0) && (!notes || notes.trim() === '')) {
+        if (logs[existingIndex].status === 'approved') {
+          handleUndoApprove(choreId, logs[existingIndex].id);
+        } else {
+          // It's needs_review, just remove the log to uncheck it
+          const updatedLogs = logs.filter((_, i) => i !== existingIndex);
+          setLogs(updatedLogs);
+          saveLogs(updatedLogs);
+          const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+          syncCompleteHouseholdToCloud(targetHhId, { logs: updatedLogs }).catch(console.warn);
+          soundFX.playPop();
+          showToast('Chore unchecked.');
+        }
+        return;
+      }
 
-    if (existingIndex >= 0) {
-      updatedLogs = [...logs];
-      updatedLogs[existingIndex] = {
-        ...updatedLogs[existingIndex],
-        memberId: effectiveAssigneeId,
-        status: 'needs_review',
-        completedAt: new Date().toISOString(),
-        completedNote: notes || updatedLogs[existingIndex].completedNote,
-        checklistStatus: checklist || updatedLogs[existingIndex].checklistStatus,
-      };
-      showToast('Chore marked done! Ready for Mom to inspect ✨');
+      soundFX.playComplete();
+
+      let updatedLogs: ChoreAssignmentLog[];
+
+      if (existingIndex >= 0) {
+        updatedLogs = [...logs];
+        updatedLogs[existingIndex] = {
+          ...updatedLogs[existingIndex],
+          memberId: effectiveAssigneeId,
+          status: 'needs_review',
+          completedAt: new Date().toISOString(),
+          completedNote: notes || updatedLogs[existingIndex].completedNote,
+          checklistStatus: checklist || updatedLogs[existingIndex].checklistStatus,
+        };
+        showToast('Chore marked done! Ready for Mom to inspect ✨');
+      } else {
+        const newLog: ChoreAssignmentLog = {
+          id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          choreId,
+          memberId: effectiveAssigneeId,
+          date: effectiveDate,
+          status: 'needs_review',
+          completedAt: new Date().toISOString(),
+          completedNote: notes,
+          checklistStatus: checklist,
+        };
+        updatedLogs = [...logs, newLog];
+        showToast('Chore marked done! Ready for Mom to inspect ✨');
+      }
+
+      setLogs(updatedLogs);
+      saveLogs(updatedLogs);
+
+      const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+      syncCompleteHouseholdToCloud(targetHhId, {
+        logs: updatedLogs,
+      }).catch(console.warn);
+    };
+
+    // Check PIN requirement for assignee
+    const assigneeMember = members.find(m => m.id === effectiveAssigneeId);
+    
+    // Only check if it's assigned to someone else, AND we are not authenticated for them
+    if (!isMomMode && assigneeMember && selectedMemberId !== effectiveAssigneeId && !isMemberAuthenticated(effectiveAssigneeId)) {
+      if (assigneeMember.pin && assigneeMember.pin.trim() !== '') {
+        setMemberPinModalData({
+          isOpen: true,
+          memberId: assigneeMember.id,
+          expectedPin: assigneeMember.pin,
+          memberName: assigneeMember.name,
+          mode: 'verify',
+          onSuccess: () => {
+             authenticateMember(assigneeMember.id);
+             performComplete();
+          },
+        });
+      } else {
+        setMemberPinModalData({
+          isOpen: true,
+          memberId: assigneeMember.id,
+          expectedPin: '',
+          memberName: assigneeMember.name,
+          mode: 'setup',
+          onSuccess: (newPin?: string) => {
+            if (newPin) {
+              const updatedMember = { ...assigneeMember, pin: newPin };
+              const updatedMembers = members.map(m => m.id === assigneeMember.id ? updatedMember : m);
+              setMembers(updatedMembers);
+              saveMembers(updatedMembers);
+              const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+              syncCompleteHouseholdToCloud(targetHhId, { members: updatedMembers }).catch(console.warn);
+              showToast(`PIN set successfully for ${assigneeMember.name}!`);
+              authenticateMember(assigneeMember.id);
+              performComplete();
+            }
+          },
+        });
+      }
     } else {
-      const newLog: ChoreAssignmentLog = {
-        id: `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        choreId,
-        memberId: effectiveAssigneeId,
-        date: effectiveDate,
-        status: 'needs_review',
-        completedAt: new Date().toISOString(),
-        completedNote: notes,
-        checklistStatus: checklist,
-      };
-      updatedLogs = [...logs, newLog];
-      showToast('Chore marked done! Ready for Mom to inspect ✨');
+      performComplete();
     }
-
-    setLogs(updatedLogs);
-    saveLogs(updatedLogs);
-
-    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
-    syncCompleteHouseholdToCloud(targetHhId, {
-      logs: updatedLogs,
-    }).catch(console.warn);
   };
 
   const handleQuickApprove = (choreId: string, logId?: string, choreDate?: string, targetMemberId?: string) => {
@@ -2502,7 +2638,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           }
         }}
         selectedMemberId={selectedMemberId}
-        onSelectMember={(id) => setSelectedMemberId(id)}
+        onSelectMember={handleSelectMember}
         pendingInspectionCount={pendingInspectionCount}
         onOpenNewChore={() => setChoreModalData({ isOpen: true, choreToEdit: null })}
         forceMobileUi={forceMobileUi}
@@ -2523,6 +2659,13 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         onSelectTheme={handleSelectTheme}
         isSoundEnabled={isSoundEnabled}
         onToggleSound={handleToggleSound}
+        onLogOffProfile={() => {
+          setSelectedMemberId('all');
+          const updatedAuth = { ...authenticatedMembers };
+          delete updatedAuth[selectedMemberId];
+          setAuthenticatedMembers(updatedAuth);
+          showToast('Profile locked.');
+        }}
       />
 
       {/* Live Nudge Alert Banner for Kids & Family */}
@@ -2587,7 +2730,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             logs={logs}
             members={members}
             selectedMemberId={selectedMemberId}
-            onSelectMember={(id) => setSelectedMemberId(id)}
+            onSelectMember={handleSelectMember}
             isMomMode={isMomMode}
             language={language}
             currentTheme={currentTheme}
@@ -2649,7 +2792,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             members={members}
             selectedMemberId={selectedMemberId}
             currentTheme={currentTheme}
-            onSelectMember={(id) => setSelectedMemberId(id)}
+            onSelectMember={handleSelectMember}
             onOpenInspect={(chore, log) => handleOpenInspect(chore, log)}
             onOpenPrintView={() => setCurrentView('reports')}
           />
@@ -2859,6 +3002,23 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           memberToEdit={memberModalData.memberToEdit}
           currentTheme={currentTheme}
           onSaveMember={handleSaveMember}
+        />
+      )}
+
+      {/* Member PIN Authentication Modal */}
+      {memberPinModalData.isOpen && (
+        <MemberPinModal
+          isOpen={memberPinModalData.isOpen}
+          onClose={() => setMemberPinModalData({ ...memberPinModalData, isOpen: false })}
+          onSuccess={(newPin?: string) => {
+            if (memberPinModalData.onSuccess) {
+              memberPinModalData.onSuccess(newPin);
+            }
+          }}
+          expectedPin={memberPinModalData.expectedPin}
+          memberName={memberPinModalData.memberName}
+          currentTheme={currentTheme}
+          mode={memberPinModalData.mode}
         />
       )}
 

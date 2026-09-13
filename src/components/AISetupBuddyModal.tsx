@@ -350,7 +350,7 @@ export const AISetupBuddyModal: React.FC<AISetupBuddyModalProps> = ({
       <div 
         className={`relative w-full max-w-4xl h-[92vh] sm:h-[86vh] flex flex-col rounded-3xl shadow-2xl border overflow-hidden ${
           isGlassTheme(currentTheme)
-            ? 'apple-glass-card border-white/30 text-slate-900 shadow-2xl'
+            ? 'apple-glass-card border-white/30 text-slate-900 dark:text-white shadow-2xl'
             : theme.isDark
             ? 'bg-slate-900 border-slate-700 text-slate-100 shadow-2xl'
             : 'bg-white border-slate-200 text-slate-800 shadow-2xl'
@@ -384,7 +384,7 @@ export const AISetupBuddyModal: React.FC<AISetupBuddyModalProps> = ({
                   Gemini
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              <p className={`text-[11px] truncate ${isGlassTheme(currentTheme) ? 'text-slate-800 dark:text-slate-200 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
                 Talk with Buddy to create, edit, or rebalance members, chores & rewards
               </p>
             </div>
@@ -411,7 +411,7 @@ export const AISetupBuddyModal: React.FC<AISetupBuddyModalProps> = ({
             {/* Clear Chat Button */}
             <button
               onClick={handleResetChat}
-              className="p-2 rounded-xl text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className={`p-2 rounded-xl transition-colors cursor-pointer ${isGlassTheme(currentTheme) ? 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/20' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800'}`}
               title="Clear conversation history and start fresh"
             >
               <RotateCcw className="w-4 h-4" />
@@ -420,7 +420,7 @@ export const AISetupBuddyModal: React.FC<AISetupBuddyModalProps> = ({
             {/* Close Modal Button */}
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className={`p-2 rounded-xl transition-colors cursor-pointer ${isGlassTheme(currentTheme) ? 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/20' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800'}`}
               title="Close Buddy"
             >
               <X className="w-5 h-5" />
@@ -457,7 +457,7 @@ export const AISetupBuddyModal: React.FC<AISetupBuddyModalProps> = ({
                       className={`max-w-[88%] sm:max-w-[80%] rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm shadow-xs border transition-all ${
                         isModel
                           ? isGlassTheme(currentTheme)
-                            ? 'bg-white/60 dark:bg-slate-900/60 border-white/40 text-slate-900 dark:text-white backdrop-blur-md'
+                            ? 'bg-white/95 border-white/60 text-slate-900 backdrop-blur-xl shadow-md font-medium'
                             : theme.isDark
                             ? 'bg-slate-800/90 border-slate-700 text-slate-100'
                             : 'bg-white border-slate-200 text-slate-800'
@@ -615,7 +615,7 @@ export const AISetupBuddyModal: React.FC<AISetupBuddyModalProps> = ({
             }`}>
               
               {/* Quick Settings & Auto-Apply Bar */}
-              <div className="flex items-center justify-between mb-2 px-1 text-xs text-slate-500 dark:text-slate-400">
+              <div className={`flex items-center justify-between mb-2 px-1 text-xs ${isGlassTheme(currentTheme) ? 'text-slate-800 dark:text-slate-200 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
                 <label className="flex items-center gap-2 cursor-pointer font-bold select-none">
                   <input
                     type="checkbox"
@@ -652,7 +652,7 @@ export const AISetupBuddyModal: React.FC<AISetupBuddyModalProps> = ({
                     disabled={isLoading}
                     className={`w-full pl-4 pr-10 py-3 rounded-2xl border text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-sky-500 transition-all ${
                       isGlassTheme(currentTheme)
-                        ? 'bg-white/40 border-white/40 text-slate-900 placeholder:text-slate-500'
+                        ? 'bg-white/80 border-white/60 text-slate-900 placeholder:text-slate-600 font-medium'
                         : theme.isDark
                         ? 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500'
                         : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'

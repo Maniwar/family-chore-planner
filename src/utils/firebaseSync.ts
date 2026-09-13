@@ -1,29 +1,16 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  getDocs, 
-  onSnapshot, 
-  query, 
-  where,
-  Unsubscribe 
-} from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { HouseholdMember, Chore, ChoreAssignmentLog, RewardItem, RewardClaim, HouseholdInfo } from '../types';
 import { INITIAL_MEMBERS, INITIAL_CHORES, generateSampleLogs, INITIAL_REWARDS, INITIAL_CLAIMS } from '../data/initialData';
 import { getParentPin } from './parentLock';
 import { getUserGeminiApiKey } from './geminiApiKey';
 
+export type Unsubscribe = () => void;
+
 // Initialize Firebase SDK with the project config
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Target Firestore Database instance
-export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
+// Target Firestore Database instance - DISABLED (Migration to API complete)
 
 export interface CloudHousehold {
   id: string;
@@ -75,13 +62,7 @@ export function cleanFirestoreData<T>(obj: T): T {
   return cleaned as T;
 }
 
-function shouldAttemptFirestoreWrite(): boolean {
-  return false;
-}
-
-function handleFirestoreWriteError(err: any) {
-  // Silent fallback
-}
+// Helper functions removed
 
 // Generate an unguessable high-entropy Family Code e.g. "NEST-7K9X" or "HERO-3M8P"
 export function generateHouseholdCode(): string {
@@ -210,16 +191,6 @@ export async function createNewHousehold(
     }
   } catch (e) {
     console.warn('Server API create notice:', e);
-  }
-
-  // 2. Try Firestore single document write (skipped if currently quota-exhausted)
-  if (shouldAttemptFirestoreWrite()) {
-    try {
-      const sanitized = cleanFirestoreData(householdData);
-      await setDoc(doc(db, 'households', householdId), sanitized, { merge: true });
-    } catch (err: any) {
-      handleFirestoreWriteError(err);
-    }
   }
 
   // Set active session
@@ -375,17 +346,7 @@ export async function syncCompleteHouseholdToCloud(
     updatedAt: now,
   };
 
-  // 1. Try Firestore single document write
-  if (shouldAttemptFirestoreWrite()) {
-    try {
-      const sanitized = cleanFirestoreData(fullData);
-      await setDoc(doc(db, 'households', householdId), sanitized, { merge: true });
-    } catch (err: any) {
-      handleFirestoreWriteError(err);
-    }
-  }
-
-  // 2. Server API sync for AI / backend awareness
+  // Sync to Server API
   try {
     const res = await fetch(`/api/household/${encodeURIComponent(householdId)}/sync`, {
       method: 'POST',
