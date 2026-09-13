@@ -1234,10 +1234,11 @@ app.post("/api/household/:id/sync", async (req, res) => {
         const existingMap = new Map((existing.members || []).map((m: any) => [m.id, m]));
         for (const m of members) {
           const prevM = existingMap.get(m.id);
-          if (prevM?.avatarPhotoUrl && (!m.avatarPhotoUrl || m.avatarPhotoUrl.trim() === "")) {
-            m.avatarPhotoUrl = prevM.avatarPhotoUrl;
-          }
-          existingMap.set(m.id, m);
+          existingMap.set(m.id, prevM ? {
+            ...prevM,
+            ...m,
+            avatarPhotoUrl: (!m.avatarPhotoUrl || m.avatarPhotoUrl.trim() === "") && prevM.avatarPhotoUrl ? prevM.avatarPhotoUrl : m.avatarPhotoUrl
+          } : m);
         }
         existing.members = Array.from(existingMap.values());
       } else {
@@ -1254,7 +1255,10 @@ app.post("/api/household/:id/sync", async (req, res) => {
     if (Array.isArray(chores)) {
       if (isStale) {
         const existingMap = new Map((existing.chores || []).map((c: any) => [c.id, c]));
-        for (const c of chores) existingMap.set(c.id, c);
+        for (const c of chores) {
+          const prevC = existingMap.get(c.id);
+          existingMap.set(c.id, prevC ? { ...prevC, ...c } : c);
+        }
         existing.chores = Array.from(existingMap.values());
       } else {
         existing.chores = chores;
@@ -1267,13 +1271,12 @@ app.post("/api/household/:id/sync", async (req, res) => {
         for (const l of logs) {
           const key = `${l.choreId}_${l.date}_${l.memberId}`;
           const prevL = existingMap.get(key);
-          if (prevL) {
-            if (l.checklistStatus && prevL.checklistStatus) {
-              l.checklistStatus = { ...prevL.checklistStatus, ...l.checklistStatus };
-            }
-            l.id = prevL.id;
-          }
-          existingMap.set(key, l);
+          existingMap.set(key, prevL ? {
+            ...prevL,
+            ...l,
+            id: prevL.id,
+            checklistStatus: { ...(prevL.checklistStatus || {}), ...(l.checklistStatus || {}) }
+          } : l);
         }
         existing.logs = Array.from(existingMap.values());
       } else {
@@ -1284,7 +1287,10 @@ app.post("/api/household/:id/sync", async (req, res) => {
     if (Array.isArray(rewards)) {
       if (isStale) {
         const existingMap = new Map((existing.rewards || []).map((r: any) => [r.id, r]));
-        for (const r of rewards) existingMap.set(r.id, r);
+        for (const r of rewards) {
+          const prevR = existingMap.get(r.id);
+          existingMap.set(r.id, prevR ? { ...prevR, ...r } : r);
+        }
         existing.rewards = Array.from(existingMap.values());
       } else {
         existing.rewards = rewards;
@@ -1294,7 +1300,10 @@ app.post("/api/household/:id/sync", async (req, res) => {
     if (Array.isArray(claims)) {
       if (isStale) {
         const existingMap = new Map((existing.claims || []).map((c: any) => [c.id, c]));
-        for (const c of claims) existingMap.set(c.id, c);
+        for (const c of claims) {
+          const prevC = existingMap.get(c.id);
+          existingMap.set(c.id, prevC ? { ...prevC, ...c } : c);
+        }
         existing.claims = Array.from(existingMap.values());
       } else {
         existing.claims = claims;
