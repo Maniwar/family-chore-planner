@@ -35,7 +35,7 @@ import {
   getChoreAssigneeForDate,
   sanitizeLogs
 } from './utils/storage';
-import { HouseholdMember, Chore, ChoreAssignmentLog, RewardItem, RewardClaim, ViewMode, HouseholdInfo, HouseholdPenaltySettings, ChoreEvent, NudgeRecord } from './types';
+import { HouseholdMember, Chore, ChoreAssignmentLog, RewardItem, RewardClaim, ViewMode, HouseholdInfo, HouseholdPenaltySettings, ChoreEvent, NudgeRecord, BuddyAction } from './types';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { DailyScheduleView } from './components/DailyScheduleView';
@@ -52,6 +52,7 @@ import { ChoreModal } from './components/ChoreModal';
 import { MemberModal } from './components/MemberModal';
 import { HouseSettingsModal } from './components/HouseSettingsModal';
 import { AIAssignModal } from './components/AIAssignModal';
+import { AISetupBuddyModal } from './components/AISetupBuddyModal';
 import { GoogleCalendarView } from './components/GoogleCalendarView';
 import { ParentPinModal } from './components/ParentPinModal';
 import { HouseholdSyncModal } from './components/HouseholdSyncModal';
@@ -200,6 +201,8 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
   };
 
   // Modals state
+  const [isAISetupBuddyOpen, setIsAISetupBuddyOpen] = useState<boolean>(false);
+  const [buddyInitialPrompt, setBuddyInitialPrompt] = useState<string | undefined>(undefined);
   const [isAIAssignModalOpen, setIsAIAssignModalOpen] = useState<boolean>(false);
   const [aiAssignInitialTab, setAiAssignInitialTab] = useState<'assigner' | 'creator' | 'coach'>('assigner');
   const [isHouseSettingsModalOpen, setIsHouseSettingsModalOpen] = useState<boolean>(false);
@@ -2147,6 +2150,245 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     }
   };
 
+  const handleApplyBuddyActions = (actions: BuddyAction[]) => {
+    let currentInfo = { ...householdInfo };
+    let currentMembers = [...members];
+    let currentChores = [...chores];
+    let currentRewards = [...rewards];
+
+    let infoChanged = false;
+    let membersChanged = false;
+    let choresChanged = false;
+    let rewardsChanged = false;
+
+    // Track newly added members by name to resolve IDs for chores referencing them
+    const memberNameToIdMap = new Map<string, string>();
+    currentMembers.forEach(m => memberNameToIdMap.set(m.name.toLowerCase().trim(), m.id));
+
+    actions.forEach(action => {
+      const data = action.data || {};
+
+      switch (action.type) {
+        case 'SET_HOUSEHOLD_INFO': {
+          if (data.familyName) currentInfo.familyName = data.familyName;
+          if (data.houseAddressOrMotto) currentInfo.houseAddressOrMotto = data.houseAddressOrMotto;
+          infoChanged = true;
+          break;
+        }
+
+        case 'ADD_MEMBER': {
+          const newId = data.id || `member_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          const name = data.name || 'Helper';
+          const newMember: HouseholdMember = {
+            id: newId,
+            name: name,
+            role: data.role || 'child',
+            age: typeof data.age === 'number' ? data.age : (data.age ? parseInt(String(data.age)) : undefined),
+            avatarEmoji: data.avatarEmoji || (data.role === 'parent' ? '🧑' : '🧒'),
+            avatarColor: data.avatarColor || 'bg-sky-500',
+            targetWeeklyPoints: typeof data.targetWeeklyPoints === 'number' ? data.targetWeeklyPoints : 50,
+            currentPoints: 0,
+            lifetimePoints: 0,
+            starsCount: 0,
+            streakDays: 1,
+          };
+          currentMembers.push(newMember);
+          memberNameToIdMap.set(name.toLowerCase().trim(), newId);
+          membersChanged = true;
+          break;
+        }
+
+        case 'UPDATE_MEMBER': {
+          const targetId = data.id;
+          const targetName = (data.memberName || data.name || '').toLowerCase().trim();
+          const idx = currentMembers.findIndex(m => m.id === targetId || (targetName && m.name.toLowerCase().trim() === targetName));
+          if (idx >= 0) {
+            const existing = currentMembers[idx];
+            currentMembers[idx] = {
+              ...existing,
+              name: data.name || existing.name,
+              role: data.role || existing.role,
+              age: data.age !== undefined ? (typeof data.age === 'number' ? data.age : parseInt(String(data.age))) : existing.age,
+              avatarEmoji: data.avatarEmoji || existing.avatarEmoji,
+              avatarColor: data.avatarColor || existing.avatarColor,
+              targetWeeklyPoints: data.targetWeeklyPoints !== undefined ? data.targetWeeklyPoints : existing.targetWeeklyPoints,
+              currentPoints: data.currentPoints !== undefined ? data.currentPoints : existing.currentPoints,
+            };
+            memberNameToIdMap.set(currentMembers[idx].name.toLowerCase().trim(), currentMembers[idx].id);
+            membersChanged = true;
+          }
+          break;
+        }
+
+        case 'DELETE_MEMBER': {
+          const targetId = data.id;
+          const targetName = (data.memberName || data.name || '').toLowerCase().trim();
+          const initialLen = currentMembers.length;
+          currentMembers = currentMembers.filter(m => m.id !== targetId && (!targetName || m.name.toLowerCase().trim() !== targetName));
+          if (currentMembers.length !== initialLen) {
+            membersChanged = true;
+          }
+          break;
+        }
+
+        case 'ADD_CHORE': {
+          const newId = data.id || `chore_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          let assignedId = data.assignedMemberId;
+          if (!assignedId && data.assignedMemberName) {
+            const searchName = data.assignedMemberName.toLowerCase().trim();
+            assignedId = memberNameToIdMap.get(searchName);
+            if (!assignedId) {
+              const match = currentMembers.find(m => m.name.toLowerCase().includes(searchName));
+              if (match) assignedId = match.id;
+            }
+          }
+
+          const newChore: Chore = {
+            id: newId,
+            title: data.title || 'Family Task',
+            description: data.description || '',
+            category: data.category || 'General',
+            difficulty: data.difficulty || 'easy',
+            defaultPoints: typeof data.defaultPoints === 'number' ? data.defaultPoints : 10,
+            frequency: data.frequency || 'daily',
+            scheduledDays: Array.isArray(data.scheduledDays) ? data.scheduledDays : [1, 2, 3, 4, 5],
+            timeOfDay: data.timeOfDay || 'anytime',
+            estimatedMinutes: data.estimatedMinutes || 10,
+            qualityChecklist: Array.isArray(data.qualityChecklist) && data.qualityChecklist.length > 0
+              ? data.qualityChecklist
+              : ['Complete task thoroughly', 'Put items back in place', 'Check area when done'],
+            assignedMemberId: assignedId,
+            isActive: data.isActive !== undefined ? data.isActive : true,
+            iconName: data.iconName || 'Sparkles',
+          };
+          currentChores.push(newChore);
+          choresChanged = true;
+          break;
+        }
+
+        case 'UPDATE_CHORE': {
+          const targetId = data.id;
+          const targetTitle = (data.choreTitle || data.title || '').toLowerCase().trim();
+          const idx = currentChores.findIndex(c => c.id === targetId || (targetTitle && c.title.toLowerCase().trim() === targetTitle));
+          if (idx >= 0) {
+            const existing = currentChores[idx];
+            let assignedId = data.assignedMemberId !== undefined ? data.assignedMemberId : existing.assignedMemberId;
+            if (data.assignedMemberName) {
+              const searchName = data.assignedMemberName.toLowerCase().trim();
+              const foundId = memberNameToIdMap.get(searchName) || currentMembers.find(m => m.name.toLowerCase().includes(searchName))?.id;
+              if (foundId) assignedId = foundId;
+            }
+
+            currentChores[idx] = {
+              ...existing,
+              title: data.title || existing.title,
+              description: data.description !== undefined ? data.description : existing.description,
+              category: data.category || existing.category,
+              difficulty: data.difficulty || existing.difficulty,
+              defaultPoints: typeof data.defaultPoints === 'number' ? data.defaultPoints : existing.defaultPoints,
+              frequency: data.frequency || existing.frequency,
+              timeOfDay: data.timeOfDay || existing.timeOfDay,
+              scheduledDays: Array.isArray(data.scheduledDays) ? data.scheduledDays : existing.scheduledDays,
+              estimatedMinutes: data.estimatedMinutes !== undefined ? data.estimatedMinutes : existing.estimatedMinutes,
+              qualityChecklist: Array.isArray(data.qualityChecklist) ? data.qualityChecklist : existing.qualityChecklist,
+              assignedMemberId: assignedId,
+              isActive: data.isActive !== undefined ? data.isActive : existing.isActive,
+            };
+            choresChanged = true;
+          }
+          break;
+        }
+
+        case 'DELETE_CHORE': {
+          const targetId = data.id;
+          const targetTitle = (data.choreTitle || data.title || '').toLowerCase().trim();
+          const initialLen = currentChores.length;
+          currentChores = currentChores.filter(c => c.id !== targetId && (!targetTitle || c.title.toLowerCase().trim() !== targetTitle));
+          if (currentChores.length !== initialLen) {
+            choresChanged = true;
+          }
+          break;
+        }
+
+        case 'ADD_REWARD': {
+          const newId = data.id || `reward_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          const newReward: RewardItem = {
+            id: newId,
+            title: data.title || 'Fun Reward',
+            pointCost: typeof data.pointCost === 'number' ? data.pointCost : 20,
+            icon: data.icon || '🎁',
+            category: data.category || 'treat',
+            description: data.description || '',
+            rarity: data.rarity || 'common',
+          };
+          currentRewards.push(newReward);
+          rewardsChanged = true;
+          break;
+        }
+
+        case 'UPDATE_REWARD': {
+          const targetId = data.id;
+          const targetTitle = (data.rewardTitle || data.title || '').toLowerCase().trim();
+          const idx = currentRewards.findIndex(r => r.id === targetId || (targetTitle && r.title.toLowerCase().trim() === targetTitle));
+          if (idx >= 0) {
+            const existing = currentRewards[idx];
+            currentRewards[idx] = {
+              ...existing,
+              title: data.title || existing.title,
+              pointCost: typeof data.pointCost === 'number' ? data.pointCost : existing.pointCost,
+              icon: data.icon || existing.icon,
+              category: data.category || existing.category,
+              description: data.description !== undefined ? data.description : existing.description,
+              rarity: data.rarity || existing.rarity,
+            };
+            rewardsChanged = true;
+          }
+          break;
+        }
+
+        case 'DELETE_REWARD': {
+          const targetId = data.id;
+          const targetTitle = (data.rewardTitle || data.title || '').toLowerCase().trim();
+          const initialLen = currentRewards.length;
+          currentRewards = currentRewards.filter(r => r.id !== targetId && (!targetTitle || r.title.toLowerCase().trim() !== targetTitle));
+          if (currentRewards.length !== initialLen) {
+            rewardsChanged = true;
+          }
+          break;
+        }
+      }
+    });
+
+    if (infoChanged) {
+      setHouseholdInfo(currentInfo);
+      saveHouseholdInfo(currentInfo);
+    }
+    if (membersChanged) {
+      setMembers(currentMembers);
+      saveMembers(currentMembers);
+    }
+    if (choresChanged) {
+      setChores(currentChores);
+      saveChores(currentChores);
+    }
+    if (rewardsChanged) {
+      setRewards(currentRewards);
+      saveRewards(currentRewards);
+    }
+
+    triggerConfettiCelebration();
+    showToast(`Buddy applied ${actions.length} household change(s)! ✨`);
+
+    const targetHhId = activeHousehold?.id || getCurrentHouseholdId() || 'household_default';
+    syncCompleteHouseholdToCloud(targetHhId, {
+      familyName: currentInfo.familyName,
+      houseAddressOrMotto: currentInfo.houseAddressOrMotto,
+      members: currentMembers,
+      chores: currentChores,
+      rewards: currentRewards,
+    }).catch(console.warn);
+  };
+
   const handleResetDemo = () => {
     resetAllToDemo();
     setHouseholdInfo(DEFAULT_HOUSEHOLD_INFO);
@@ -2208,6 +2450,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         onOpenInspectionQueue={() => setCurrentView('inspection')}
         onOpenPrintView={() => setCurrentView('reports')}
         onOpenAIAssign={() => setIsAIAssignModalOpen(true)}
+        onOpenAISetupBuddy={() => {
+          setBuddyInitialPrompt(undefined);
+          setIsAISetupBuddyOpen(true);
+        }}
         onOpenGoogleCalendar={() => setCurrentView('calendar')}
         isMomMode={isMomMode}
         onToggleMomMode={handleToggleMomMode}
@@ -2263,6 +2509,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           isCloudSyncModalOpen ||
           isHouseSettingsModalOpen ||
           isAIAssignModalOpen ||
+          isAISetupBuddyOpen ||
           inspectModalData.isOpen ||
           choreModalData.isOpen ||
           memberModalData.isOpen ||
@@ -2372,6 +2619,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             onDeleteChore={handleDeleteChore}
             onToggleChoreActive={handleToggleChoreActive}
             onOpenAIAssign={handleOpenAIAssign}
+            onOpenAISetupBuddy={() => {
+              setBuddyInitialPrompt('I want to set up and manage household chores and routines.');
+              setIsAISetupBuddyOpen(true);
+            }}
           />
         )}
 
@@ -2388,6 +2639,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
             onAdjustPoints={handleAdjustPoints}
             onOpenPointManager={handleOpenPointManager}
             onOpenHouseSettings={() => setIsHouseSettingsModalOpen(true)}
+            onOpenAISetupBuddy={() => {
+              setBuddyInitialPrompt('I want to add or update family members and their profiles.');
+              setIsAISetupBuddyOpen(true);
+            }}
             onOpenProgression={(member) => {
               setProgressionModalData({
                 isOpen: true,
@@ -2423,6 +2678,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
               });
             }}
             onResetRewardsToDefault={handleResetRewardsToDefault}
+            onOpenAISetupBuddy={() => {
+              setBuddyInitialPrompt('I want to create and customize family rewards and privileges.');
+              setIsAISetupBuddyOpen(true);
+            }}
           />
         )}
 
@@ -2484,6 +2743,21 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           initialTab={aiAssignInitialTab}
           onApplyAssignments={handleApplyAIAssignments}
           onAddGeneratedChores={handleBatchAddChores}
+        />
+      )}
+
+      {/* AI Household Setup & Management Buddy Modal */}
+      {isAISetupBuddyOpen && (
+        <AISetupBuddyModal
+          isOpen={isAISetupBuddyOpen}
+          onClose={() => setIsAISetupBuddyOpen(false)}
+          householdInfo={householdInfo}
+          members={members}
+          chores={chores}
+          rewards={rewards}
+          currentTheme={currentTheme}
+          onApplyActions={handleApplyBuddyActions}
+          initialPrompt={buddyInitialPrompt}
         />
       )}
 
@@ -2688,6 +2962,10 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           } else {
             setIsHouseSettingsModalOpen(true);
           }
+        }}
+        onOpenAISetupBuddy={() => {
+          setBuddyInitialPrompt(undefined);
+          setIsAISetupBuddyOpen(true);
         }}
         onOpenPointManager={() => {
           if (!isMomMode) {

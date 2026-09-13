@@ -69,7 +69,7 @@ app.get(["/api/auth/client-id", "/api/oauth/client-id"], (req, res) => {
 });
 
 // Resilient Gemini model caller with automatic model fallback for 503 / high demand spikes
-const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
 
 async function callGeminiWithFallback(contents: any, config?: any) {
   const ai = getGeminiClient();
@@ -498,6 +498,160 @@ Return strictly conforming to the JSON schema.
   } catch (error: any) {
     console.error("AI Draft Quality Checklist error:", error);
     return res.status(500).json({ error: error.message || "Failed to draft quality checklist with AI" });
+  }
+});
+
+// AI Family Setup & Management Buddy Endpoint
+app.post("/api/ai/setup-buddy", async (req, res) => {
+  try {
+    const { messages = [], currentHousehold = {} } = req.body;
+    const { householdInfo = {}, members = [], chores = [], rewards = [] } = currentHousehold;
+
+    const lastUserMessage = messages.length > 0 
+      ? messages[messages.length - 1].text 
+      : "Hello! Please help me set up our family household.";
+
+    const conversationHistory = messages.slice(0, -1).map((m: any) => 
+      `${m.role === 'user' ? 'User' : 'Buddy'}: ${m.text}`
+    ).join("\n");
+
+    const systemPrompt = `
+You are "Buddy", the friendly, knowledgeable, and proactive AI Family Setup & Management Companion for the "Family Chore & Quality Tracker" app.
+You talk directly with parents and families to set up and customize their entire household, including:
+1. Family identity (Family Name, House Motto/Rules).
+2. Family members (Parents, teens, children: names, roles, ages, avatars, weekly star goals).
+3. Age-appropriate chores (Category, difficulty, points, checklist inspection steps, estimated time, frequency, assigned helper).
+4. Motivating rewards (Fun treats, activities, screen time, allowance, with fair point costs).
+5. Editing, rebalancing, or deleting existing members, chores, and rewards whenever requested.
+
+CURRENT HOUSEHOLD STATE:
+- Family Name: "${householdInfo.familyName || 'Not set'}"
+- House Motto: "${householdInfo.houseAddressOrMotto || 'Not set'}"
+- Current Members (${members.length}):
+${JSON.stringify(members.map((m: any) => ({ id: m.id, name: m.name, role: m.role, age: m.age, points: m.currentPoints, goal: m.targetWeeklyPoints })), null, 2)}
+- Current Chores (${chores.length}):
+${JSON.stringify(chores.map((c: any) => ({ id: c.id, title: c.title, category: c.category, points: c.defaultPoints, difficulty: c.difficulty, assignedMemberId: c.assignedMemberId, checklistCount: c.qualityChecklist?.length || 0 })), null, 2)}
+- Current Rewards (${rewards.length}):
+${JSON.stringify(rewards.map((r: any) => ({ id: r.id, title: r.title, cost: r.pointCost, icon: r.icon, category: r.category })), null, 2)}
+
+RECENT CONVERSATION HISTORY:
+${conversationHistory || "None (new conversation)"}
+
+LATEST USER MESSAGE:
+"${lastUserMessage}"
+
+TASK & GUIDELINES:
+- Listen carefully to what the user asks. If they provide details about their family (e.g. "We have Mom, Dad, a 7-year-old named Sam, and a 12-year-old named Maya"), create members for them, give each age-tailored chores with concrete quality inspection checklists, and suggest motivating rewards!
+- If the user asks to edit, reassign, change points, delete, or rename anything, generate the appropriate UPDATE or DELETE actions matching the existing IDs or names.
+- Age-appropriateness guidelines:
+  * Toddlers (3-5): 1-step motor tasks (put toys in bins, fluff cushions), 5-10 pts, easy.
+  * Elementary (6-9): 2-3 step tasks (water plants, feed pets, make bed, unload silverware), 10-15 pts, easy/medium.
+  * Pre-teens (10-12): Dishwasher, vacuuming bedroom, folding laundry, trash bins, 15-20 pts, medium.
+  * Teens (13+): Bathrooms, cooking helper, lawn mowing, deep cleans, 20-30 pts, hard/medium.
+- Always include 3 to 4 clear, observable verification bullet points in qualityChecklist for every added chore.
+- If the user asks a general question or wants advice on allowance, motivation, or routines, answer warmly and suggest 1-2 actionable options they can approve.
+- Always format your 'reply' in warm, engaging, encouraging markdown with emojis.
+- In 'actions', provide every concrete addition, update, or deletion that the user requested or that fits their setup.
+- In 'suggestedFollowUps', suggest 3 short follow-up prompts the user can click next.
+
+Return strictly conforming to the JSON schema.
+`;
+
+    try {
+      const response = await callGeminiWithFallback(systemPrompt, {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            reply: {
+              type: Type.STRING,
+              description: "Warm, supportive conversational response explaining changes made or answering questions."
+            },
+            actions: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  type: {
+                    type: Type.STRING,
+                    enum: [
+                      "SET_HOUSEHOLD_INFO",
+                      "ADD_MEMBER",
+                      "UPDATE_MEMBER",
+                      "DELETE_MEMBER",
+                      "ADD_CHORE",
+                      "UPDATE_CHORE",
+                      "DELETE_CHORE",
+                      "ADD_REWARD",
+                      "UPDATE_REWARD",
+                      "DELETE_REWARD"
+                    ]
+                  },
+                  summary: {
+                    type: Type.STRING,
+                    description: "Short human-readable summary of the action e.g. 'Add Member: Leo (Age 8)' or 'Update Chore: Dishwasher (20 pts)'"
+                  },
+                  data: {
+                    type: Type.OBJECT,
+                    description: "Payload data for the mutation action"
+                  }
+                },
+                required: ["type", "summary", "data"]
+              }
+            },
+            suggestedFollowUps: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "2 to 4 quick action chip suggestions for what the user might want to do next"
+            }
+          },
+          required: ["reply", "actions"]
+        }
+      });
+
+      const text = response.text || "{}";
+      const result = JSON.parse(text);
+      return res.json({
+        reply: result.reply || "I am ready to help organize your household!",
+        actions: Array.isArray(result.actions) ? result.actions : [],
+        suggestedFollowUps: Array.isArray(result.suggestedFollowUps) ? result.suggestedFollowUps : [
+          "Add another family member",
+          "Suggest chores for our kids",
+          "Create weekend rewards",
+          "Review chore balance"
+        ]
+      });
+    } catch (modelErr: any) {
+      console.warn("AI Setup Buddy model fallback:", modelErr?.message);
+      
+      // Smart local heuristic fallback if API is unavailable
+      const lower = lastUserMessage.toLowerCase();
+      let reply = "I'm your AI Household Buddy! I'm ready to help you set up and fine-tune your family members, chores, and rewards.";
+      const actions: any[] = [];
+      const suggestedFollowUps = [
+        "Add a 7-year-old helper",
+        "Create kitchen chores",
+        "Add screen time rewards",
+        "Set family motto"
+      ];
+
+      if (lower.includes("member") || lower.includes("kid") || lower.includes("child") || lower.includes("family")) {
+        reply = "I'm ready to help you set up your family roster! Tell me their names, roles, and ages (for example: *'Add Maya age 7 and Leo age 11'*), and I'll create customized profiles and age-appropriate chore routines.";
+      } else if (lower.includes("chore") || lower.includes("clean") || lower.includes("dish")) {
+        reply = "Let's organize your family chores! Tell me what tasks you need done (like *'Make beds, feed the cat, and empty the dishwasher'*), or what rooms need attention, and I'll generate checklists with fair star points!";
+      } else if (lower.includes("reward") || lower.includes("prize") || lower.includes("point")) {
+        reply = "Rewards make chores motivating and fun! What kind of privileges or treats work best for your kids? Screen time, treats, allowance, or family movie nights?";
+      }
+
+      return res.json({ reply, actions, suggestedFollowUps });
+    }
+  } catch (error: any) {
+    console.error("AI Setup Buddy error:", error);
+    return res.status(500).json({
+      reply: "I ran into a temporary hiccup connecting to my knowledge base. Please try asking again in a moment!",
+      actions: [],
+      suggestedFollowUps: ["Add a family member", "Suggest daily chores", "Set up rewards"]
+    });
   }
 });
 

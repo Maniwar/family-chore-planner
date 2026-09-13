@@ -47,6 +47,7 @@ interface QuickSettingsModalProps {
   onOpenAIAssign?: () => void;
   onOpenRedemptions?: () => void;
   onOpenHouseSettings?: () => void;
+  onOpenAISetupBuddy?: () => void;
   onOpenPointManager?: (memberId?: string) => void;
   onOpenCosmeticsManager?: (memberId?: string) => void;
   onResetDemo?: () => void;
@@ -73,6 +74,7 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
   onOpenAIAssign,
   onOpenRedemptions,
   onOpenHouseSettings,
+  onOpenAISetupBuddy,
   onOpenPointManager,
   onOpenCosmeticsManager,
   onResetDemo,
@@ -254,6 +256,43 @@ export const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
                 : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800'
             }`}>
               
+              {/* Row 0: AI Household Setup Buddy */}
+              <button
+                id="settings-ai-setup-buddy-btn"
+                onClick={() => {
+                  soundFX.playPop();
+                  onClose();
+                  if (onOpenAISetupBuddy) onOpenAISetupBuddy();
+                }}
+                className={`w-full p-3.5 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer min-h-[52px] group ${
+                  isGlass
+                    ? 'hover:bg-white/40 active:bg-white/60 bg-linear-to-r from-sky-500/10 to-indigo-500/10'
+                    : 'hover:bg-sky-50/70 dark:hover:bg-sky-950/30 active:bg-sky-100/70 bg-sky-50/30 dark:bg-sky-950/10'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-linear-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs border border-white/30">
+                    <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs sm:text-sm font-black text-slate-950 dark:text-white truncate">
+                        AI Household Setup Buddy
+                      </p>
+                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase bg-sky-500 text-white">
+                        Gemini AI
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium truncate">
+                      Chat to set up or edit members, chores, checklists & rewards
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
+                  <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                </div>
+              </button>
+
               {/* Row 1: Household Members & Profiles */}
               <button
                 id="settings-manage-family-btn"

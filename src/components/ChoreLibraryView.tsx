@@ -37,6 +37,7 @@ interface ChoreLibraryViewProps {
   onDeleteChore: (choreId: string) => void;
   onToggleChoreActive: (choreId: string) => void;
   onOpenAIAssign: (initialTab?: 'assigner' | 'creator' | 'coach') => void;
+  onOpenAISetupBuddy?: () => void;
 }
 
 const CATEGORIES: ChoreCategory[] = [
@@ -85,6 +86,7 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
   onDeleteChore,
   onToggleChoreActive,
   onOpenAIAssign,
+  onOpenAISetupBuddy,
 }) => {
   const theme = THEMES[currentTheme] || THEMES.rose;
 
@@ -175,7 +177,23 @@ export const ChoreLibraryView: React.FC<ChoreLibraryViewProps> = ({
           </div>
 
           {/* Action Button Strip */}
-          <div className="flex items-center gap-2 pt-1 sm:pt-0">
+          <div className="flex flex-wrap items-center gap-2 pt-1 sm:pt-0">
+            {/* AI Setup Buddy */}
+            {onOpenAISetupBuddy && (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  soundFX.playPop();
+                  onOpenAISetupBuddy();
+                }}
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black bg-linear-to-r from-sky-500 to-indigo-600 text-white transition-all cursor-pointer shadow-2xs min-h-[44px] hover:brightness-110"
+                title="Chat with AI Setup Buddy to manage routines"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300 shrink-0 animate-pulse" />
+                <span>AI Buddy</span>
+              </motion.button>
+            )}
+
             {/* AI Chore Assigner */}
             <motion.button
               whileTap={{ scale: 0.95 }}

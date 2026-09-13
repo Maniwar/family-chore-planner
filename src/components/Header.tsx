@@ -48,6 +48,7 @@ interface HeaderProps {
   forceMobileUi?: boolean;
   onToggleMobileUi?: () => void;
   onToggleMomMode: () => void;
+  onOpenAISetupBuddy?: () => void;
   language: SupportedLanguage;
   onSelectLanguage: (lang: SupportedLanguage) => void;
   currentTheme: ThemePreset;
@@ -76,6 +77,7 @@ export const Header: React.FC<HeaderProps> = ({
   forceMobileUi,
   onToggleMobileUi,
   onToggleMomMode,
+  onOpenAISetupBuddy,
   language,
   onSelectLanguage,
   currentTheme,
@@ -158,6 +160,20 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[8px] font-extrabold px-1 py-0.2 rounded-md bg-amber-500 text-white leading-none">
                 {houseProg.levelProgressPercent}%
               </span>
+            </button>
+
+            {/* Mobile AI Setup Buddy Trigger */}
+            <button
+              id="mobile-ai-setup-buddy-btn"
+              onClick={() => {
+                soundFX.playPop();
+                if (onOpenAISetupBuddy) onOpenAISetupBuddy();
+              }}
+              className="text-[11px] px-2 py-1 rounded-xl font-extrabold transition-all flex items-center gap-1 border active:scale-95 cursor-pointer min-h-[34px] bg-linear-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white border-transparent shadow-xs"
+              title="Chat with AI Setup Buddy"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+              <span>Buddy</span>
             </button>
 
             {/* Mom/Kid Mode Toggle */}
@@ -506,6 +522,25 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </button>
             </div>
+
+            {/* AI Setup Buddy Button */}
+            <button
+              id="header-ai-setup-buddy-btn"
+              onClick={() => {
+                soundFX.playPop();
+                if (onOpenAISetupBuddy) onOpenAISetupBuddy();
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all shadow-xs cursor-pointer active:scale-95 whitespace-nowrap shrink-0 ${
+                isGlassTheme(currentTheme)
+                  ? 'apple-glass-button-primary bg-linear-to-r from-sky-500/80 to-indigo-600/80 text-white border-white/30 hover:brightness-110'
+                  : 'bg-linear-to-r from-sky-500 via-indigo-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white shadow-sky-500/25'
+              }`}
+              title="Chat with AI Setup Buddy to configure members, chores & rewards"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+              <span className="hidden xl:inline">AI Setup Buddy</span>
+              <span className="xl:hidden">AI Buddy</span>
+            </button>
 
             {/* Mom Inspection Alert Pill (Mom Mode Only) */}
             {isMomMode && pendingInspectionCount > 0 && (

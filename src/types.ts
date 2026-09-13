@@ -266,3 +266,32 @@ export interface CalendarSyncLog {
   htmlLink?: string;
   syncedAt: string;
 }
+
+export type BuddyActionType = 
+  | 'SET_HOUSEHOLD_INFO'
+  | 'ADD_MEMBER'
+  | 'UPDATE_MEMBER'
+  | 'DELETE_MEMBER'
+  | 'ADD_CHORE'
+  | 'UPDATE_CHORE'
+  | 'DELETE_CHORE'
+  | 'ADD_REWARD'
+  | 'UPDATE_REWARD'
+  | 'DELETE_REWARD';
+
+export interface BuddyAction {
+  id: string;
+  type: BuddyActionType;
+  summary: string;
+  data: any;
+  applied?: boolean;
+}
+
+export interface BuddyChatMessage {
+  id: string;
+  role: 'user' | 'model';
+  text: string;
+  timestamp: string;
+  actions?: BuddyAction[];
+  suggestedFollowUps?: string[];
+}

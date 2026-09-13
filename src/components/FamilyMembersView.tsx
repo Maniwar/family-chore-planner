@@ -43,6 +43,7 @@ interface FamilyMembersViewProps {
   onOpenProgression?: (member: HouseholdMember) => void;
   onOpenPointManager?: (memberId?: string) => void;
   onOpenHouseEvolution?: (memberId?: string) => void;
+  onOpenAISetupBuddy?: () => void;
 }
 
 export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
@@ -59,6 +60,7 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
   onOpenProgression,
   onOpenPointManager,
   onOpenHouseEvolution,
+  onOpenAISetupBuddy,
 }) => {
   const theme = THEMES[currentTheme] || THEMES.rose;
   const houseProg = calculateHouseProgression(members, householdInfo);
@@ -89,18 +91,34 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
           </p>
         </div>
 
-        {isMomMode && (
-          <button
-            onClick={() => {
-              soundFX.playPop();
-              onOpenNewMember();
-            }}
-            className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-95 cursor-pointer min-h-[44px] shrink-0 self-start sm:self-auto ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : `${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover}`}`}
-          >
-            <Plus className="w-4 h-4 text-emerald-400" />
-            <span>Add Member</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          {onOpenAISetupBuddy && (
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                onOpenAISetupBuddy();
+              }}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-linear-to-r from-sky-500 to-indigo-600 text-white shadow-xs hover:brightness-110 transition-all active:scale-95 cursor-pointer min-h-[44px]"
+              title="Chat with AI Setup Buddy to manage family members"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+              <span>AI Buddy</span>
+            </button>
+          )}
+
+          {isMomMode && (
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                onOpenNewMember();
+              }}
+              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-95 cursor-pointer min-h-[44px] shrink-0 ${isGlassTheme(currentTheme) ? 'apple-glass-button-primary' : `${theme.primaryBg} ${theme.primaryText} ${theme.primaryHover}`}`}
+            >
+              <Plus className="w-4 h-4 text-emerald-400" />
+              <span>Add Member</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Household Hub Hero Card (Apple Inset Style with Zero Text Overlaps) */}

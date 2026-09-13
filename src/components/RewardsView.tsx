@@ -60,6 +60,7 @@ interface RewardsViewProps {
   onNavigateToRedemptions?: () => void;
   onOpenProgression?: () => void;
   onResetRewardsToDefault?: () => void;
+  onOpenAISetupBuddy?: () => void;
 }
 
 type RewardCategory = 'all' | 'treat' | 'allowance' | 'screentime' | 'activity' | 'privilege' | 'cosmetic';
@@ -81,6 +82,7 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
   onNavigateToRedemptions,
   onOpenProgression,
   onResetRewardsToDefault,
+  onOpenAISetupBuddy,
 }) => {
   const theme = THEMES[currentTheme] || THEMES.rose;
   const isGlass = isGlassTheme(currentTheme);
@@ -319,6 +321,20 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Game Theory Pack</span>
+            </button>
+          )}
+
+          {onOpenAISetupBuddy && (
+            <button
+              onClick={() => {
+                soundFX.playPop();
+                onOpenAISetupBuddy();
+              }}
+              className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black shadow-xs transition-all active:scale-95 cursor-pointer min-h-[40px] shrink-0 bg-linear-to-r from-sky-500 to-indigo-600 hover:brightness-110 text-white"
+              title="Chat with AI Setup Buddy to create or tweak rewards"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+              <span>AI Buddy</span>
             </button>
           )}
 
