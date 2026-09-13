@@ -221,6 +221,14 @@ export const MemberPinModal: React.FC<MemberPinModalProps> = ({
             </button>
           </div>
         </div>
+
+        {mode === 'verify' && (
+          <div className="text-center mt-6">
+            <p className="text-[10px] text-slate-400">
+              Forgot PIN? Ask Mom to reset it in Family Members.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
