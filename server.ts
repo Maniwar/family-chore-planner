@@ -1016,7 +1016,7 @@ app.get("/api/household/primary", (req, res) => {
 });
 
 // Create a new household on server - B2, B4, B5, B7
-app.post("/api/household/create", (req, res) => {
+app.post("/api/household/create", async (req, res) => {
   try {
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     if (!checkRateLimit(`create_${ip}`, 5, 900000)) {
@@ -1057,7 +1057,7 @@ app.post("/api/household/create", (req, res) => {
     };
 
     householdsMemoryStore[hhId] = record;
-    saveHouseholdStore(hhId);
+    await saveHouseholdStore(hhId);
 
     // Return authKey exactly once at create, never return householdCode/adminPin/joinPassphrase in serialized household
     return res.json({ success: true, household: sanitizeHousehold(record), authKey });
@@ -1094,7 +1094,7 @@ app.post(["/api/household/join", "/api/household/by-code/:code/join"], async (re
 
     if (!found.authKey) {
       found.authKey = crypto.randomBytes(32).toString("hex");
-      saveHouseholdStore(found.id);
+      await saveHouseholdStore(found.id);
     }
 
     return res.json({
@@ -1246,7 +1246,7 @@ app.post("/api/household/:id/sync", async (req, res) => {
     existing.version = (existing.version || 0) + 1;
     
     householdsMemoryStore[hhId] = existing;
-    saveHouseholdStore(hhId);
+    await saveHouseholdStore(hhId);
 
     return res.json({ success: true, household: sanitizeHousehold(existing) });
   } catch (err: any) {
@@ -1371,7 +1371,7 @@ app.post("/api/household/:id/settle-penalties", async (req, res) => {
 
     hh.updatedAt = now.toISOString();
     hh.version = (hh.version || 0) + 1;
-    saveHouseholdStore(hhId);
+    await saveHouseholdStore(hhId);
 
     return res.json({
       success: true,
@@ -1433,7 +1433,7 @@ app.post("/api/household/:id/nudge", async (req, res) => {
 
     hh.updatedAt = now;
     hh.version = (hh.version || 0) + 1;
-    saveHouseholdStore(hhId);
+    await saveHouseholdStore(hhId);
 
     return res.json({ success: true, nudge: newNudge });
   } catch (err: any) {
