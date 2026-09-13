@@ -127,7 +127,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const found = await findHouseholdByCode(cleanCode);
+      const found = await findHouseholdByCode(cleanCode, joinPassphraseInput.trim() || undefined);
       if (!found) {
         setErrorMessage(`No household found with code "${cleanCode}". Double check and try again!`);
         soundFX.playPop();
@@ -135,7 +135,7 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
       }
 
       // If household has a join passphrase requirement
-      if (found.joinPassphrase && found.joinPassphrase.trim().length > 0) {
+      if (found.joinPassphrase && found.joinPassphrase.trim().length > 0 && (!found.id || found.joinPassphrase === 'REQUIRED')) {
         if (!requiresPassphrasePrompt || !joinPassphraseInput) {
           setRequiresPassphrasePrompt(true);
           setPendingHouseholdFound(found);
@@ -143,12 +143,10 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
           return;
         }
 
-        if (joinPassphraseInput.trim() !== found.joinPassphrase.trim()) {
-          setErrorMessage('Incorrect household password! Ask your family administrator.');
-          soundFX.playPop();
-          setIsLoading(false);
-          return;
-        }
+        setErrorMessage('Incorrect household password! Ask your family administrator.');
+        soundFX.playPop();
+        setIsLoading(false);
+        return;
       }
 
       soundFX.playStarChime(5);

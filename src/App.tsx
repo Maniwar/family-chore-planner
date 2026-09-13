@@ -75,9 +75,9 @@ import {
   setCurrentHouseholdId,
   findHouseholdByCode,
   getHousehold, 
-  getPrimaryHousehold,
   subscribeHouseholdFull,
-  syncCompleteHouseholdToCloud
+  syncCompleteHouseholdToCloud,
+  getHouseholdAuthHeaders
 } from './utils/firebaseSync';
 
 export default function App() {
@@ -394,12 +394,6 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           if (savedHhId) {
             targetHh = await getHousehold(savedHhId);
           }
-        }
-
-        // If still no household found (e.g. fresh phone/tablet opening the app for the first time),
-        // fetch the primary family household from server/cloud so all devices share the same live state
-        if (!targetHh) {
-          targetHh = await getPrimaryHousehold();
         }
 
         if (targetHh && isMounted) {
@@ -1230,7 +1224,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     if (activeHousehold?.id) {
       fetch(`/api/household/${encodeURIComponent(activeHousehold.id)}/nudge`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHouseholdAuthHeaders(activeHousehold.id),
         body: JSON.stringify(newNudge),
       }).catch(console.warn);
 

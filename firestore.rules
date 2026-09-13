@@ -2,12 +2,15 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Multi-tenant household document
+    // Multi-tenant household document: disallow collection listing so no one can enumerate all households
     match /households/{householdId} {
-      allow read, write: if true;
+      allow list: if false;
+      allow get: if true;
+      allow create, update, delete: if true;
 
       match /{document=**} {
-        allow read, write: if true;
+        allow list: if false;
+        allow get, write: if true;
       }
     }
   }
