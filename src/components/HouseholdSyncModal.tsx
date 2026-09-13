@@ -99,6 +99,10 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
       setErrorMessage('Please enter a family or household name.');
       return;
     }
+    if (!newPassphrase.trim()) {
+      setErrorMessage('Please create a secure household join password / passphrase.');
+      return;
+    }
     setIsLoading(true);
     setErrorMessage('');
     try {
@@ -536,17 +540,18 @@ export const HouseholdSyncModal: React.FC<HouseholdSyncModalProps> = ({
 
               <div className="space-y-1">
                 <label className={`text-xs font-bold flex items-center justify-between ${theme.isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  <span>Household Join Password (Optional)</span>
-                  <span className={`text-[10px] font-normal ${theme.isDark ? 'text-slate-400' : 'text-slate-400'}`}>Extra privacy protection</span>
+                  <span>Household Join Password (Required)</span>
+                  <span className={`text-[10px] font-normal ${theme.isDark ? 'text-slate-400' : 'text-slate-400'}`}>Privacy & credential protection</span>
                 </label>
                 <input
                   type="password"
                   value={newPassphrase}
                   onChange={(e) => setNewPassphrase(e.target.value)}
-                  placeholder="e.g. secret123 (Leave blank for code-only access)"
+                  placeholder="e.g. secretPass123! (Required for joining)"
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${
                     isGlassTheme(currentTheme) ? 'bg-white/10  border-white/20 focus:bg-white/20 text-slate-900 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] placeholder:text-slate-500' : theme.isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
                   }`}
+                  required
                 />
               </div>
 

@@ -75,23 +75,12 @@ export function cleanFirestoreData<T>(obj: T): T {
 }
 
 function shouldAttemptFirestoreWrite(): boolean {
-  if (!isFirestoreQuotaExhausted) return true;
-  if (Date.now() - quotaCooldownTimestamp > QUOTA_COOLDOWN_MS) {
-    isFirestoreQuotaExhausted = false; // Retry after cooldown
-    return true;
-  }
+  // Direct client writes to Firestore are permanently disabled; all operations route via the authenticated Express API
   return false;
 }
 
 function handleFirestoreWriteError(err: any) {
-  const errMsg = (err?.message || String(err)).toLowerCase();
-  if (errMsg.includes('quota') || errMsg.includes('resource-exhausted') || errMsg.includes('limit exceeded')) {
-    isFirestoreQuotaExhausted = true;
-    quotaCooldownTimestamp = Date.now();
-    console.info('Firestore daily write quota reached - automatically routing all syncs through resilient server store.');
-  } else {
-    console.warn('Firestore write warning:', err?.message || err);
-  }
+  // Silent fallback
 }
 
 // Generate an unguessable high-entropy Family Code e.g. "NEST-7K9X" or "HERO-3M8P"
@@ -240,10 +229,31 @@ export async function findHouseholdByCode(code: string, passphrase?: string): Pr
     extraHeaders['X-Join-Passphrase'] = passphrase;
   }
 
-  // 1. Try Server API first by code (instant, bypasses exhausted Firestore quota)
+  // 1. If passphrase is provided, attempt join verification via dedicated endpoint
+  if (passphrase) {
+    try {
+      const joinRes = await fetch('/api/household/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...extraHeaders },
+        body: JSON.stringify({ householdCode: normalized, joinPassphrase: passphrase }),
+      });
+      if (joinRes.ok) {
+        const data = await joinRes.json();
+        if (data?.household) {
+          if (data.authKey) {
+            setHouseholdAuthToken(data.household.id, data.authKey);
+          }
+          return data.household as CloudHousehold;
+        }
+      }
+    } catch (e) {
+      // continue fallback
+    }
+  }
+
+  // 2. Query lookup endpoint for household existence and passphrase requirement stub
   try {
-    const queryStr = passphrase ? `?passphrase=${encodeURIComponent(passphrase)}` : '';
-    const res = await fetch(`/api/household/by-code/${encodeURIComponent(normalized)}${queryStr}`, {
+    const res = await fetch(`/api/household/by-code/${encodeURIComponent(normalized)}`, {
       headers: extraHeaders,
     });
     if (res.ok) {
@@ -252,7 +262,7 @@ export async function findHouseholdByCode(code: string, passphrase?: string): Pr
         // Return placeholder stub requiring password prompt without leaking family data
         return {
           id: '',
-          householdCode: data.householdCode || normalized,
+          householdCode: normalized,
           familyName: data.familyName || 'Family Home',
           joinPassphrase: 'REQUIRED',
         } as CloudHousehold;
@@ -268,7 +278,7 @@ export async function findHouseholdByCode(code: string, passphrase?: string): Pr
     // continue fallback
   }
 
-  // 2. Try Server API by direct ID with existing auth credentials
+  // 3. Try Server API by direct ID if an authenticated session already exists
   try {
     const res = await fetch(`/api/household/${encodeURIComponent(raw)}`, {
       headers: getHouseholdAuthHeaders(raw, extraHeaders),
@@ -286,19 +296,6 @@ export async function findHouseholdByCode(code: string, passphrase?: string): Pr
     // continue fallback
   }
 
-  // 3. Direct Firestore getDoc if already an exact household ID
-  if (raw.startsWith('hh_') && raw.length > 5) {
-    try {
-      const snap = await getDoc(doc(db, 'households', raw));
-      if (snap.exists()) {
-        const docData = snap.data() as CloudHousehold;
-        return docData;
-      }
-    } catch (err) {
-      // Catch quota or permission errors
-    }
-  }
-
   return null;
 }
 
@@ -314,7 +311,6 @@ export async function getPrimaryHousehold(): Promise<CloudHousehold | null> {
  * Fetch Complete Household Details - Authenticated Request
  */
 export async function getHousehold(householdId: string): Promise<CloudHousehold | null> {
-  // 1. Try server API with authorization credentials
   try {
     const res = await fetch(`/api/household/${encodeURIComponent(householdId)}`, {
       headers: getHouseholdAuthHeaders(householdId),
@@ -332,18 +328,7 @@ export async function getHousehold(householdId: string): Promise<CloudHousehold 
       return null;
     }
   } catch (e) {
-    // continue to Firestore fallback
-  }
-
-  // 2. Try Firestore doc
-  try {
-    const snap = await getDoc(doc(db, 'households', householdId));
-    if (snap.exists()) {
-      const data = snap.data() as CloudHousehold;
-      return data;
-    }
-  } catch (err: any) {
-    console.warn('Firestore getHousehold warning:', err?.message || err);
+    // network issue
   }
 
   return null;
@@ -398,20 +383,12 @@ export async function syncCompleteHouseholdToCloud(
     console.warn('Server sync notice:', e);
   }
 
-  // 2. Firestore single document update (skipped if currently quota-exhausted)
-  if (shouldAttemptFirestoreWrite()) {
-    try {
-      const sanitized = cleanFirestoreData(fullData);
-      await setDoc(doc(db, 'households', householdId), sanitized, { merge: true });
-    } catch (err: any) {
-      handleFirestoreWriteError(err);
-    }
-  }
+  // Writes route exclusively through the authenticated Express API
 }
 
 /**
  * Real-Time Subscriptions & Polling Manager
- * Listens to Firestore onSnapshot with an authenticated fallback to server polling.
+ * Uses authenticated long-polling / fast-polling against the server.
  */
 export function subscribeHouseholdFull(
   householdId: string,
@@ -421,29 +398,7 @@ export function subscribeHouseholdFull(
   let lastUpdatedAt = '';
   let pollInterval: any = null;
 
-  // 1. Firestore realtime listener
-  let firestoreUnsub: Unsubscribe | null = null;
-  try {
-    firestoreUnsub = onSnapshot(
-      doc(db, 'households', householdId),
-      (snap) => {
-        if (isUnsubscribed) return;
-        if (snap.exists()) {
-          const data = snap.data() as CloudHousehold;
-          lastUpdatedAt = data.updatedAt || '';
-          callback(data);
-        }
-      },
-      (err) => {
-        handleFirestoreWriteError(err);
-        console.info('Firestore realtime listener note (seamless server fallback stream active):', err?.message || err);
-      }
-    );
-  } catch (e) {
-    console.warn('Could not establish Firestore listener:', e);
-  }
-
-  // 2. Authenticated polling stream (every 2.5s)
+  // Authenticated polling stream (every 2.5s)
   const pollServer = async () => {
     if (isUnsubscribed) return;
     try {
@@ -476,9 +431,6 @@ export function subscribeHouseholdFull(
 
   return () => {
     isUnsubscribed = true;
-    if (firestoreUnsub) {
-      try { firestoreUnsub(); } catch {}
-    }
     if (pollInterval) {
       clearInterval(pollInterval);
     }

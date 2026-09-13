@@ -534,6 +534,53 @@ interface ServerHouseholdRecord {
 
 let householdsMemoryStore: Record<string, ServerHouseholdRecord> = {};
 
+// Rate limiting store for brute-force sensitive endpoints (B7)
+const ipRateLimits = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = ipRateLimits.get(key);
+  if (!entry || now > entry.resetTime) {
+    ipRateLimits.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxRequests) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
+// Timing-safe string comparison hygiene (B7)
+function safeEqual(a: string | undefined | null, b: string | undefined | null): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+// Random household code generator - no hardcoded defaults (B4)
+function generateHouseholdCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "NEST-";
+  for (let i = 0; i < 4; i++) {
+    code += chars[crypto.randomInt(0, chars.length)];
+  }
+  return code;
+}
+
+// Random admin PIN generator - no hardcoded defaults (B4)
+function generateAdminPin(): string {
+  return crypto.randomInt(1000, 10000).toString();
+}
+
+// Sanitize household: strip credentials from all response bodies (B2)
+function sanitizeHousehold(hh: ServerHouseholdRecord) {
+  const { adminPin, joinPassphrase, householdCode, authKey, ...safe } = hh;
+  return safe;
+}
+
 function initHouseholdStore() {
   try {
     if (!fs.existsSync(HOUSEHOLD_DATA_DIR)) {
@@ -542,14 +589,27 @@ function initHouseholdStore() {
     if (fs.existsSync(HOUSEHOLD_STORE_FILE)) {
       const data = fs.readFileSync(HOUSEHOLD_STORE_FILE, "utf-8");
       householdsMemoryStore = JSON.parse(data);
-      // Ensure all stored households have an unguessable authKey
+
+      // B6: Delete stray probe records
+      if (householdsMemoryStore["hh_doesnotexist000"]) {
+        delete householdsMemoryStore["hh_doesnotexist000"];
+      }
+
       let modified = false;
       Object.values(householdsMemoryStore).forEach((h) => {
-        if (h && !h.authKey) {
+        if (!h) return;
+        // Ensure unguessable authKey
+        if (!h.authKey) {
           h.authKey = crypto.randomBytes(32).toString("hex");
           modified = true;
         }
+        // B5: Backfill missing or empty passphrases
+        if (!h.joinPassphrase || !h.joinPassphrase.trim()) {
+          h.joinPassphrase = crypto.randomBytes(16).toString("base64url");
+          modified = true;
+        }
       });
+
       if (modified) {
         saveHouseholdStore();
       }
@@ -572,6 +632,7 @@ function saveHouseholdStore() {
 
 initHouseholdStore();
 
+// Token extraction: B7 - Remove query parameter ?auth= support to prevent token leakage in URLs
 function getRequestAuthToken(req: express.Request): string | null {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -581,42 +642,16 @@ function getRequestAuthToken(req: express.Request): string | null {
   if (typeof xAuth === "string" && xAuth.trim()) {
     return xAuth.trim();
   }
-  if (typeof req.query.auth === "string" && req.query.auth.trim()) {
-    return req.query.auth.trim();
-  }
   return null;
 }
 
+// B3: Bearer token is the ONLY accepted credential.
+// x-household-code and x-admin-pin branches are deleted.
 function verifyHouseholdAuth(req: express.Request, hh: ServerHouseholdRecord): boolean {
-  if (!hh) return false;
-
-  // 1. Primary verification: Valid auth token
+  if (!hh || !hh.authKey) return false;
   const clientToken = getRequestAuthToken(req);
-  if (clientToken && hh.authKey && clientToken === hh.authKey) {
-    return true;
-  }
-
-  // 2. Admin PIN verification (from family header)
-  const pinHeader = req.headers["x-admin-pin"];
-  if (typeof pinHeader === "string" && hh.adminPin && pinHeader.trim() === hh.adminPin.trim()) {
-    return true;
-  }
-
-  // 3. Family Join Code verification
-  const codeHeader = req.headers["x-household-code"];
-  if (typeof codeHeader === "string" && hh.householdCode && codeHeader.trim().toUpperCase() === hh.householdCode.trim().toUpperCase()) {
-    // If household requires a join passphrase, ensure it matches
-    if (hh.joinPassphrase && hh.joinPassphrase.trim()) {
-      const passHeader = req.headers["x-join-passphrase"] || req.query.passphrase;
-      if (typeof passHeader === "string" && passHeader.trim() === hh.joinPassphrase.trim()) {
-        return true;
-      }
-      return false;
-    }
-    return true;
-  }
-
-  return false;
+  if (!clientToken) return false;
+  return safeEqual(clientToken, hh.authKey);
 }
 
 // PERMANENTLY DISABLED: Do NOT volunteer any family's household to unauthenticated strangers
@@ -624,14 +659,26 @@ app.get("/api/household/primary", (req, res) => {
   return res.status(404).json({ error: "Endpoint disabled for privacy and security. Strangers cannot read household data." });
 });
 
-// Create a new household on server
+// Create a new household on server - B2, B4, B5, B7
 app.post("/api/household/create", (req, res) => {
   try {
-    const { id, householdCode, familyName, houseAddressOrMotto, housePhotoUrl, adminPin, pinProtectionEnabled, joinPassphrase, members, chores, logs, rewards, claims } = req.body;
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    if (!checkRateLimit(`create_${ip}`, 5, 900000)) {
+      return res.status(429).json({ error: "Too many creations. Please try again later." });
+    }
+
+    const { id, familyName, houseAddressOrMotto, housePhotoUrl, adminPin, pinProtectionEnabled, joinPassphrase, members, chores, logs, rewards, claims } = req.body;
+    
+    // B5: Make joinPassphrase required at creation
+    if (!joinPassphrase || typeof joinPassphrase !== "string" || !joinPassphrase.trim()) {
+      return res.status(400).json({ error: "joinPassphrase is required to create a household" });
+    }
+
     const now = new Date().toISOString();
-    const hhId = id || "hh_" + Math.random().toString(36).substring(2, 11);
-    const code = (householdCode || "NEST-" + Math.random().toString(36).substring(2, 6)).toUpperCase();
+    const hhId = id || "hh_" + crypto.randomBytes(6).toString("hex");
+    const code = generateHouseholdCode();
     const authKey = crypto.randomBytes(32).toString("hex");
+    const pin = (typeof adminPin === "string" && adminPin.trim().length > 0) ? adminPin.trim() : generateAdminPin();
 
     const record: ServerHouseholdRecord = {
       id: hhId,
@@ -640,9 +687,9 @@ app.post("/api/household/create", (req, res) => {
       familyName: familyName || "Our Family Home",
       houseAddressOrMotto: houseAddressOrMotto || "Clean spaces, happy smiles & teamwork! ✨",
       housePhotoUrl: housePhotoUrl || "",
-      adminPin: adminPin || "1234",
+      adminPin: pin,
       pinProtectionEnabled: pinProtectionEnabled !== undefined ? Boolean(pinProtectionEnabled) : true,
-      joinPassphrase: joinPassphrase || undefined,
+      joinPassphrase: joinPassphrase.trim(),
       members: Array.isArray(members) ? members : [],
       chores: Array.isArray(chores) ? chores : [],
       logs: Array.isArray(logs) ? logs : [],
@@ -656,17 +703,68 @@ app.post("/api/household/create", (req, res) => {
     householdsMemoryStore[hhId] = record;
     saveHouseholdStore();
 
-    res.setHeader("x-household-auth", authKey);
-    return res.json({ success: true, household: record, authKey });
+    // Return authKey exactly once at create, never return householdCode/adminPin/joinPassphrase in serialized household
+    return res.json({ success: true, household: sanitizeHousehold(record), authKey });
   } catch (err: any) {
     console.error("Create household API error:", err);
     return res.status(500).json({ error: err.message || "Failed to create household" });
   }
 });
 
-// Look up household by code with optional passphrase requirement
+// Dedicated join endpoint - accepts code + passphrase, verifies both, mints/returns token (B3, B7)
+app.post(["/api/household/join", "/api/household/by-code/:code/join"], (req, res) => {
+  try {
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    if (!checkRateLimit(`join_${ip}`, 10, 60000)) {
+      return res.status(429).json({ error: "Too many join attempts. Please try again later." });
+    }
+
+    const codeParam = (req.params.code || req.body.householdCode || req.body.code || "").trim().toUpperCase();
+    const cleanSearch = codeParam.replace(/[^A-Z0-9]/g, "");
+
+    if (!cleanSearch) {
+      return res.status(400).json({ error: "householdCode is required" });
+    }
+
+    const found = Object.values(householdsMemoryStore).find((h) => {
+      if (!h) return false;
+      const hCode = (h.householdCode || "").toUpperCase();
+      const hClean = hCode.replace(/[^A-Z0-9]/g, "");
+      return hCode === codeParam || hClean === cleanSearch;
+    });
+
+    if (!found) {
+      return res.status(404).json({ error: "Household not found" });
+    }
+
+    const providedPassphrase = (req.body.joinPassphrase || req.body.passphrase || req.headers["x-join-passphrase"] || "") as string;
+    if (!found.joinPassphrase || !safeEqual(providedPassphrase.trim(), found.joinPassphrase.trim())) {
+      return res.status(401).json({ error: "Invalid household join passphrase" });
+    }
+
+    if (!found.authKey) {
+      found.authKey = crypto.randomBytes(32).toString("hex");
+      saveHouseholdStore();
+    }
+
+    return res.json({
+      success: true,
+      household: sanitizeHousehold(found),
+      authKey: found.authKey,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Failed to join household" });
+  }
+});
+
+// Look up household by code - B2, B5, B7: Returns ONLY a passphrase prompt stub without leaking roster or credentials
 app.get("/api/household/by-code/:code", (req, res) => {
   try {
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    if (!checkRateLimit(`lookup_${ip}`, 10, 60000)) {
+      return res.status(429).json({ error: "Too many lookups. Please try again later." });
+    }
+
     const raw = (req.params.code || "").trim();
     const searchCode = raw.toUpperCase();
     const cleanSearch = searchCode.replace(/[^A-Z0-9]/g, "");
@@ -682,33 +780,19 @@ app.get("/api/household/by-code/:code", (req, res) => {
       return res.status(404).json({ error: "Household not found" });
     }
 
-    // If household requires a join passphrase
-    if (found.joinPassphrase && found.joinPassphrase.trim().length > 0) {
-      const providedPassphrase = (req.headers["x-join-passphrase"] || req.query.passphrase || "") as string;
-      if (providedPassphrase.trim() !== found.joinPassphrase.trim()) {
-        // Return only metadata indicating passphrase is required without leaking family members or chores
-        return res.json({
-          success: false,
-          requiresPassphrase: true,
-          familyName: found.familyName,
-          householdCode: found.householdCode,
-        });
-      }
-    }
-
-    if (!found.authKey) {
-      found.authKey = crypto.randomBytes(32).toString("hex");
-      saveHouseholdStore();
-    }
-
-    res.setHeader("x-household-auth", found.authKey);
-    return res.json({ success: true, household: found, authKey: found.authKey });
+    // Never leak members, chores, rewards, adminPin, joinPassphrase, householdCode, or authKey
+    // Always return passphrase prompt stub only
+    return res.json({
+      success: false,
+      requiresPassphrase: true,
+      familyName: found.familyName,
+    });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to search household" });
   }
 });
 
-// Fetch full household by ID - REQUIRES AUTHENTICATION
+// Fetch full household by ID - REQUIRES AUTHENTICATION (B2, B3)
 app.get("/api/household/:id", (req, res) => {
   try {
     const hh = householdsMemoryStore[req.params.id];
@@ -718,57 +802,38 @@ app.get("/api/household/:id", (req, res) => {
     if (!verifyHouseholdAuth(req, hh)) {
       return res.status(401).json({ error: "Unauthorized: Household access credentials required" });
     }
-    if (!hh.authKey) {
-      hh.authKey = crypto.randomBytes(32).toString("hex");
-      saveHouseholdStore();
-    }
-    res.setHeader("x-household-auth", hh.authKey);
-    return res.json({ success: true, household: hh, authKey: hh.authKey });
+    return res.json({ success: true, household: sanitizeHousehold(hh) });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-// Sync / update household data across all devices - REQUIRES AUTHENTICATION
+// Sync / update household data across all devices - REQUIRES AUTHENTICATION (B2, B3, B4)
 app.post("/api/household/:id/sync", (req, res) => {
   try {
     const hhId = req.params.id;
-    const { familyName, houseAddressOrMotto, housePhotoUrl, householdCode, adminPin, pinProtectionEnabled, joinPassphrase, members, chores, logs, rewards, claims, version } = req.body;
-    
-    let existing = householdsMemoryStore[hhId];
-    const now = new Date().toISOString();
+    const existing = householdsMemoryStore[hhId];
 
-    if (existing && !verifyHouseholdAuth(req, existing)) {
+    // B4: An unauthenticated POST to a nonexistent id must not bring one into existence
+    if (!existing) {
+      return res.status(401).json({ error: "Unauthorized: Household does not exist" });
+    }
+
+    if (!verifyHouseholdAuth(req, existing)) {
       return res.status(401).json({ error: "Unauthorized: Invalid household credentials" });
     }
 
-    if (!existing) {
-      const authKey = crypto.randomBytes(32).toString("hex");
-      existing = {
-        id: hhId,
-        householdCode: householdCode || "HERO-8K2Q",
-        authKey,
-        familyName: familyName || "Our Family Home",
-        houseAddressOrMotto: houseAddressOrMotto || "",
-        housePhotoUrl: housePhotoUrl || "",
-        adminPin: adminPin || "1234",
-        pinProtectionEnabled: pinProtectionEnabled !== undefined ? Boolean(pinProtectionEnabled) : true,
-        createdAt: now,
-        updatedAt: now,
-        version: 1,
-      };
-    }
+    const { familyName, houseAddressOrMotto, housePhotoUrl, pinProtectionEnabled, members, chores, logs, rewards, claims } = req.body;
+    const now = new Date().toISOString();
 
     if (familyName !== undefined) existing.familyName = familyName;
     if (houseAddressOrMotto !== undefined) existing.houseAddressOrMotto = houseAddressOrMotto;
     if (housePhotoUrl !== undefined) existing.housePhotoUrl = housePhotoUrl;
-    if (adminPin !== undefined) existing.adminPin = adminPin;
     if (pinProtectionEnabled !== undefined) existing.pinProtectionEnabled = Boolean(pinProtectionEnabled);
-    if (joinPassphrase !== undefined) existing.joinPassphrase = joinPassphrase;
     if (Array.isArray(members)) {
       existing.members = members.map((m: any) => {
         const prevM = existing.members?.find((em: any) => em.id === m.id);
-        if (prevM?.avatarPhotoUrl && (!m.avatarPhotoUrl || m.avatarPhotoUrl.trim() === '')) {
+        if (prevM?.avatarPhotoUrl && (!m.avatarPhotoUrl || m.avatarPhotoUrl.trim() === "")) {
           return { ...m, avatarPhotoUrl: prevM.avatarPhotoUrl };
         }
         return m;
@@ -789,8 +854,7 @@ app.post("/api/household/:id/sync", (req, res) => {
     householdsMemoryStore[hhId] = existing;
     saveHouseholdStore();
 
-    res.setHeader("x-household-auth", existing.authKey || "");
-    return res.json({ success: true, household: existing, authKey: existing.authKey });
+    return res.json({ success: true, household: sanitizeHousehold(existing) });
   } catch (err: any) {
     console.error("Household sync API error:", err);
     return res.status(500).json({ error: err.message || "Failed to sync household" });
@@ -1000,8 +1064,7 @@ app.get("/api/household/:id/poll", (req, res) => {
 
     // Return if changed since provided timestamp or version
     if (!since || hh.updatedAt !== since) {
-      res.setHeader("x-household-auth", hh.authKey || "");
-      return res.json({ hasUpdate: true, household: hh, authKey: hh.authKey });
+      return res.json({ hasUpdate: true, household: sanitizeHousehold(hh) });
     }
 
     return res.json({ hasUpdate: false, updatedAt: hh.updatedAt });
