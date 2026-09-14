@@ -153,12 +153,11 @@ export async function createNewHousehold(
   }
 ): Promise<CloudHousehold> {
   const householdId = 'hh_' + Math.random().toString(36).substring(2, 11);
-  const householdCode = generateHouseholdCode();
   const now = new Date().toISOString();
 
   const householdData: CloudHousehold = {
     id: householdId,
-    householdCode,
+    householdCode: "", // Server will generate this
     familyName: familyName.trim() || 'Our Family Home',
     houseAddressOrMotto: motto,
     adminPin,
@@ -173,25 +172,25 @@ export async function createNewHousehold(
     version: 1,
   };
 
-  // 1. Sync to server API (bulletproof fallback)
-  try {
-    const res = await fetch('/api/household/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(householdData),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.authKey) {
-        setHouseholdAuthToken(householdId, data.authKey);
-      }
-      if (data.household) {
-        Object.assign(householdData, data.household);
-      }
-    }
-  } catch (e) {
-    console.warn('Server API create notice:', e);
+  const res = await fetch('/api/household/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(householdData),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Create failed (${res.status})`);
   }
+
+  const data = await res.json();
+  if (!data.authKey) throw new Error("Create returned no auth key");
+
+  setHouseholdAuthToken(householdId, data.authKey);
+  if (data.household) {
+    Object.assign(householdData, data.household);
+  }
+  householdData.householdCode = data.householdCode;
 
   // Set active session
   setCurrentHouseholdId(householdId);
