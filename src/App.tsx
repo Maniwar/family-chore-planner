@@ -2038,7 +2038,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         pointCost: reward.pointCost,
         claimedAt: new Date().toISOString(),
         status: 'pending',
-        childNote: note,
+        note: note,
       };
 
       const updatedClaims = [newClaim, ...claims];
@@ -2073,7 +2073,12 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           memberName: member.name,
           mode: 'setup',
           onSuccess: (newPin) => {
-            handleSetMemberPin(member.id, newPin);
+            const updatedMember = { ...member, pin: newPin };
+            const updatedMembersList = members.map(m => m.id === member.id ? updatedMember : m);
+            setMembers(updatedMembersList);
+            saveMembers(updatedMembersList);
+            const targetHhId = activeHousehold?.id || getCurrentHouseholdId();
+            syncCompleteHouseholdToCloud(targetHhId, { version: activeHousehold?.version, members: updatedMembersList }).catch(() => {});
             authenticateMember(member.id);
             performClaim();
           },

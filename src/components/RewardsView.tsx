@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Gift, 
   Plus, 
@@ -86,13 +86,6 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
   onResetRewardsToDefault,
   onOpenAISetupBuddy,
 }) => {
-  useEffect(() => {
-    if (!isMomMode && selectedMemberId && selectedMemberId !== 'all') {
-      setSelectedFilterMemberId(selectedMemberId);
-      setSelectedClaimMemberId(selectedMemberId);
-    }
-  }, [selectedMemberId, isMomMode]);
-
   const theme = THEMES[currentTheme] || THEMES.rose;
   const isGlass = isGlassTheme(currentTheme);
 
@@ -115,6 +108,14 @@ export const RewardsView: React.FC<RewardsViewProps> = ({
   );
   const [sortBy, setSortBy] = useState<SortOption>('featured');
   const [onlyAffordable, setOnlyAffordable] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isMomMode && selectedMemberId && selectedMemberId !== 'all') {
+      setSelectedFilterMemberId(selectedMemberId);
+      setSelectedClaimMemberId(selectedMemberId);
+    }
+  }, [selectedMemberId, isMomMode]);
+
 
   const pendingClaims = claims.filter(c => c.status === 'pending');
   const activeMember = members.find(m => m.id === selectedFilterMemberId);
