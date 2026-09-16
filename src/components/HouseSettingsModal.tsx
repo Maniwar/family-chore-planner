@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Home, Camera, Trash2, Check, Sparkles, Lock, KeyRound, ShieldCheck, RotateCcw, AlertTriangle, ChevronRight } from 'lucide-react';
+import { X, Home, Camera, Trash2, Check, Sparkles, Lock, KeyRound, ShieldCheck, RotateCcw, AlertTriangle, ChevronRight, Copy, Cloud, QrCode } from 'lucide-react';
 import { HouseholdInfo } from '../types';
 import { processImageFile } from '../utils/imageUpload';
 import { soundFX } from '../utils/audio';
@@ -16,6 +16,8 @@ interface HouseSettingsModalProps {
   onOpenPinChange?: () => void;
   onResetDemo?: () => void;
   currentTheme?: ThemePreset;
+  onOpenCloudSync?: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
 export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
@@ -25,6 +27,8 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
   onSaveHouseholdInfo,
   onResetDemo,
   currentTheme,
+  onOpenCloudSync,
+  onShowToast,
 }) => {
   const { sheetStyle, dragHandleProps, handleDismiss } = useBottomSheet({
     onClose,
@@ -143,6 +147,88 @@ export const HouseSettingsModal: React.FC<HouseSettingsModalProps> = ({
         {/* Scrollable Form Content */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
           
+          {/* SECTION: FAMILY JOIN CODE & CLOUD SYNC */}
+          <div className="space-y-2">
+            <span className={`text-[11px] font-bold uppercase tracking-wider px-1 ${isGlassTheme(currentTheme) ? 'text-slate-600' : 'text-slate-400 dark:text-slate-500'}`}>
+              Family Join Code & Cloud Sync
+            </span>
+
+            <div className={`p-4 rounded-2xl border shadow-2xs ${isGlassTheme(currentTheme) ? 'apple-glass-card border-white/20' : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/80'}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-lg font-bold shrink-0">
+                    <KeyRound className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                        Family Join Code
+                      </h3>
+                      {householdInfo.isCloudSynced && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                          Cloud Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Enter this code on other devices to connect family members and sync chores.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  {householdInfo.householdCode ? (
+                    <>
+                      <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono font-black text-sm tracking-wider text-emerald-700 dark:text-emerald-400 select-all">
+                        {householdInfo.householdCode}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundFX.playPop();
+                          if (householdInfo.householdCode) {
+                            navigator.clipboard?.writeText(householdInfo.householdCode);
+                            if (onShowToast) onShowToast(`Family Code copied: ${householdInfo.householdCode}`);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs flex items-center gap-1.5"
+                        title="Copy Code"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy</span>
+                      </button>
+                      {onOpenCloudSync && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            soundFX.playPop();
+                            onOpenCloudSync();
+                          }}
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs flex items-center justify-center"
+                          title="Open QR Code & Connected Devices"
+                        >
+                          <QrCode className="w-4 h-4" />
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundFX.playPop();
+                        if (onOpenCloudSync) onOpenCloudSync();
+                      }}
+                      className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs flex items-center gap-1.5"
+                    >
+                      <Cloud className="w-4 h-4" />
+                      <span>Connect & Generate Code</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* SECTION 1: HOUSE PHOTO & IDENTITY (Apple Inset Grouped Card) */}
           <div className="space-y-2">
             <span className={`text-[11px] font-bold uppercase tracking-wider px-1 ${isGlassTheme(currentTheme) ? 'text-slate-600' : 'text-slate-400 dark:text-slate-500'}`}>

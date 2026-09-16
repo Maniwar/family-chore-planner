@@ -77,6 +77,7 @@ import {
   setCurrentHouseholdId,
   findHouseholdByCode,
   getHousehold, 
+  getHouseholdCodeFromCloud,
   subscribeHouseholdFull,
   syncCompleteHouseholdToCloud,
   getHouseholdAuthHeaders
@@ -478,7 +479,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
         }
 
         if (!targetHh) {
-          const savedHhId = getCurrentHouseholdId();
+          const savedHhId = getCurrentHouseholdId() || householdInfo.householdId;
           if (savedHhId) {
             targetHh = await getHousehold(savedHhId);
           }
@@ -486,6 +487,13 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
 
         if (targetHh && isMounted) {
           setCurrentHouseholdId(targetHh.id);
+          let hhCode = targetHh.householdCode;
+          if (!hhCode && targetHh.id) {
+            hhCode = (await getHouseholdCodeFromCloud(targetHh.id)) || undefined;
+          }
+          if (hhCode) {
+            targetHh.householdCode = hhCode;
+          }
           setActiveHousehold(targetHh);
 
           // Synchronize Mom PIN & settings
@@ -533,7 +541,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
               familyName: targetHh!.familyName || prev.familyName,
               houseAddressOrMotto: targetHh!.houseAddressOrMotto || prev.houseAddressOrMotto,
               housePhotoUrl: targetHh!.housePhotoUrl || prev.housePhotoUrl,
-              householdCode: targetHh!.householdCode,
+              householdCode: hhCode || targetHh!.householdCode || prev.householdCode,
               householdId: targetHh!.id,
               customHouseXp: targetHh!.customHouseXp !== undefined ? targetHh!.customHouseXp : prev.customHouseXp,
               isCloudSynced: true,
@@ -543,6 +551,16 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           });
 
           // Set hash baseline so debounced effect does not push identical copy
+          isCloudHydratedRef.current = true;
+        } else if (householdInfo.householdId && !householdInfo.householdCode && isMounted) {
+          const fetchedCode = await getHouseholdCodeFromCloud(householdInfo.householdId);
+          if (fetchedCode && isMounted) {
+            setHouseholdInfo(prev => {
+              const next = { ...prev, householdCode: fetchedCode, isCloudSynced: true };
+              saveHouseholdInfo(next);
+              return next;
+            });
+          }
           isCloudHydratedRef.current = true;
         } else if (isMounted) {
           isCloudHydratedRef.current = true;
@@ -623,7 +641,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           familyName: cloudHh.familyName || prev.familyName,
           houseAddressOrMotto: cloudHh.houseAddressOrMotto || prev.houseAddressOrMotto,
           housePhotoUrl: cloudHh.housePhotoUrl || prev.housePhotoUrl,
-          householdCode: cloudHh.householdCode,
+          householdCode: cloudHh.householdCode || prev.householdCode,
           householdId: cloudHh.id,
           customHouseXp: cloudHh.customHouseXp !== undefined ? cloudHh.customHouseXp : prev.customHouseXp,
           isCloudSynced: true,
@@ -655,15 +673,19 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     if (household.nudges && household.nudges.length > 0) setNudges(household.nudges);
     if (household.penaltySettings) setPenaltySettings(household.penaltySettings);
 
-    setHouseholdInfo(prev => ({
-      ...prev,
-      familyName: household.familyName,
-      houseAddressOrMotto: household.houseAddressOrMotto,
-      housePhotoUrl: household.housePhotoUrl,
-      householdCode: household.householdCode,
-      householdId: household.id,
-      isCloudSynced: true,
-    }));
+    setHouseholdInfo(prev => {
+      const next = {
+        ...prev,
+        familyName: household.familyName,
+        houseAddressOrMotto: household.houseAddressOrMotto,
+        housePhotoUrl: household.housePhotoUrl,
+        householdCode: household.householdCode || prev.householdCode,
+        householdId: household.id,
+        isCloudSynced: true,
+      };
+      saveHouseholdInfo(next);
+      return next;
+    });
   };
 
   const handleHouseholdDisconnected = () => {
@@ -2662,6 +2684,7 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           setAuthenticatedMembers(updatedAuth);
           showToast('Profile locked.');
         }}
+        onShowToast={(msg) => showToast(msg)}
       />
 
       {/* Live Nudge Alert Banner for Kids & Family */}
@@ -2853,6 +2876,11 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
               setHighlightMemberIdForHouse(memberId);
               setIsHouseEvolutionOpen(true);
             }}
+            onOpenCloudSync={() => {
+              setCloudSyncInitialTab('status');
+              setIsCloudSyncModalOpen(true);
+            }}
+            onShowToast={(msg) => showToast(msg)}
           />
         )}
 
@@ -2930,6 +2958,12 @@ const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
           householdInfo={householdInfo}
           onSaveHouseholdInfo={handleSaveHouseholdInfo}
           onResetDemo={handleResetDemo}
+          onOpenCloudSync={() => {
+            setIsHouseSettingsModalOpen(false);
+            setCloudSyncInitialTab('status');
+            setIsCloudSyncModalOpen(true);
+          }}
+          onShowToast={(msg) => showToast(msg)}
         />
       )}
 

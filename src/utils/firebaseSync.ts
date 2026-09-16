@@ -123,7 +123,19 @@ export function getHouseholdAuthHeaders(householdId?: string, extraHeaders?: Rec
 }
 
 export const getCurrentHouseholdId = (): string | null => {
-  return localStorage.getItem(HOUSEHOLD_SESSION_KEY);
+  try {
+    const directId = localStorage.getItem(HOUSEHOLD_SESSION_KEY);
+    if (directId) return directId;
+    const hhInfoRaw = localStorage.getItem('family_chores_household_info_v1');
+    if (hhInfoRaw) {
+      const parsed = JSON.parse(hhInfoRaw);
+      if (parsed?.householdId) {
+        localStorage.setItem(HOUSEHOLD_SESSION_KEY, parsed.householdId);
+        return parsed.householdId;
+      }
+    }
+  } catch {}
+  return null;
 };
 
 export const setCurrentHouseholdId = (householdId: string | null): void => {
@@ -299,6 +311,13 @@ export async function getHousehold(householdId: string): Promise<CloudHousehold 
     if (res.ok) {
       const data = await res.json();
       if (data?.household) {
+        if (data.householdCode && !data.household.householdCode) {
+          data.household.householdCode = data.householdCode;
+        }
+        if (!data.household.householdCode) {
+          const code = await getHouseholdCodeFromCloud(householdId);
+          if (code) data.household.householdCode = code;
+        }
         if (data.authKey) {
           setHouseholdAuthToken(householdId, data.authKey);
         }
@@ -398,6 +417,9 @@ export function subscribeHouseholdFull(
       if (res.ok) {
         const data = await res.json();
         if (data.hasUpdate && data.household) {
+          if (data.householdCode && !data.household.householdCode) {
+            data.household.householdCode = data.householdCode;
+          }
           lastUpdatedAt = data.household.updatedAt || '';
           callback(data.household);
         }

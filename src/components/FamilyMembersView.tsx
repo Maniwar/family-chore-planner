@@ -19,7 +19,10 @@ import {
   ShieldCheck,
   Zap,
   Check,
-  ChevronRight
+  ChevronRight,
+  KeyRound,
+  Copy,
+  Cloud
 } from 'lucide-react';
 import { HouseholdMember, Chore, HouseholdInfo } from '../types';
 import { getMemberEffectiveAge } from '../utils/age';
@@ -44,6 +47,8 @@ interface FamilyMembersViewProps {
   onOpenPointManager?: (memberId?: string) => void;
   onOpenHouseEvolution?: (memberId?: string) => void;
   onOpenAISetupBuddy?: () => void;
+  onOpenCloudSync?: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
 export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
@@ -61,6 +66,8 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
   onOpenPointManager,
   onOpenHouseEvolution,
   onOpenAISetupBuddy,
+  onOpenCloudSync,
+  onShowToast,
 }) => {
   const theme = THEMES[currentTheme] || THEMES.rose;
   const houseProg = calculateHouseProgression(members, householdInfo);
@@ -166,6 +173,32 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                     {householdInfo.houseAddressOrMotto}
                   </p>
                 )}
+                {/* Family Code Pill */}
+                {householdInfo.householdCode && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/50 border border-white/20 text-xs text-white">
+                      <KeyRound className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="text-[10px] text-slate-300 font-medium">Code:</span>
+                      <span className="font-mono font-black text-emerald-300 tracking-wider text-xs select-all">
+                        {householdInfo.householdCode}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        soundFX.playPop();
+                        navigator.clipboard?.writeText(householdInfo.householdCode!);
+                        if (onShowToast) onShowToast(`Family Code copied: ${householdInfo.householdCode}`);
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white/20 hover:bg-white/30 text-white text-[11px] font-bold transition-all active:scale-95 cursor-pointer"
+                      title="Copy Code"
+                    >
+                      <Copy className="w-3 h-3" />
+                      <span>Copy</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -192,6 +225,46 @@ export const FamilyMembersView: React.FC<FamilyMembersViewProps> = ({
                   <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-xl leading-snug">
                     {householdInfo.houseAddressOrMotto || 'Clean spaces, happy smiles & teamwork! ✨'}
                   </p>
+                  {/* Family Code Pill */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                    {householdInfo.householdCode ? (
+                      <>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 border border-white/20 text-xs text-white">
+                          <KeyRound className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span className="text-[10px] text-slate-300 font-medium">Family Code:</span>
+                          <span className="font-mono font-black text-emerald-300 tracking-wider text-xs select-all">
+                            {householdInfo.householdCode}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            soundFX.playPop();
+                            navigator.clipboard?.writeText(householdInfo.householdCode!);
+                            if (onShowToast) onShowToast(`Family Code copied: ${householdInfo.householdCode}`);
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                          title="Copy Code"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>Copy</span>
+                        </button>
+                      </>
+                    ) : isMomMode ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundFX.playPop();
+                          if (onOpenCloudSync) onOpenCloudSync();
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+                      >
+                        <Cloud className="w-3.5 h-3.5" />
+                        <span>Connect & Get Family Code</span>
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 

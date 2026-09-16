@@ -1220,7 +1220,14 @@ app.get("/api/household/:id", async (req, res) => {
     if (!verifyHouseholdAuth(req, hh)) {
       return res.status(401).json({ error: "Unauthorized: Household access credentials required" });
     }
-    return res.json({ success: true, household: sanitizeHousehold(hh) });
+    return res.json({ 
+      success: true, 
+      household: {
+        ...sanitizeHousehold(hh),
+        householdCode: hh.householdCode
+      },
+      householdCode: hh.householdCode 
+    });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
@@ -1346,7 +1353,14 @@ app.post("/api/household/:id/sync", async (req, res) => {
     householdsMemoryStore[hhId] = existing;
     await saveHouseholdStore(hhId);
 
-    return res.json({ success: true, household: sanitizeHousehold(existing) });
+    return res.json({ 
+      success: true, 
+      household: {
+        ...sanitizeHousehold(existing),
+        householdCode: existing.householdCode
+      },
+      householdCode: existing.householdCode 
+    });
   } catch (err: any) {
     console.error("Household sync API error:", err);
     return res.status(500).json({ error: err.message || "Failed to sync household" });
@@ -1556,7 +1570,14 @@ app.get("/api/household/:id/poll", async (req, res) => {
 
     // Return if changed since provided timestamp or version
     if (!since || hh.updatedAt !== since) {
-      return res.json({ hasUpdate: true, household: sanitizeHousehold(hh) });
+      return res.json({ 
+        hasUpdate: true, 
+        household: {
+          ...sanitizeHousehold(hh),
+          householdCode: hh.householdCode
+        },
+        householdCode: hh.householdCode 
+      });
     }
 
     return res.json({ hasUpdate: false, updatedAt: hh.updatedAt });

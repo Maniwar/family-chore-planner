@@ -19,7 +19,10 @@ import {
   CloudCheck,
   Smartphone,
   Monitor,
-  Settings
+  Settings,
+  KeyRound,
+  Copy,
+  QrCode
 } from 'lucide-react';
 import { HouseholdMember, HouseholdInfo } from '../types';
 import { soundFX } from '../utils/audio';
@@ -56,6 +59,7 @@ interface HeaderProps {
   isSoundEnabled: boolean;
   onToggleSound: () => void;
   onLogOffProfile?: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -86,6 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
   isSoundEnabled,
   onToggleSound,
   onLogOffProfile,
+  onShowToast,
 }) => {
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
@@ -663,6 +668,99 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Mom Admin Mode Status & Family Code Banner */}
+      {isMomMode && (
+        <div 
+          id="admin-mode-banner"
+          className={`px-3 sm:px-6 py-1.5 border-t flex flex-wrap items-center justify-between gap-2 text-xs transition-colors select-none ${
+            isGlassTheme(currentTheme)
+              ? 'bg-rose-500/15 border-white/20 text-white'
+              : 'bg-linear-to-r from-rose-50 via-amber-50/60 to-rose-50 dark:from-rose-950/40 dark:via-amber-950/20 dark:to-rose-950/40 border-rose-200/80 dark:border-rose-900/40 text-slate-900 dark:text-white'
+          }`}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="flex h-2 w-2 relative shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            </span>
+            <span className="font-extrabold text-rose-700 dark:text-rose-300 text-xs tracking-tight shrink-0">
+              Mom Admin Mode
+            </span>
+            <span className="text-slate-300 dark:text-slate-600 hidden sm:inline">•</span>
+            <span className="text-slate-500 dark:text-slate-400 text-[11px] truncate hidden md:inline">
+              Full controls unlocked
+            </span>
+          </div>
+
+          {/* Family Code Badge & Actions */}
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
+            {householdInfo.householdCode ? (
+              <div className="flex items-center gap-1.5">
+                <button
+                  id="admin-banner-copy-code-btn"
+                  type="button"
+                  onClick={() => {
+                    soundFX.playPop();
+                    if (householdInfo.householdCode) {
+                      navigator.clipboard?.writeText(householdInfo.householdCode);
+                      if (onShowToast) {
+                        onShowToast(`Family Code copied: ${householdInfo.householdCode}`);
+                      }
+                    }
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer border shadow-2xs ${
+                    isGlassTheme(currentTheme)
+                      ? 'apple-glass-pill bg-white/10 text-white border-white/30 hover:bg-white/20'
+                      : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-slate-200 dark:border-slate-700 hover:border-emerald-400'
+                  }`}
+                  title="Tap to copy Family Code for kids and other devices"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="text-[10px] font-sans font-semibold text-slate-500 dark:text-slate-400">Family Code:</span>
+                  <span className="font-mono font-black text-emerald-700 dark:text-emerald-400 tracking-wider">
+                    {householdInfo.householdCode}
+                  </span>
+                  <Copy className="w-3 h-3 text-slate-400 ml-0.5" />
+                </button>
+
+                {onOpenCloudSync && (
+                  <button
+                    id="admin-banner-cloud-sync-btn"
+                    type="button"
+                    onClick={() => {
+                      soundFX.playPop();
+                      onOpenCloudSync();
+                    }}
+                    className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border flex items-center justify-center ${
+                      isGlassTheme(currentTheme)
+                        ? 'apple-glass-pill bg-white/10 text-white border-white/20 hover:bg-white/20'
+                        : 'bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                    title="Open Family Cloud Sync & QR Code"
+                  >
+                    <QrCode className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                id="admin-banner-connect-btn"
+                type="button"
+                onClick={() => {
+                  soundFX.playPop();
+                  if (onOpenCloudSync) onOpenCloudSync();
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+                title="Connect to Cloud to generate Family Code"
+              >
+                <Cloud className="w-3.5 h-3.5" />
+                <span>Connect / Get Family Code</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };
